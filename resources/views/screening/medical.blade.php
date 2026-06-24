@@ -1,6 +1,6 @@
 @extends('layouts.screening')
 
-@section('title', 'Medical Screening - DMRMS')
+@section('title', 'Medical Screening - Ghana Armed Forces')
 
 @section('content')
 <div x-data="{ search: '', applicant: null }" class="max-w-3xl mx-auto">

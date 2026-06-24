@@ -4,6 +4,7 @@
 
 :root {
     --gaf-green: #14532d;
+    --gaf-dark-green: #0f2f1f;
     --gaf-dark-green-green: #0f2f1f;
     --gaf-khaki-green: #166534;
     --gaf-accent: #5fa489;
@@ -16,6 +17,7 @@
     --gaf-flag-gold: #fcd116;
     --gaf-flag-green: #006b3f;
     --gaf-section: #2d3748;
+    --gaf-sectionn: #2d3748;
 }
 
 @layer components {
@@ -138,7 +140,7 @@
 
     .auth-split {
         @apply flex w-full overflow-hidden;
-        min-height: 100vh;
+        min-height: calc(100vh - 64px);
     }
     .auth-split-left {
         flex: 1.85;

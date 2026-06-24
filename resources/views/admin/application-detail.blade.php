@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Application Detail - DMRMS')
+@section('title', 'Application Detail - Ghana Armed Forces')
 
 @section('content')
 <div class="space-y-6">

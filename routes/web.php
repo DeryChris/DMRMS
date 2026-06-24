@@ -40,6 +40,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_ad
     Route::get('/users', [AdminWebController::class, 'users'])->name('users');
     Route::get('/ai-config', [AdminWebController::class, 'aiConfig'])->name('ai-config');
     Route::get('/audit-logs', [AdminWebController::class, 'auditLogs'])->name('audit-logs');
+    Route::get('/settings', [AdminWebController::class, 'settings'])->name('settings');
 });
 
 // Screening officer routes

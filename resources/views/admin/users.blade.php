@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Users - DMRMS')
+@section('title', 'Users - Ghana Armed Forces')
 
 @section('content')
 <div x-data="{ showModal: false }" class="space-y-6">

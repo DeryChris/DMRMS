@@ -16,32 +16,20 @@ class RoleMiddleware
             abort(403, 'Unauthenticated.');
         }
 
-        if ($request->user('admin')) {
-            $admin = $request->user('admin');
+        if (in_array('applicant', $roles)) {
+            $allowedStatuses = ['registered', 'application_submitted', 'eligibility_passed', 'shortlisted', 'appointment_scheduled', 'screening_completed'];
 
-            if (!in_array($admin->role, $roles)) {
-                abort(403, 'Unauthorized action. Required role: ' . implode(', ', $roles));
+            if (in_array($user->status, $allowedStatuses)) {
+                return $next($request);
             }
 
-            return $next($request);
+            abort(403, 'Unauthorized action.');
         }
 
-        if ($guard = $request->user('web')) {
-            $allowedStatuses = [];
-
-            if (in_array('applicant', $roles)) {
-                $allowedStatuses = ['registered', 'application_submitted', 'eligibility_passed', 'shortlisted', 'appointment_scheduled', 'screening_completed'];
-            }
-
-            $applicant = $request->user('web');
-
-            if (!in_array('applicant', $roles) || ($allowedStatuses && !in_array($applicant->status, $allowedStatuses))) {
-                abort(403, 'Unauthorized action.');
-            }
-
-            return $next($request);
+        if (!in_array($user->role, $roles)) {
+            abort(403, 'Unauthorized action. Required role: ' . implode(', ', $roles));
         }
 
-        abort(403, 'Unauthorized.');
+        return $next($request);
     }
 }

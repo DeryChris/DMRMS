@@ -14,6 +14,7 @@ export default {
         extend: {
             colors: {
                 'gaf-green': '#14532d',
+                'gaf-dark-green': '#0f2f1f',
                 'gaf-dark-green-green': '#0f2f1f',
                 'gaf-khaki-green': '#166534',
                 'gaf-accent': '#5fa489',

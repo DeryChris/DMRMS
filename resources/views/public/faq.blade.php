@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'FAQ - DMRMS')
+@section('title', 'FAQ - Ghana Armed Forces')
 
 @section('content')
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -15,13 +15,13 @@
             </div>
         </div>
         <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
-            <button @click="category = 'all'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" :class="category === 'all' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">All</button>
-            <button @click="category = 'general'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" :class="category === 'general' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">General</button>
-            <button @click="category = 'eligibility'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" :class="category === 'eligibility' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Eligibility</button>
-            <button @click="category = 'application'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" :class="category === 'application' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Application</button>
-            <button @click="category = 'documents'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" :class="category === 'documents' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Documents</button>
-            <button @click="category = 'screening'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" :class="category === 'screening' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Screening</button>
-            <button @click="category = 'results'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" :class="category === 'results' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Results</button>
+            <button @click="category = 'all'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" x-bind:class="category === 'all' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">All</button>
+            <button @click="category = 'general'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" x-bind:class="category === 'general' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">General</button>
+            <button @click="category = 'eligibility'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" x-bind:class="category === 'eligibility' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Eligibility</button>
+            <button @click="category = 'application'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" x-bind:class="category === 'application' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Application</button>
+            <button @click="category = 'documents'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" x-bind:class="category === 'documents' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Documents</button>
+            <button @click="category = 'screening'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" x-bind:class="category === 'screening' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Screening</button>
+            <button @click="category = 'results'" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap" x-bind:class="category === 'results' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Results</button>
         </div>
 
         @php
@@ -52,7 +52,7 @@
                  class="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <button @click="open = !open" class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition">
                     <span class="text-sm font-medium text-gray-800">{{ $faq['q'] }}</span>
-                    <svg class="w-5 h-5 text-gray-400 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    <svg class="w-5 h-5 text-gray-400 transition-transform" x-bind:class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
                 <div x-show="open" x-collapse x-cloak class="px-6 pb-4">
                     <p class="text-sm text-gray-600">{{ $faq['a'] }}</p>

@@ -1,6 +1,6 @@
 @extends('layouts.applicant')
 
-@section('title', 'Application Status - DMRMS')
+@section('title', 'Application Status - Ghana Armed Forces')
 
 @section('content')
 <div class="max-w-3xl mx-auto">

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Announcements - DMRMS')
+@section('title', 'Announcements - Ghana Armed Forces')
 
 @section('content')
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -13,11 +13,11 @@
 
     <div x-data="{ category: 'all' }">
         <div class="flex space-x-2 mb-8 overflow-x-auto pb-2">
-            <button @click="category = 'all'" class="px-4 py-2 rounded-full text-sm font-medium transition" :class="category === 'all' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">All</button>
-            <button @click="category = 'general'" class="px-4 py-2 rounded-full text-sm font-medium transition" :class="category === 'general' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">General</button>
-            <button @click="category = 'requirements'" class="px-4 py-2 rounded-full text-sm font-medium transition" :class="category === 'requirements' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Requirements</button>
-            <button @click="category = 'deadlines'" class="px-4 py-2 rounded-full text-sm font-medium transition" :class="category === 'deadlines' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Deadlines</button>
-            <button @click="category = 'results'" class="px-4 py-2 rounded-full text-sm font-medium transition" :class="category === 'results' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Results</button>
+            <button @click="category = 'all'" class="px-4 py-2 rounded-full text-sm font-medium transition" x-bind:class="category === 'all' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">All</button>
+            <button @click="category = 'general'" class="px-4 py-2 rounded-full text-sm font-medium transition" x-bind:class="category === 'general' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">General</button>
+            <button @click="category = 'requirements'" class="px-4 py-2 rounded-full text-sm font-medium transition" x-bind:class="category === 'requirements' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Requirements</button>
+            <button @click="category = 'deadlines'" class="px-4 py-2 rounded-full text-sm font-medium transition" x-bind:class="category === 'deadlines' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Deadlines</button>
+            <button @click="category = 'results'" class="px-4 py-2 rounded-full text-sm font-medium transition" x-bind:class="category === 'results' ? 'bg-gaf-green text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">Results</button>
         </div>
 
         <div class="space-y-4">

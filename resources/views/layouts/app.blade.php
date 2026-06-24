@@ -6,9 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('assets/images/favicon/favicon.ico') }}">
     <link rel="apple-touch-icon" href="{{ asset('assets/images/favicon/favicon.ico') }}">
-    <title>@yield('title', 'DMRMS - Ghana Armed Forces Recruitment')</title>
-    <link rel="preconnect" href="https://fonts.gunny.net">
-    <link href="https://fonts.gunny.net/css?family=inter:400,500,600,700&family=montserrat:600,700,800&display=swap" rel="stylesheet" />
+    <title>@yield('title', 'Ghana Armed Forces')</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&family=montserrat:600,700,800&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
@@ -33,11 +33,7 @@
                         <a href="{{ route('contact') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Contact</a>
                     </div>
                     <div class="flex items-center space-x-3">
-                        @auth
-                            <a href="{{ route('dashboard') }}" class="bg-gaf-khaki text-gaf-green px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gaf-khaki transition">dashboard</a>
-                        @else
-                            <a href="{{ route('login') }}" class="bg-gaf-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">Login</a>
-                        @endauth
+                        <a href="{{ route('login') }}" class="bg-gaf-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">Login</a>
                         <button @click="mobileMenu = !mobileMenu" class="md:hidden text-white">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>

@@ -7,11 +7,6 @@ use Illuminate\View\View;
 
 class ApplicantWebController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-    }
-
     public function dashboard(): View
     {
         return view('applicant.dashboard');

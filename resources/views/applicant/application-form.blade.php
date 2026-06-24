@@ -1,6 +1,6 @@
 @extends('layouts.applicant')
 
-@section('title', 'Application Form - DMRMS')
+@section('title', 'Application Form - Ghana Armed Forces')
 
 @section('content')
 <div x-data="{

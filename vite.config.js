@@ -8,4 +8,9 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        watch: {
+            ignored: ['**/storage/**', '**/vendor/**', '**/node_modules/**', '**/.git/**', '**/public/build/**', '**/public/hot'],
+        },
+    },
 });

@@ -1,6 +1,6 @@
 @extends('layouts.screening')
 
-@section('title', 'Screening Dashboard - DMRMS')
+@section('title', 'Screening Dashboard - Ghana Armed Forces')
 
 @section('today-count', '24')
 @section('checked-in-count', '12')

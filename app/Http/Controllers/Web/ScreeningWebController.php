@@ -7,12 +7,6 @@ use Illuminate\View\View;
 
 class ScreeningWebController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-        $this->middleware('role:screener,admin');
-    }
-
     public function dashboard(): View
     {
         return view('screening.dashboard');

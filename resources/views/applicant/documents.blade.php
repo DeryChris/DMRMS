@@ -1,6 +1,6 @@
 @extends('layouts.applicant')
 
-@section('title', 'Documents - DMRMS')
+@section('title', 'Documents - Ghana Armed Forces')
 
 @section('content')
 <div x-data="{ filePreview: null }" class="max-w-4xl mx-auto">

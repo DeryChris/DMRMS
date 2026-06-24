@@ -1,6 +1,6 @@
 @extends('layouts.screening')
 
-@section('title', 'Verify Applicant - DMRMS')
+@section('title', 'Verify Applicant - Ghana Armed Forces')
 
 @section('content')
 <div x-data="{ verified: false, code: '' }" class="max-w-2xl mx-auto">

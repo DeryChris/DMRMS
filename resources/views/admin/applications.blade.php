@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Applications - DMRMS')
+@section('title', 'Applications - Ghana Armed Forces')
 
 @section('content')
 <div x-data="{ selectAll: false, selected: [] }" class="space-y-6">

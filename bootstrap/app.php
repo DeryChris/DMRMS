@@ -1,8 +1,10 @@
 <?php
 
+use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,6 +19,16 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription' => \App\Http\Middleware\SubscriptionMiddleware::class,
             'ai.rate.limit' => \App\Http\Middleware\AiRateLimitMiddleware::class,
         ]);
+
+        RedirectIfAuthenticated::redirectUsing(function (Request $request) {
+            $user = $request->user();
+
+            if ($user?->isAdmin()) {
+                return route('admin.dashboard');
+            }
+
+            return route('applicant.dashboard');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

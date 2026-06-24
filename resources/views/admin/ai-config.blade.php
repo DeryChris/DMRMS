@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'AI Configuration - DMRMS')
+@section('title', 'AI Configuration - Ghana Armed Forces')
 
 @section('content')
 <div x-data="{ aiEnabled: true, provider: 'openai' }" class="space-y-6">

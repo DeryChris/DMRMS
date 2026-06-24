@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'DMRMS - Ghana Armed Forces Recruitment Portal')
+@section('title', 'Home - Ghana Armed Forces')
 
 @push('styles')
 <style>

@@ -7,12 +7,6 @@ use Illuminate\View\View;
 
 class AdminWebController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-        $this->middleware('role:admin');
-    }
-
     public function dashboard(): View
     {
         return view('admin.dashboard');
@@ -66,5 +60,10 @@ class AdminWebController extends Controller
     public function auditLogs(): View
     {
         return view('admin.audit-logs');
+    }
+
+    public function settings(): View
+    {
+        return view('admin.settings');
     }
 }

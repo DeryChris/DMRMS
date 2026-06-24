@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Recruitment Cycles - DMRMS')
+@section('title', 'Recruitment Cycles - Ghana Armed Forces')
 
 @section('content')
 <div x-data="{ showModal: false, editing: null }" class="space-y-6">
