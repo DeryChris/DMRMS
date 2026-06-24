@@ -36,16 +36,24 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        $name = explode(' ', $request->name, 2);
         $user = User::create([
-            'name' => $request->name,
+            'first_name' => $name[0],
+            'last_name' => $name[1] ?? '',
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => 'applicant',
+            'status' => 'active',
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect(match ($user->role) {
+            'admin', 'super_admin' => route('admin.dashboard'),
+            'screening_officer' => route('screening.dashboard'),
+            default => route('applicant.dashboard'),
+        });
     }
 }

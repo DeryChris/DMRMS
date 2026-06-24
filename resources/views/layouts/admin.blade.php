@@ -86,6 +86,11 @@
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <span x-show="!sidebarCollapsed">Audit Logs</span>
                 </a>
+                @php $isSendNotif = request()->routeIs('admin.notifications.*'); @endphp
+                <a href="{{ route('admin.notifications.create') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isSendNotif ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    <span x-show="!sidebarCollapsed">Send Notification</span>
+                </a>
             </div>
             @endif
         </nav>
@@ -108,7 +113,9 @@
                     <input type="text" placeholder="Search applicants..." class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki focus:bg-white transition-all outline-none">
                 </div>
             </div>
-            <div x-data="{ open: false }" class="relative flex-shrink-0">
+            <div class="flex items-center space-x-2 flex-shrink-0">
+                <x-notification-bell />
+                <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="flex items-center space-x-3 text-sm text-gray-700 hover:text-gray-900 p-1.5 rounded-lg hover:bg-gray-100 transition-all">
                     <div class="w-8 h-8 bg-gaf-green rounded-full flex items-center justify-center text-white font-semibold text-xs shadow-sm">
                         {{ substr(auth()->user()->name ?? 'A', 0, 1) }}
@@ -135,6 +142,7 @@
                         </form>
                     </div>
                 </div>
+            </div>
             </div>
         </header>
         <main class="flex-1 overflow-y-auto bg-[#f0f4f0] min-h-0">

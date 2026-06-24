@@ -17,6 +17,15 @@ Route::get('/contact', [WebController::class, 'contact'])->name('contact');
 // Breeze auth routes
 require __DIR__ . '/auth.php';
 
+// Notification AJAX routes (for bell component)
+Route::middleware('auth')->group(function () {
+    Route::get('/notifications/fetch', [\App\Http\Controllers\NotificationWebController::class, 'index']);
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationWebController::class, 'unreadCount']);
+    Route::put('/notifications/{id}/read', [\App\Http\Controllers\NotificationWebController::class, 'markAsRead']);
+    Route::put('/notifications/read-all', [\App\Http\Controllers\NotificationWebController::class, 'markAllAsRead']);
+    Route::get('/notifications', [\App\Http\Controllers\NotificationWebController::class, 'allNotifications'])->name('notifications.all');
+});
+
 // Applicant routes
 Route::prefix('applicant')->name('applicant.')->middleware('auth')->group(function () {
     Route::get('/dashboard', [ApplicantWebController::class, 'dashboard'])->name('dashboard');
@@ -28,7 +37,7 @@ Route::prefix('applicant')->name('applicant.')->middleware('auth')->group(functi
 });
 
 // Admin routes
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_admin'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_admin,recruitment_officer,screening_officer,scheduling_officer'])->group(function () {
     Route::get('/dashboard', [AdminWebController::class, 'dashboard'])->name('dashboard');
     Route::get('/applications', [AdminWebController::class, 'applications'])->name('applications');
     Route::get('/applications/{id}', [AdminWebController::class, 'applicationDetail'])->name('applications.detail');
@@ -41,6 +50,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_ad
     Route::get('/ai-config', [AdminWebController::class, 'aiConfig'])->name('ai-config');
     Route::get('/audit-logs', [AdminWebController::class, 'auditLogs'])->name('audit-logs');
     Route::get('/settings', [AdminWebController::class, 'settings'])->name('settings');
+
+    // Admin notification management
+    Route::get('/notifications/send', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'create'])->name('notifications.create');
+    Route::post('/notifications/send', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'send'])->name('notifications.send');
 });
 
 // Screening officer routes

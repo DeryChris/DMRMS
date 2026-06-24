@@ -13,7 +13,7 @@
     @stack('styles')
 </head>
 <body class="font-sans antialiased bg-gray-50 text-gray-900">
-    <div x-data="{ mobileMenu: false }">
+    <div x-data="{ mobileMenu: false }" class="flex flex-col min-h-screen">
         <nav class="bg-gaf-green text-white shadow-lg sticky top-0 z-40">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
@@ -26,14 +26,24 @@
                     </div>
                     <div class="hidden md:flex items-center space-x-6">
                         <a href="{{ route('landing') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Home</a>
+                        @guest
                         <a href="{{ route('eligibility.checker') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Eligibility Checker</a>
+                        @endguest
                         <a href="{{ route('announcements') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Announcements</a>
                         <a href="{{ route('guide') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Guide</a>
                         <a href="{{ route('faq') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">FAQ</a>
                         <a href="{{ route('contact') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Contact</a>
                     </div>
                     <div class="flex items-center space-x-3">
+                        @guest
                         <a href="{{ route('login') }}" class="bg-gaf-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">Login</a>
+                        @else
+                        <a href="{{ route('applicant.dashboard') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Dashboard</a>
+                        <form method="POST" action="{{ route('logout') }}" class="inline">
+                            @csrf
+                            <button type="submit" class="bg-gaf-khaki text-gaf-green px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-500 transition">Sign Out</button>
+                        </form>
+                        @endguest
                         <button @click="mobileMenu = !mobileMenu" class="md:hidden text-white">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -44,11 +54,20 @@
             </div>
             <div x-show="mobileMenu" x-cloak class="md:hidden bg-gaf-green border-t border-gaf-dark-green px-4 py-3 space-y-2">
                 <a href="{{ route('landing') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Home</a>
+                @guest
                 <a href="{{ route('eligibility.checker') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Eligibility Checker</a>
+                @endguest
                 <a href="{{ route('announcements') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Announcements</a>
                 <a href="{{ route('guide') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Guide</a>
                 <a href="{{ route('faq') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">FAQ</a>
                 <a href="{{ route('contact') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Contact</a>
+                @auth
+                <a href="{{ route('applicant.dashboard') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Dashboard</a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="block w-full text-left text-white hover:text-gaf-khaki py-1 text-sm">Sign Out</button>
+                </form>
+                @endauth
             </div>
         </nav>
 
@@ -58,13 +77,13 @@
             </section>
         @endif
 
-        <main>
+        <main class="flex-1">
             @yield('content')
         </main>
 
         <x-chatbot-widget />
 
-        <footer class="bg-gaf-green text-gray-300 py-8">
+        <footer class="bg-gaf-dark-green text-gray-300 py-8 mt-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex flex-col md:flex-row items-center justify-between">
                     <div class="flex items-center space-x-2 mb-4 md:mb-0">

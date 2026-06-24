@@ -210,59 +210,136 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    Alpine.data('notificationCenter', () => ({
+    Alpine.data('notificationBell', () => ({
         open: false,
-        notifications: [],
-        unreadCount: 0,
-        polling: null,
-
-        toggle() {
-            this.open = !this.open;
-            if (this.open) this.fetch();
-        },
-
-        async fetch() {
-            try {
-                const response = await window.axios.get('/api/notifications');
-                this.notifications = response.data.notifications || [];
-                this.unreadCount = this.notifications.filter(n => !n.read_at).length;
-            } catch (e) {
-                // silent
-            }
-        },
-
-        async markAsRead(id) {
-            try {
-                await window.axios.post(`/api/notifications/${id}/read`);
-                const notification = this.notifications.find(n => n.id === id);
-                if (notification) {
-                    notification.read_at = new Date().toISOString();
-                    this.unreadCount = Math.max(0, this.unreadCount - 1);
-                }
-            } catch (e) {
-                // silent
-            }
-        },
-
-        markAllRead() {
-            this.notifications.forEach(n => this.markAsRead(n.id));
-        },
-
-        startPolling() {
-            this.polling = setInterval(() => this.fetch(), 30000);
-        },
-
-        stopPolling() {
-            if (this.polling) clearInterval(this.polling);
-        },
+        showAll: false,
+        loading: true,
+        allLoading: false,
+        items: [],
+        allItems: [],
+        expanded: null,
+        allExpanded: null,
+        unread: 0,
+        total: 0,
+        allPage: 1,
+        allHasMore: false,
 
         init() {
             this.fetch();
-            this.startPolling();
         },
 
-        destroy() {
-            this.stopPolling();
+        toggle() {
+            this.open = !this.open;
+            if (this.open && this.items.length === 0) {
+                this.fetch();
+            }
+        },
+
+        async fetch() {
+            this.loading = true;
+            try {
+                const res = await fetch('/notifications/fetch?per_page=5');
+                const json = await res.json();
+                this.items = json.data;
+                this.unread = json.meta.unread_count;
+            } catch (e) {
+                // silent
+            }
+            this.loading = false;
+        },
+
+        async toggleExpand(i, item) {
+            if (this.expanded === i) {
+                this.expanded = null;
+                return;
+            }
+            this.expanded = i;
+            if (!item.read_at) {
+                item.read_at = new Date().toISOString();
+                this.unread = Math.max(0, this.unread - 1);
+                try {
+                    await fetch(`/notifications/${item.id}/read`, {
+                        method: 'PUT',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '' },
+                    });
+                } catch (e) {
+                    // silent
+                }
+            }
+        },
+
+        async expandAll(i, item) {
+            if (this.allExpanded === i) {
+                this.allExpanded = null;
+                return;
+            }
+            this.allExpanded = i;
+            if (!item.read_at) {
+                item.read_at = new Date().toISOString();
+                this.unread = Math.max(0, this.unread - 1);
+                try {
+                    await fetch(`/notifications/${item.id}/read`, {
+                        method: 'PUT',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '' },
+                    });
+                } catch (e) {
+                    // silent
+                }
+            }
+        },
+
+        async markAllRead() {
+            try {
+                await fetch('/notifications/read-all', {
+                    method: 'PUT',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '' },
+                });
+                this.items.forEach(item => item.read_at = new Date().toISOString());
+                this.unread = 0;
+            } catch (e) {
+                // silent
+            }
+        },
+
+        async loadMore() {
+            this.allPage++;
+            this.allLoading = true;
+            try {
+                const res = await fetch(`/notifications/fetch?per_page=10&page=${this.allPage}`);
+                const json = await res.json();
+                this.allItems = [...this.allItems, ...json.data];
+                this.allHasMore = json.meta.current_page < json.meta.last_page;
+            } catch (e) {
+                // silent
+            }
+            this.allLoading = false;
+        },
+
+        timeAgo(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const now = new Date();
+            const diff = Math.floor((now - d) / 1000);
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+            if (diff < 2592000) return Math.floor(diff / 86400) + 'd ago';
+            return d.toLocaleDateString();
+        },
+
+        initAll() {
+            this.allPage = 1;
+            this.allItems = [];
+            this.allLoading = true;
+            this.allHasMore = false;
+            fetch('/notifications/fetch?per_page=10')
+                .then(r => r.json())
+                .then(json => {
+                    this.allItems = json.data;
+                    this.allHasMore = json.meta.current_page < json.meta.last_page;
+                    this.total = json.meta.total;
+                })
+                .finally(() => { this.allLoading = false; });
         },
     }));
 

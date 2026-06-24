@@ -26,7 +26,7 @@
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-heading font-semibold text-gray-800">Profile</h3>
                 <div class="w-10 h-10 bg-gaf-green rounded-full flex items-center justify-center text-white font-heading font-bold">
-                    {{ sugstr(auth()->user()->name ?? 'A', 0, 1) }}
+                    {{ substr(auth()->user()->name ?? 'A', 0, 1) }}
                 </div>
             </div>
             <p class="text-sm font-medium text-gray-800">{{ auth()->user()->name ?? 'John Doe' }}</p>
