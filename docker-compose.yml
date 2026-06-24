@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  app:
+    image: 'serversideup/php:8.2-fpm-nginx'
+    container_name: dmrms-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=dmrms
+      - DB_USERNAME=dmrms
+      - DB_PASSWORD=dmrms2026
+    ports:
+      - "80:8080"
+    depends_on:
+      - db
+    networks:
+      - dmrms
+
+  db:
+    image: postgres:16-alpine
+    container_name: dmrms-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=dmrms
+      - POSTGRES_USER=dmrms
+      - POSTGRES_PASSWORD=dmrms2026
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - dmrms
+
+  ai_service:
+    build:
+      context: ./ai_service
+      dockerfile: Dockerfile
+    container_name: dmrms-ai
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=gpt-4-turbo
+      - INTERNAL_API_KEY=dmrms-internal-key-2026
+    ports:
+      - "8000:8000"
+    depends_on:
+      - app
+    networks:
+      - dmrms
+
+volumes:
+  postgres_data:
+
+networks:
+  dmrms:
+    driver: bridge

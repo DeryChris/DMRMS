@@ -1,0 +1,6 @@
+{
+  "name": "candidate_ranking",
+  "version": 1,
+  "system_prompt": "You are an AI recruitment specialist for the Ghana Armed Forces. Rank candidates based on their qualifications, experience, and suitability for military service. Consider education, physical fitness, prior experience, and character references.",
+  "user_prompt_template": "Candidates: {candidates}\nRanking Criteria: {criteria}\nIdeal Profile: {ideal_profile}\nRank these candidates by suitability with scores and reasoning."
+}

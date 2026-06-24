@@ -1,0 +1,198 @@
+<?php
+
+namespace App\Services\Ai\Providers;
+
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class OpenAiProvider implements AiProviderInterface
+{
+    protected string $apiKey;
+    protected string $model;
+    protected string $embeddingModel;
+    protected int $maxTokens;
+    protected float $temperature;
+
+    public function __construct()
+    {
+        $this->apiKey = config('ai.openai.api_key');
+        $this->model = config('ai.openai.model', 'gpt-4-turbo');
+        $this->embeddingModel = config('ai.openai.embedding_model', 'text-embedding-3-small');
+        $this->maxTokens = config('ai.openai.max_tokens', 4096);
+        $this->temperature = config('ai.openai.temperature', 0.7);
+    }
+
+    public function chat(array $messages, array $options = []): array
+    {
+        $start = microtime(true);
+
+        try {
+            $response = Http::withToken($this->apiKey)
+                ->timeout(60)
+                ->post('https://api.openai.com/v1/chat/completions', array_merge([
+                    'model'       => $this->model,
+                    'messages'    => $messages,
+                    'max_tokens'  => $this->maxTokens,
+                    'temperature' => $this->temperature,
+                ], $options));
+
+            if ($response->failed()) {
+                Log::error('OpenAI chat request failed', ['status' => $response->status(), 'body' => $response->body()]);
+
+                return $this->prepareErrorResponse('Chat request failed: ' . $response->body(), $start);
+            }
+
+            $data = $response->json();
+
+            return $this->prepareSuccessResponse($data, $start, 'chat');
+        } catch (\Exception $e) {
+            Log::error('OpenAI chat exception: ' . $e->getMessage());
+
+            return $this->prepareErrorResponse($e->getMessage(), $start);
+        }
+    }
+
+    public function analyzeDocument(string $filePath, string $documentType): array
+    {
+        $start = microtime(true);
+
+        try {
+            $imageContent = base64_encode(file_get_contents($filePath));
+
+            $messages = [
+                [
+                    'role'    => 'user',
+                    'content' => [
+                        [
+                            'type' => 'text',
+                            'text' => "Analyze this {$documentType} document. Extract all visible text and identify key fields (name, date, ID numbers, etc.). Return as structured JSON.",
+                        ],
+                        [
+                            'type'     => 'image_url',
+                            'image_url' => [
+                                'url' => "data:image/jpeg;base64,{$imageContent}",
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+
+            $response = Http::withToken($this->apiKey)
+                ->timeout(120)
+                ->post('https://api.openai.com/v1/chat/completions', [
+                    'model'      => $this->model,
+                    'messages'   => $messages,
+                    'max_tokens' => 4096,
+                ]);
+
+            if ($response->failed()) {
+                Log::error('OpenAI document analysis failed', ['status' => $response->status()]);
+
+                return $this->prepareErrorResponse('Document analysis failed', $start);
+            }
+
+            $data = $response->json();
+
+            return $this->prepareSuccessResponse($data, $start, 'document_analysis');
+        } catch (\Exception $e) {
+            Log::error('OpenAI document analysis exception: ' . $e->getMessage());
+
+            return $this->prepareErrorResponse($e->getMessage(), $start);
+        }
+    }
+
+    public function getEmbeddings(string $text): array
+    {
+        $start = microtime(true);
+
+        try {
+            $response = Http::withToken($this->apiKey)
+                ->timeout(30)
+                ->post('https://api.openai.com/v1/embeddings', [
+                    'model' => $this->embeddingModel,
+                    'input' => $text,
+                ]);
+
+            if ($response->failed()) {
+                Log::error('OpenAI embeddings request failed', ['status' => $response->status()]);
+
+                return $this->prepareErrorResponse('Embeddings request failed', $start);
+            }
+
+            $data = $response->json();
+
+            return $this->prepareSuccessResponse($data, $start, 'embeddings');
+        } catch (\Exception $e) {
+            Log::error('OpenAI embeddings exception: ' . $e->getMessage());
+
+            return $this->prepareErrorResponse($e->getMessage(), $start);
+        }
+    }
+
+    public function generateRanking(array $candidates, array $requirements): array
+    {
+        $prompt = "Rank the following candidates based on these requirements: " . json_encode($requirements) . "\n\nCandidates:\n" . json_encode($candidates) . "\n\nReturn a ranked list with scores and reasoning.";
+
+        $result = $this->chat([
+            ['role' => 'system', 'content' => 'You are a recruitment ranking assistant.'],
+            ['role' => 'user', 'content' => $prompt],
+        ]);
+
+        return $result;
+    }
+
+    protected function prepareSuccessResponse(array $data, float $start, string $promptType): array
+    {
+        $processingTime = round((microtime(true) - $start) * 1000, 2);
+        $tokensUsed = $data['usage']['total_tokens'] ?? 0;
+        $cost = $this->calculateCost($tokensUsed, $data['model'] ?? $this->model);
+
+        $this->logUsage($promptType, $tokensUsed, $cost);
+
+        return [
+            'success'         => true,
+            'data'            => $data['choices'][0] ?? $data,
+            'model'           => $data['model'] ?? $this->model,
+            'tokens_used'     => $tokensUsed,
+            'processing_time' => $processingTime,
+            'cost'            => $cost,
+        ];
+    }
+
+    protected function prepareErrorResponse(string $error, float $start): array
+    {
+        return [
+            'success'         => false,
+            'error'           => $error,
+            'processing_time' => round((microtime(true) - $start) * 1000, 2),
+            'tokens_used'     => 0,
+            'cost'            => 0.0,
+        ];
+    }
+
+    protected function calculateCost(int $tokens, string $model): float
+    {
+        $rates = [
+            'gpt-4-turbo'       => ['input' => 0.01, 'output' => 0.03],
+            'gpt-4'             => ['input' => 0.03, 'output' => 0.06],
+            'gpt-3.5-turbo'     => ['input' => 0.001, 'output' => 0.002],
+            'text-embedding-3-small' => ['input' => 0.00002, 'output' => 0.0],
+        ];
+
+        $rate = $rates[$model] ?? ['input' => 0.01, 'output' => 0.03];
+
+        return round(($tokens / 1000) * $rate['input'], 6);
+    }
+
+    protected function logUsage($promptType, $tokens, $cost): void
+    {
+        Log::channel('ai')->info('OpenAI API usage', [
+            'prompt_type' => $promptType,
+            'model'       => $this->model,
+            'tokens'      => $tokens,
+            'cost'        => $cost,
+            'timestamp'   => Carbon::now()->toDateTimeString(),
+        ]);
+    }
+}

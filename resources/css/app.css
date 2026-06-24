@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --gaf-green: #14532d;
+    --gaf-dark-green-green: #0f2f1f;
+    --gaf-khaki-green: #166534;
+    --gaf-accent: #5fa489;
+    --gaf-olive: #4a7a65;
+    --gaf-khaki: #D4AF37;
+    --gaf-gold: #D4AF37;
+    --gaf-red: #9B2226;
+    --gaf-brown: #7F4F24;
+    --gaf-flag-red: #b22234;
+    --gaf-flag-gold: #fcd116;
+    --gaf-flag-green: #006b3f;
+    --gaf-section: #2d3748;
+}
+
+@layer components {
+    .btn-primary {
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-gaf-green hover:bg-gaf-dark-green focus:outline-none focus:ring-2 focus:ring-gaf-green focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+    .btn-secondary {
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-gaf-dark-green hover:bg-green-900 focus:outline-none focus:ring-2 focus:ring-gaf-dark-green focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+    .btn-success {
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-gaf-green hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-gaf-green focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+    .card {
+        @apply overflow-hidden bg-white border border-gray-200 rounded-lg shadow-sm;
+    }
+    .card-hover {
+        @apply transition-shadow duration-200 card hover:shadow-md;
+    }
+    .timeline-dot {
+        @apply absolute top-0 left-0 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-gaf-green ring-4 ring-white;
+    }
+    .timeline-line {
+        @apply absolute top-0 left-4 w-0.5 h-full -ml-px bg-gray-200;
+    }
+    .status-badge {
+        @apply inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full;
+    }
+    .status-pending {
+        @apply text-yellow-800 bg-yellow-100 status-badge;
+    }
+    .status-completed {
+        @apply text-green-800 bg-green-100 status-badge;
+    }
+    .status-rejected {
+        @apply text-red-800 bg-red-100 status-badge;
+    }
+    .form-input {
+        @apply block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gaf-green focus:border-gaf-green disabled:bg-gray-50 disabled:text-gray-500;
+    }
+    .form-error {
+        @apply mt-1 text-sm text-red-600;
+    }
+
+    .flag-strip {
+        height: 8px;
+        background: linear-gradient(
+            to right,
+            var(--gaf-flag-red) 33.33%,
+            var(--gaf-flag-gold) 33.33% 66.66%,
+            var(--gaf-flag-green) 66.66%
+        );
+    }
+
+    .step-item {
+        @apply flex items-center gap-2;
+        flex: 1;
+    }
+    .step-num {
+        @apply flex items-center justify-center w-[26px] h-[26px] text-[11px] font-bold rounded-full flex-shrink-0;
+        background: #e2e8f0;
+        color: #718096;
+    }
+    .step-num.active {
+        background: var(--gaf-dark-green);
+        color: #ffffff;
+    }
+    .step-label {
+        @apply text-[11px] font-semibold uppercase tracking-[0.5px] whitespace-nowrap;
+        color: #718096;
+    }
+    .step-label.active {
+        color: #1a202c;
+        font-weight: 700;
+    }
+    .step-connector {
+        flex: 1;
+        height: 1px;
+        background: #cbd5e1;
+        margin: 0 10px;
+    }
+
+    .form-card-header {
+        background: var(--gaf-dark-green);
+        padding: 10px 24px;
+        text-align: center;
+    }
+    .form-card-header h2 {
+        @apply text-[13px] font-bold text-white uppercase;
+        letter-spacing: 1.5px;
+    }
+
+    .split-card {
+        @apply grid overflow-hidden bg-white border border-gray-200 rounded-xl shadow-sm;
+        grid-template-columns: 1.15fr 1fr;
+    }
+    .split-card-info {
+        background: linear-gradient(165deg, var(--gaf-green) 0%, var(--gaf-dark-green) 100%);
+        @apply text-white p-8 md:p-12 flex flex-col justify-between relative;
+    }
+    .split-card-info::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 250px;
+        height: 250px;
+        background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .split-card-form {
+        @apply bg-white p-8 md:p-12 flex flex-col justify-center;
+    }
+
+    .portal-badge {
+        @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[1px] rounded-md;
+        background: rgba(212, 175, 55, 0.15);
+        color: var(--gaf-khaki);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+    }
+
+    .auth-split {
+        @apply flex w-full overflow-hidden;
+        min-height: 100vh;
+    }
+    .auth-split-left {
+        flex: 1.85;
+        @apply flex flex-col items-center justify-center p-10;
+    }
+    .auth-split-right {
+        flex: 1;
+        @apply bg-white flex flex-col items-center justify-center p-8 md:p-12 overflow-y-auto shadow-[-5px_0_25px_rgba(0,0,0,0.3)];
+    }
+    .auth-info-box {
+        @apply p-8 md:p-10 rounded-sm max-w-[760px] w-full;
+        background: rgba(18, 22, 26, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .auth-info-box h1 {
+        @apply text-white text-2xl font-bold tracking-[1px] uppercase mb-5;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+        padding-bottom: 12px;
+    }
+    .auth-info-box ul {
+        @apply list-none p-0 m-0;
+    }
+    .auth-info-box li {
+        @apply text-sm mb-3.5 leading-relaxed pl-5 relative text-gray-100;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+    .auth-info-box li::before {
+        content: "•";
+        @apply absolute left-0 text-white text-lg;
+        top: -1px;
+    }
+    .auth-form-container {
+        @apply w-full max-w-[420px];
+    }
+    .auth-form-header {
+        @apply flex flex-col items-center gap-2.5 pb-3 mb-7 w-full relative;
+    }
+    .auth-form-header::after {
+        content: "";
+        @apply absolute bottom-0 left-0 w-full h-[2px];
+        background: linear-gradient(to right, #cf2e2e 0%, #cf2e2e 45%, #e2e8f0 45%, #e2e8f0 55%, #2e4ecf 55%, #2e4ecf 100%);
+    }
+    .auth-input-group {
+        @apply mb-4 w-full;
+    }
+    .auth-input-group label {
+        @apply block text-[11px] font-bold uppercase tracking-[0.03em] mb-1.5;
+        color: var(--gaf-green);
+    }
+    .auth-input-group input {
+        @apply w-full border-0 border-b-[1.5px] text-sm font-medium text-gray-800 bg-transparent outline-none;
+        border-color: #59957f;
+        padding: 8px 0;
+    }
+    .auth-input-group input:focus {
+        border-color: #2c4c40;
+    }
+    .auth-input-group select {
+        @apply w-full border text-sm font-medium text-gray-700 outline-none cursor-pointer;
+        border-color: #cbd5e1;
+        padding: 11px 14px;
+        border-radius: 6px;
+        background: #f8fafc;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2212%22%20height%3D%228%22%20viewBox%3D%220%200%2012%208%22%3E%3Cpath%20fill%3D%22%23475569%22%20d%3D%22M6.707.293a1%201%200%2000-1.414%200L.293%205a1%201%200%2014.414%201L6%202.414l4.707%204.707a1%201%200%2014.414-1L6.707.293z%22/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: calc(100% - 14px) center;
+    }
+    .auth-btn-submit {
+        @apply w-full text-white border-none font-bold cursor-pointer mt-2.5;
+        background-color: var(--gaf-green);
+        padding: 12px;
+        border-radius: 25px;
+        font-size: 13.5px;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+    .auth-btn-submit:hover { background-color: #4d8870; }
+    .auth-btn-submit:active { transform: scale(0.99); }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+}

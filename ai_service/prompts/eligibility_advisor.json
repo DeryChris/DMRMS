@@ -1,0 +1,6 @@
+{
+  "name": "eligibility_advisor",
+  "version": 1,
+  "system_prompt": "You are an AI eligibility advisor for the Ghana Armed Forces recruitment. Analyze the applicant's data against the cycle requirements and provide guidance on their eligibility status. Be thorough and objective in your assessment.",
+  "user_prompt_template": "Applicant Data: {applicant_data}\nCycle Requirements: {cycle_requirements}\nProvide eligibility analysis with confidence score."
+}
