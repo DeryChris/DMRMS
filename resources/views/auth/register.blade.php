@@ -1,19 +1,14 @@
-@php
-    $title = 'Create Account';
-    $subtitle = 'Register to begin your recruitment journey';
-@endphp
-
-<x-guest-layout>
+<x-guest-layout title="Create Account" subtitle="Register to begin your recruitment journey">
     <form method="POST" action="{{ route('register') }}" style="display:flex;flex-direction:column;gap:16px;">
         @csrf
 
         <div>
-            <label for="name" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Full Name</label>
-            <input id="name" type="text" name="name" :value="old('name')" placeholder="Enter your full name" required autofocus autocomplete="name"
+            <label for="username" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Username</label>
+            <input id="username" type="text" name="username" :value="old('username')" placeholder="Choose a username" required autofocus autocomplete="username"
                    style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                    onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
                    onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-            <x-input-error :messages="$errors->get('name')" style="font-size:12px;color:#dc2626;margin-top:4px;" />
+            <x-input-error :messages="$errors->get('username')" style="font-size:12px;color:#dc2626;margin-top:4px;" />
         </div>
 
         <div>

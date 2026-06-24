@@ -31,9 +31,10 @@
                 <div class="text-center text-xs font-medium text-gray-500 py-2">{{ $d }}</div>
             @endforeach
             @for($i = 1; $i <= 30; $i++)
-                <div class="text-center py-3 rounded-lg text-sm {{ $i === 15 ? 'bg-gaf-red text-white font-semibold' : 'hover:bg-gray-100 border border-gray-200' }}">
+                @php $dateStr = now()->startOfMonth()->addDays($i - 1)->format('Y-m-d'); @endphp
+                <div class="text-center py-3 rounded-lg text-sm {{ in_array($dateStr, $scheduledDates) ? 'bg-gaf-red text-white font-semibold' : 'hover:bg-gray-100 border border-gray-200' }}">
                     {{ $i }}
-                    @if(in_array($i, [15,16,17,22,23,24]))
+                    @if(in_array($dateStr, $scheduledDates))
                     <div class="w-1.5 h-1.5 bg-gaf-green rounded-full mx-auto mt-1"></div>
                     @endif
                 </div>
@@ -48,16 +49,26 @@
                 <tr><th class="px-6 py-4 text-left font-medium text-gray-700">Applicant</th><th class="px-6 py-4 text-left font-medium text-gray-700">Date</th><th class="px-6 py-4 text-left font-medium text-gray-700">Time</th><th class="px-6 py-4 text-left font-medium text-gray-700">Venue</th><th class="px-6 py-4 text-left font-medium text-gray-700">Slot</th><th class="px-6 py-4 text-left font-medium text-gray-700">Status</th></tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-                @for($i = 1; $i <= 8; $i++)
+                @forelse($appointments as $apt)
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 font-medium">Applicant {{ $i }}</td>
-                    <td class="px-6 py-4">2026-07-{{ str_pad(10 + $i, 2, '0', STR_PAD_LEFT) }}</td>
-                    <td class="px-6 py-4">{{ ['8:00 AM','9:00 AM','10:00 AM','11:00 AM','1:00 PM','2:00 PM','3:00 PM','8:00 AM'][$i - 1] }}</td>
-                    <td class="px-6 py-4">Burma Camp</td>
-                    <td class="px-6 py-4">SLOT-{{ str_pad(400 + $i, 4, '0', STR_PAD_LEFT) }}</td>
-                    <td class="px-6 py-4"><span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['bg-blue-100 text-blue-700','bg-green-100 text-green-700','bg-yellow-100 text-yellow-700','bg-gray-100 text-gray-700'][$i % 4] }}">{{ ['Scheduled','Confirmed','Pending','Attended'][$i % 4] }}</span></td>
+                    <td class="px-6 py-4 font-medium">{{ $apt->application->applicant->name ?? 'N/A' }}</td>
+                    <td class="px-6 py-4">{{ $apt->scheduled_date?->format('Y-m-d') }}</td>
+                    <td class="px-6 py-4">{{ $apt->scheduled_time }}</td>
+                    <td class="px-6 py-4">{{ $apt->venue }}</td>
+                    <td class="px-6 py-4">{{ $apt->slot_number ?? 'SLOT-' . str_pad($apt->id, 4, '0', STR_PAD_LEFT) }}</td>
+                    <td class="px-6 py-4">
+                        @php $sMap = ['scheduled' => ['Scheduled', 'bg-blue-100 text-blue-700'], 'confirmed' => ['Confirmed', 'bg-green-100 text-green-700'], 'pending' => ['Pending', 'bg-yellow-100 text-yellow-700'], 'attended' => ['Attended', 'bg-gray-100 text-gray-700'], 'missed' => ['Missed', 'bg-red-100 text-red-700']]; @endphp
+                        @php [$label, $classes] = $sMap[$apt->status] ?? [ucfirst($apt->status), 'bg-gray-100 text-gray-500']; @endphp
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ $classes }}">{{ $label }}</span>
+                    </td>
                 </tr>
-                @endfor
+                @empty
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-400">
+                        <p class="text-sm font-medium">No appointments scheduled</p>
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>

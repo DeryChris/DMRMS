@@ -1,9 +1,4 @@
-@php
-    $title = 'Confirm Password';
-    $subtitle = 'This is a secure area. Please confirm your password before continuing.';
-@endphp
-
-<x-guest-layout>
+<x-guest-layout title="Admin — Confirm Password" subtitle="This is a secure area. Please confirm your password before continuing.">
     <form method="POST" action="{{ route('password.confirm') }}" style="display:flex;flex-direction:column;gap:18px;">
         @csrf
 

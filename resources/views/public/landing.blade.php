@@ -54,7 +54,7 @@
                         <div class="text-center"><span class="text-3xl font-heading font-bold text-gaf-khaki" x-text="countdown.seconds">0</span><p class="text-xs text-gray-400">Sec</p></div>
                     </div>
                 </div>
-                <a href="{{ route('register') }}" class="inline-block bg-gaf-khaki text-gaf-dark-green px-8 py-4 rounded-lg font-heading font-bold text-lg hover:bg-yellow-500 transition transform hover:scale-105 shadow-lg">Apply Now</a>
+                <a href="{{ route('applicant.register') }}" class="inline-block bg-gaf-khaki text-gaf-dark-green px-8 py-4 rounded-lg font-heading font-bold text-lg hover:bg-yellow-500 transition transform hover:scale-105 shadow-lg">Apply Now</a>
             </div>
             <div class="md:w-1/2 flex justify-center">
                 <img src="{{ asset('assets/images/hero/img1.png') }}" alt="GAF Recruitment" class="w-full max-w-md rounded-xl shadow-2xl border-4 border-gaf-khaki/30">

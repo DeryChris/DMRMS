@@ -12,24 +12,32 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table class="w-full text-sm">
             <thead class="bg-gray-50">
-                <tr><th class="px-6 py-4 text-left font-medium text-gray-700">Name</th><th class="px-6 py-4 text-left font-medium text-gray-700">Code</th><th class="px-6 py-4 text-left font-medium text-gray-700">Start Date</th><th class="px-6 py-4 text-left font-medium text-gray-700">End Date</th><th class="px-6 py-4 text-left font-medium text-gray-700">Vacancies</th><th class="px-6 py-4 text-left font-medium text-gray-700">Status</th><th class="px-6 py-4 text-right font-medium text-gray-700">Actions</th></tr>
+                <tr><th class="px-6 py-4 text-left font-medium text-gray-700">Name</th><th class="px-6 py-4 text-left font-medium text-gray-700">Code</th><th class="px-6 py-4 text-left font-medium text-gray-700">Start Date</th><th class="px-6 py-4 text-left font-medium text-gray-700">End Date</th><th class="px-6 py-4 text-left font-medium text-gray-700">Vacancies</th><th class="px-6 py-4 text-left font-medium text-gray-700">Applications</th><th class="px-6 py-4 text-left font-medium text-gray-700">Status</th><th class="px-6 py-4 text-right font-medium text-gray-700">Actions</th></tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-                @php $cycles = [['2026 Recruitment Cycle', '2026/01', '2026-06-01', '2026-07-31', 5000, 'active'], ['2025 Recruitment Cycle', '2025/02', '2025-06-01', '2025-07-31', 4500, 'closed'], ['2025 Early Intake', '2025/01', '2025-01-15', '2025-03-15', 2000, 'archived']]; @endphp
-                @foreach($cycles as $c)
+                @forelse($cycles as $c)
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 font-medium">{{ $c[0] }}</td>
-                    <td class="px-6 py-4">{{ $c[1] }}</td>
-                    <td class="px-6 py-4">{{ $c[2] }}</td>
-                    <td class="px-6 py-4">{{ $c[3] }}</td>
-                    <td class="px-6 py-4">{{ number_format($c[4]) }}</td>
-                    <td class="px-6 py-4"><span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['active' => 'bg-green-100 text-green-700', 'closed' => 'bg-red-100 text-red-700', 'archived' => 'bg-gray-100 text-gray-700'][$c[5]] }}">{{ ucfirst($c[5]) }}</span></td>
+                    <td class="px-6 py-4 font-medium">{{ $c->name ?? 'N/A' }}</td>
+                    <td class="px-6 py-4">{{ $c->cycle_code ?? $c->code ?? 'N/A' }}</td>
+                    <td class="px-6 py-4">{{ $c->start_date?->format('Y-m-d') }}</td>
+                    <td class="px-6 py-4">{{ $c->end_date?->format('Y-m-d') }}</td>
+                    <td class="px-6 py-4">{{ number_format($c->total_vacancies ?? 0) }}</td>
+                    <td class="px-6 py-4">{{ $c->applications_count ?? $c->applications?->count() ?? 0 }}</td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['active' => 'bg-green-100 text-green-700', 'closed' => 'bg-red-100 text-red-700', 'archived' => 'bg-gray-100 text-gray-700'][$c->status] ?? 'bg-gray-100 text-gray-500' }}">{{ ucfirst($c->status) }}</span>
+                    </td>
                     <td class="px-6 py-4 text-right space-x-2">
                         <button @click="showModal = true; editing = true" class="text-gaf-khaki hover:underline text-sm font-medium">Edit</button>
-                        <button class="text-red-600 hover:underline text-sm font-medium">{{ $c[5] === 'active' ? 'Close' : 'Archive' }}</button>
+                        <button class="text-red-600 hover:underline text-sm font-medium">{{ $c->status === 'active' ? 'Close' : 'Archive' }}</button>
                     </td>
                 </tr>
-                @endforeach
+                @empty
+                <tr>
+                    <td colspan="8" class="px-6 py-12 text-center text-gray-400">
+                        <p class="text-sm font-medium">No cycles created yet</p>
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>

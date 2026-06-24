@@ -6,13 +6,14 @@
 
 @section('content')
 <div x-data="{ sidebarOpen: true }" class="flex min-h-screen bg-gray-100">
+    @php $applicant = auth('applicant')->user(); @endphp
     <aside x-show="sidebarOpen" x-cloak class="w-64 bg-white shadow-lg fixed md:relative z-30 h-full md:h-auto" x-transition>
         <div class="p-6 border-b text-center">
             <div class="w-16 h-16 bg-gaf-khaki rounded-full mx-auto flex items-center justify-center text-white font-heading font-bold text-xl">
-                {{ substr(auth()->user()->name ?? 'A', 0, 1) }}
+                {{ substr($applicant->name ?? 'A', 0, 1) }}
             </div>
-            <h3 class="font-heading font-semibold text-sm mt-2">{{ auth()->user()->name ?? 'Applicant' }}</h3>
-            <p class="text-xs text-gray-500">GAF-{{ auth()->user()->gaf_id ?? '000000' }}</p>
+            <h3 class="font-heading font-semibold text-sm mt-2">{{ $applicant->name ?? 'Applicant' }}</h3>
+            <p class="text-xs text-gray-500">GAF-{{ optional($applicant->application)->gaf_id ?? '000000' }}</p>
         </div>
         <nav class="p-4 space-y-1">
             <a href="{{ route('applicant.dashboard') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-sm {{ request()->routeIs('applicant.dashboard') ? 'bg-gaf-green text-white' : 'text-gray-700 hover:bg-gray-100' }}">

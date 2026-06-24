@@ -21,9 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         RedirectIfAuthenticated::redirectUsing(function (Request $request) {
-            $user = $request->user();
+            $user = $request->user('applicant') ?? $request->user();
 
-            if ($user?->isAdmin()) {
+            if ($user && method_exists($user, 'isAdmin') && $user->isAdmin()) {
                 return route('admin.dashboard');
             }
 

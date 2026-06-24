@@ -1,5 +1,5 @@
-<x-guest-layout title="Admin — Reset Password" subtitle="Enter your email and we'll send you a reset link">
-    <form method="POST" action="{{ route('password.email') }}" style="display:flex;flex-direction:column;gap:18px;">
+<x-applicant-guest-layout title="Applicant — Reset Password" subtitle="Enter your email and we'll send you a reset link">
+    <form method="POST" action="{{ route('applicant.password.email') }}" style="display:flex;flex-direction:column;gap:18px;">
         @csrf
 
         <div style="padding:14px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;font-size:13px;color:#166534;line-height:1.5;">
@@ -26,8 +26,8 @@
 
         <p style="text-align:center;font-size:13px;color:#64748b;margin:0;">
             Remember your password?
-            <a href="{{ route('login') }}" style="color:#14532d;font-weight:700;text-decoration:none;transition:color 0.2s;"
+            <a href="{{ route('applicant.login') }}" style="color:#14532d;font-weight:700;text-decoration:none;transition:color 0.2s;"
                onmouseover="this.style.color='#0f2f1f'" onmouseout="this.style.color='#14532d'">Log in</a>
         </p>
     </form>
-</x-guest-layout>
+</x-applicant-guest-layout>

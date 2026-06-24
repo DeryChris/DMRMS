@@ -8,15 +8,15 @@ use App\Models\Document;
 use App\Models\Cycle;
 use App\Models\AiUsage;
 use App\Models\Subscription;
-use App\Services\Ai\AiGatewayService;
+use App\Services\Ai\AiGateway;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AiController extends Controller
 {
-    protected AiGatewayService $aiGateway;
+    protected AiGateway $aiGateway;
 
-    public function __construct(AiGatewayService $aiGateway)
+    public function __construct(AiGateway $aiGateway)
     {
         $this->aiGateway = $aiGateway;
     }

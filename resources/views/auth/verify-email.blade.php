@@ -1,9 +1,4 @@
-@php
-    $title = 'Verify Email';
-    $subtitle = 'Please verify your email address to continue';
-@endphp
-
-<x-guest-layout>
+<x-guest-layout title="Admin — Verify Email" subtitle="Please verify your email address to continue">
     <form method="POST" action="{{ route('verification.send') }}" style="display:flex;flex-direction:column;gap:18px;">
         @csrf
 

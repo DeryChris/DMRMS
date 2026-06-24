@@ -31,18 +31,18 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:'.User::class.',username'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $name = explode(' ', $request->name, 2);
         $user = User::create([
-            'first_name' => $name[0],
-            'last_name' => $name[1] ?? '',
+            'username' => $request->username,
+            'first_name' => '',
+            'last_name' => '',
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'applicant',
+            'role' => 'admin',
             'status' => 'active',
         ]);
 
@@ -50,10 +50,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(match ($user->role) {
-            'admin', 'super_admin' => route('admin.dashboard'),
-            'screening_officer' => route('screening.dashboard'),
-            default => route('applicant.dashboard'),
-        });
+        return redirect()->route('admin.profile.complete');
     }
 }

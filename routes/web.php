@@ -17,8 +17,8 @@ Route::get('/contact', [WebController::class, 'contact'])->name('contact');
 // Breeze auth routes
 require __DIR__ . '/auth.php';
 
-// Notification AJAX routes (for bell component)
-Route::middleware('auth')->group(function () {
+// Notification AJAX routes (for bell component) — works with both guards
+Route::middleware('auth:applicant,web')->group(function () {
     Route::get('/notifications/fetch', [\App\Http\Controllers\NotificationWebController::class, 'index']);
     Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationWebController::class, 'unreadCount']);
     Route::put('/notifications/{id}/read', [\App\Http\Controllers\NotificationWebController::class, 'markAsRead']);
@@ -26,14 +26,41 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications', [\App\Http\Controllers\NotificationWebController::class, 'allNotifications'])->name('notifications.all');
 });
 
-// Applicant routes
-Route::prefix('applicant')->name('applicant.')->middleware('auth')->group(function () {
-    Route::get('/dashboard', [ApplicantWebController::class, 'dashboard'])->name('dashboard');
-    Route::get('/application', [ApplicantWebController::class, 'applicationForm'])->name('application');
-    Route::get('/documents', [ApplicantWebController::class, 'documents'])->name('documents');
-    Route::get('/status', [ApplicantWebController::class, 'status'])->name('status');
-    Route::get('/appointment', [ApplicantWebController::class, 'appointment'])->name('appointment');
-    Route::get('/notifications', [ApplicantWebController::class, 'notifications'])->name('notifications');
+// Applicant auth routes
+Route::prefix('applicant')->name('applicant.')->group(function () {
+    Route::middleware('guest:applicant')->group(function () {
+        Route::get('login', [\App\Http\Controllers\Web\ApplicantAuthController::class, 'showLoginForm'])->name('login');
+        Route::post('login', [\App\Http\Controllers\Web\ApplicantAuthController::class, 'login'])->name('login.post');
+        Route::get('register', [\App\Http\Controllers\Web\ApplicantAuthController::class, 'showRegisterForm'])->name('register');
+        Route::post('register', [\App\Http\Controllers\Web\ApplicantAuthController::class, 'register']);
+
+        // Applicant password reset
+        Route::get('forgot-password', [\App\Http\Controllers\Auth\ApplicantPasswordResetLinkController::class, 'create'])->name('password.request');
+        Route::post('forgot-password', [\App\Http\Controllers\Auth\ApplicantPasswordResetLinkController::class, 'store'])->name('password.email');
+        Route::get('reset-password/{token}', [\App\Http\Controllers\Auth\ApplicantNewPasswordController::class, 'create'])->name('password.reset');
+        Route::post('reset-password', [\App\Http\Controllers\Auth\ApplicantNewPasswordController::class, 'store'])->name('password.store');
+    });
+
+    // Applicant routes (authenticated)
+    Route::middleware('auth:applicant')->group(function () {
+        Route::post('logout', [\App\Http\Controllers\Web\ApplicantAuthController::class, 'logout'])->name('logout');
+        Route::get('/dashboard', [ApplicantWebController::class, 'dashboard'])->name('dashboard');
+        Route::get('/application', [ApplicantWebController::class, 'applicationForm'])->name('application');
+        Route::post('/application', [ApplicantWebController::class, 'saveApplication'])->name('application.save');
+        Route::post('/application/submit', [ApplicantWebController::class, 'submitApplication'])->name('application.submit');
+        Route::get('/documents', [ApplicantWebController::class, 'documents'])->name('documents');
+        Route::post('/documents/upload', [ApplicantWebController::class, 'uploadDocument'])->name('documents.upload');
+        Route::delete('/documents/{id}', [ApplicantWebController::class, 'deleteDocument'])->name('documents.delete');
+        Route::get('/status', [ApplicantWebController::class, 'status'])->name('status');
+        Route::get('/appointment', [ApplicantWebController::class, 'appointment'])->name('appointment');
+        Route::get('/notifications', [ApplicantWebController::class, 'notifications'])->name('notifications');
+    });
+});
+
+// Profile completion (auth-only, before admin group to avoid role middleware)
+Route::middleware('auth')->group(function () {
+    Route::get('/admin/profile/complete', [AdminWebController::class, 'profileComplete'])->name('admin.profile.complete');
+    Route::post('/admin/profile/complete', [AdminWebController::class, 'profileCompleteStore'])->name('admin.profile.complete.store');
 });
 
 // Admin routes

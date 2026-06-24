@@ -5,15 +5,30 @@ namespace App\Http\Controllers;
 use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class NotificationWebController extends Controller
 {
+    private function getNotificationsQuery()
+    {
+        if (Auth::guard('applicant')->check()) {
+            return Notification::where('applicant_id', Auth::guard('applicant')->id());
+        }
+
+        $user = Auth::user();
+        $query = Notification::where('admin_id', $user?->id);
+
+        return $query;
+    }
+
     public function index(Request $request): JsonResponse
     {
         $perPage = $request->integer('per_page', 5);
-        $notifications = Notification::where('admin_id', auth()->id())
+        $notifications = $this->getNotificationsQuery()
             ->orderBy('sent_at', 'desc')
             ->paginate($perPage);
+
+        $query = $this->getNotificationsQuery();
 
         return response()->json([
             'data' => $notifications->items(),
@@ -21,14 +36,14 @@ class NotificationWebController extends Controller
                 'current_page' => $notifications->currentPage(),
                 'last_page' => $notifications->lastPage(),
                 'total' => $notifications->total(),
-                'unread_count' => Notification::where('admin_id', auth()->id())->whereNull('read_at')->count(),
+                'unread_count' => (clone $query)->whereNull('read_at')->count(),
             ],
         ]);
     }
 
     public function unreadCount(): JsonResponse
     {
-        $count = Notification::where('admin_id', auth()->id())
+        $count = $this->getNotificationsQuery()
             ->whereNull('read_at')
             ->count();
 
@@ -37,7 +52,7 @@ class NotificationWebController extends Controller
 
     public function markAsRead(int $id): JsonResponse
     {
-        $notification = Notification::where('admin_id', auth()->id())
+        $notification = $this->getNotificationsQuery()
             ->where('id', $id)
             ->firstOrFail();
 
@@ -48,7 +63,7 @@ class NotificationWebController extends Controller
 
     public function markAllAsRead(): JsonResponse
     {
-        Notification::where('admin_id', auth()->id())
+        $this->getNotificationsQuery()
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
@@ -58,7 +73,7 @@ class NotificationWebController extends Controller
     public function allNotifications(Request $request)
     {
         $perPage = $request->integer('per_page', 20);
-        $notifications = Notification::where('admin_id', auth()->id())
+        $notifications = $this->getNotificationsQuery()
             ->orderBy('sent_at', 'desc')
             ->paginate($perPage);
 

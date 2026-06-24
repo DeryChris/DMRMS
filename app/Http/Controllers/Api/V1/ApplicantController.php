@@ -8,7 +8,7 @@ use App\Models\Application;
 use App\Models\Document;
 use App\Models\VerificationCode;
 use App\Models\Appointment;
-use App\Services\Ai\AiGatewayService;
+use App\Services\Ai\AiGateway;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,9 +16,9 @@ use Illuminate\Support\Facades\Validator;
 
 class ApplicantController extends Controller
 {
-    protected AiGatewayService $aiGateway;
+    protected AiGateway $aiGateway;
 
-    public function __construct(AiGatewayService $aiGateway)
+    public function __construct(AiGateway $aiGateway)
     {
         $this->aiGateway = $aiGateway;
     }

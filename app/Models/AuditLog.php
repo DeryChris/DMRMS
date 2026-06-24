@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditLog extends Model
 {
@@ -30,5 +31,15 @@ class AuditLog extends Model
         return [
             'details' => 'array',
         ];
+    }
+
+    public function applicant(): BelongsTo
+    {
+        return $this->belongsTo(Applicant::class, 'user_id');
+    }
+
+    public function administrator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

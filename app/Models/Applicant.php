@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Applicant extends Model
+class Applicant extends Authenticatable
 {
-    use Notifiable;
+    use HasApiTokens, Notifiable;
 
     protected $table = 'applicants';
 
@@ -50,7 +51,13 @@ class Applicant extends Model
             'email_verified_at' => 'datetime',
             'phone_verified' => 'boolean',
             'last_login' => 'datetime',
+            'password' => 'hashed',
         ];
+    }
+
+    public function getNameAttribute(): string
+    {
+        return trim($this->first_name . ' ' . $this->last_name);
     }
 
     public function voucher(): BelongsTo
@@ -66,5 +73,10 @@ class Applicant extends Model
     public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class, 'applicant_id');
+    }
+
+    public function verificationCodes(): HasMany
+    {
+        return $this->hasMany(VerificationCode::class, 'applicant_id');
     }
 }

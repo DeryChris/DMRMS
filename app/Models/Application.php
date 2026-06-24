@@ -44,6 +44,18 @@ class Application extends Model
         ];
     }
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function ($application) {
+            if (!$application->gaf_id) {
+                $latest = static::max('id') ?? 0;
+                $application->gaf_id = 'GAF-' . date('Y') . '-' . str_pad($latest + 1, 4, '0', STR_PAD_LEFT);
+            }
+        });
+    }
+
     public function applicant(): BelongsTo
     {
         return $this->belongsTo(Applicant::class);
@@ -62,6 +74,11 @@ class Application extends Model
     public function eligibilityResult(): HasOne
     {
         return $this->hasOne(EligibilityResult::class);
+    }
+
+    public function eligibility(): HasOne
+    {
+        return $this->eligibilityResult();
     }
 
     public function verificationCode(): HasOne

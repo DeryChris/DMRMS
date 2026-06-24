@@ -1,5 +1,5 @@
-<x-guest-layout title="Admin — Set New Password" subtitle="Choose a strong password for your admin account">
-    <form method="POST" action="{{ route('password.store') }}" style="display:flex;flex-direction:column;gap:16px;">
+<x-applicant-guest-layout title="Applicant — Set New Password" subtitle="Choose a strong password for your account">
+    <form method="POST" action="{{ route('applicant.password.store') }}" style="display:flex;flex-direction:column;gap:16px;">
         @csrf
         <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
@@ -40,8 +40,8 @@
         </button>
 
         <p style="text-align:center;font-size:13px;color:#64748b;margin:0;">
-            <a href="{{ route('login') }}" style="color:#14532d;font-weight:700;text-decoration:none;transition:color 0.2s;"
+            <a href="{{ route('applicant.login') }}" style="color:#14532d;font-weight:700;text-decoration:none;transition:color 0.2s;"
                onmouseover="this.style.color='#0f2f1f'" onmouseout="this.style.color='#14532d'">Back to Login</a>
         </p>
     </form>
-</x-guest-layout>
+</x-applicant-guest-layout>

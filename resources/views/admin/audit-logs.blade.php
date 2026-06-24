@@ -26,42 +26,28 @@
                 <tr><th class="px-6 py-4 text-left font-medium text-gray-700">User</th><th class="px-6 py-4 text-left font-medium text-gray-700">Action</th><th class="px-6 py-4 text-left font-medium text-gray-700">Details</th><th class="px-6 py-4 text-left font-medium text-gray-700">IP Address</th><th class="px-6 py-4 text-right font-medium text-gray-700">Timestamp</th></tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-                @php
-                    $logs = [
-                        ['Admin User', 'Login', 'Successful login from web interface', '192.168.1.100', '2026-06-24 08:30:00'],
-                        ['System', 'Status Update', 'Application GAF-2026001 set to Eligible', '10.0.0.1', '2026-06-24 08:25:00'],
-                        ['Screening Officer', 'Document Verify', 'Verified National ID for GAF-2026001', '192.168.1.102', '2026-06-24 08:20:00'],
-                        ['Applicant #1', 'Application Submit', 'Submitted application for 2026/01 cycle', '10.0.0.5', '2026-06-24 08:15:00'],
-                        ['Admin User', 'User Create', 'Created new user: Screening Officer', '192.168.1.100', '2026-06-24 08:00:00'],
-                        ['System', 'AI Process', 'AI eligibility check for 150 applications', '10.0.0.1', '2026-06-24 07:45:00'],
-                        ['Reviewer', 'Status Update', 'Application GAF-2026003 marked Shortlisted', '192.168.1.103', '2026-06-24 07:30:00'],
-                        ['Admin User', 'Logout', 'Successful logout', '192.168.1.100', '2026-06-23 18:00:00'],
-                        ['Screening Officer', 'Login', 'Successful login from web interface', '192.168.1.102', '2026-06-23 07:55:00'],
-                        ['System', 'Cycle Create', 'Created new cycle: 2026/01', '10.0.0.1', '2026-06-23 07:00:00'],
-                    ];
-                @endphp
-                @foreach($logs as $log)
+                @forelse($logs as $log)
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 font-medium">{{ $log[0] }}</td>
-                    <td class="px-6 py-4"><span class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-700">{{ $log[1] }}</span></td>
-                    <td class="px-6 py-4 text-gray-500 max-w-xs truncate">{{ $log[2] }}</td>
-                    <td class="px-6 py-4 text-gray-500 font-mono text-xs">{{ $log[3] }}</td>
-                    <td class="px-6 py-4 text-right text-gray-500 text-xs">{{ $log[4] }}</td>
+                    <td class="px-6 py-4 font-medium">{{ $log->applicant?->name ?? $log->administrator?->name ?? 'System' }}</td>
+                    <td class="px-6 py-4"><span class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-700">{{ $log->action }}</span></td>
+                    <td class="px-6 py-4 text-gray-500 max-w-xs truncate">{{ is_array($log->details) ? json_encode($log->details) : $log->details }}</td>
+                    <td class="px-6 py-4 text-gray-500 font-mono text-xs">{{ $log->ip_address ?? 'N/A' }}</td>
+                    <td class="px-6 py-4 text-right text-gray-500 text-xs">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
                 </tr>
-                @endfor
+                @empty
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                        <p class="text-sm font-medium">No audit logs found</p>
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
 
     <div class="flex items-center justify-between">
-        <p class="text-sm text-gray-500">Showing 1 to 10 of 1,245 entries</p>
-        <div class="flex space-x-2">
-            <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Prev</button>
-            <button class="px-3 py-2 bg-gaf-green text-white rounded-lg text-sm">1</button>
-            <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">2</button>
-            <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">3</button>
-            <button class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Next</button>
-        </div>
+        <p class="text-sm text-gray-500">Showing {{ $logs->firstItem() ?? 0 }} to {{ $logs->lastItem() ?? 0 }} of {{ $logs->total() }} entries</p>
+        {{ $logs->links() }}
     </div>
 </div>
 @endsection

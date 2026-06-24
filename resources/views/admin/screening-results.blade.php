@@ -12,20 +12,34 @@
                 <tr><th class="px-6 py-4 text-left font-medium text-gray-700">Applicant</th><th class="px-6 py-4 text-left font-medium text-gray-700">GAF ID</th><th class="px-6 py-4 text-left font-medium text-gray-700">Medical</th><th class="px-6 py-4 text-left font-medium text-gray-700">Fitness</th><th class="px-6 py-4 text-left font-medium text-gray-700">Interview</th><th class="px-6 py-4 text-left font-medium text-gray-700">Overall</th><th class="px-6 py-4 text-right font-medium text-gray-700">Actions</th></tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-                @for($i = 1; $i <= 10; $i++)
+                @forelse($results as $r)
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 font-medium">Applicant {{ $i }}</td>
-                    <td class="px-6 py-4">GAF-{{ str_pad(2026000 + $i, 7, '0', STR_PAD_LEFT) }}</td>
-                    <td class="px-6 py-4"><span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['bg-green-100 text-green-700','bg-red-100 text-red-700','bg-yellow-100 text-yellow-700'][$i % 3] }}">{{ ['Fit','Unfit','Pending'][$i % 3] }}</span></td>
-                    <td class="px-6 py-4"><span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['bg-green-100 text-green-700','bg-red-100 text-red-700','bg-yellow-100 text-yellow-700'][($i + 1) % 3] }}">{{ ['Pass','Fail','Pending'][($i + 1) % 3] }}</span></td>
-                    <td class="px-6 py-4"><span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['bg-green-100 text-green-700','bg-red-100 text-red-700','bg-yellow-100 text-yellow-700'][($i + 2) % 3] }}">{{ ['Recommended','Not Recommended','Pending'][($i + 2) % 3] }}</span></td>
-                    <td class="px-6 py-4"><span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['bg-green-100 text-green-700','bg-red-100 text-red-700','bg-yellow-100 text-yellow-700'][($i + 3) % 3] }}">{{ ['Pass','Fail','In Progress'][($i + 3) % 3] }}</span></td>
+                    <td class="px-6 py-4 font-medium">{{ $r->application->applicant->name ?? 'N/A' }}</td>
+                    <td class="px-6 py-4">{{ $r->application->gaf_id ?? 'N/A' }}</td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['fit' => 'bg-green-100 text-green-700', 'unfit' => 'bg-red-100 text-red-700', 'pending' => 'bg-yellow-100 text-yellow-700'][$r->medical_result] ?? 'bg-gray-100 text-gray-500' }}">{{ ucfirst($r->medical_result ?? 'Pending') }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['pass' => 'bg-green-100 text-green-700', 'fail' => 'bg-red-100 text-red-700', 'pending' => 'bg-yellow-100 text-yellow-700'][$r->fitness_result] ?? 'bg-gray-100 text-gray-500' }}">{{ ucfirst($r->fitness_result ?? 'Pending') }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['recommended' => 'bg-green-100 text-green-700', 'not_recommended' => 'bg-red-100 text-red-700', 'pending' => 'bg-yellow-100 text-yellow-700'][$r->interview_result] ?? 'bg-gray-100 text-gray-500' }}">{{ ucfirst(str_replace('_', ' ', $r->interview_result ?? 'Pending')) }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ ['pass' => 'bg-green-100 text-green-700', 'fail' => 'bg-red-100 text-red-700', 'in_progress' => 'bg-yellow-100 text-yellow-700'][$r->overall_status] ?? 'bg-gray-100 text-gray-500' }}">{{ ucfirst(str_replace('_', ' ', $r->overall_status ?? 'Pending')) }}</span>
+                    </td>
                     <td class="px-6 py-4 text-right space-x-2">
                         <button class="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700">Pass</button>
                         <button class="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700">Fail</button>
                     </td>
                 </tr>
-                @endfor
+                @empty
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">
+                        <p class="text-sm font-medium">No screening results yet</p>
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>

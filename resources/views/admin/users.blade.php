@@ -15,19 +15,26 @@
                 <tr><th class="px-6 py-4 text-left font-medium text-gray-700">Name</th><th class="px-6 py-4 text-left font-medium text-gray-700">Email</th><th class="px-6 py-4 text-left font-medium text-gray-700">Role</th><th class="px-6 py-4 text-left font-medium text-gray-700">Status</th><th class="px-6 py-4 text-right font-medium text-gray-700">Actions</th></tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-                @php $users = [['Admin User', 'admin@gaf.mil.gh', 'Super Admin', 'active'], ['Screening Officer', 'screening@gaf.mil.gh', 'Admin', 'active'], ['Reviewer', 'reviewer@gaf.mil.gh', 'Admin', 'suspended']]; @endphp
-                @foreach($users as $u)
+                @forelse($users as $u)
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 font-medium">{{ $u[0] }}</td>
-                    <td class="px-6 py-4">{{ $u[1] }}</td>
-                    <td class="px-6 py-4">{{ $u[2] }}</td>
-                    <td class="px-6 py-4"><span class="text-xs font-semibold px-2 py-1 rounded-full {{ $u[3] === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">{{ ucfirst($u[3]) }}</span></td>
+                    <td class="px-6 py-4 font-medium">{{ $u->name }}</td>
+                    <td class="px-6 py-4">{{ $u->email }}</td>
+                    <td class="px-6 py-4">{{ ucfirst(str_replace('_', ' ', $u->role ?? 'admin')) }}</td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ $u->status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">{{ ucfirst($u->status ?? 'active') }}</span>
+                    </td>
                     <td class="px-6 py-4 text-right space-x-2">
                         <button class="text-gaf-khaki hover:underline text-sm font-medium">Edit</button>
-                        <button class="text-red-600 hover:underline text-sm font-medium">{{ $u[3] === 'active' ? 'Suspend' : 'Activate' }}</button>
+                        <button class="text-red-600 hover:underline text-sm font-medium">{{ $u->status === 'active' ? 'Suspend' : 'Activate' }}</button>
                     </td>
                 </tr>
-                @endforeach
+                @empty
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                        <p class="text-sm font-medium">No users found</p>
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>

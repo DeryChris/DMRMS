@@ -5,7 +5,7 @@ namespace App\View\Components;
 use Illuminate\View\Component;
 use Illuminate\View\View;
 
-class GuestLayout extends Component
+class ApplicantGuestLayout extends Component
 {
     public string $title = 'Authentication';
     public string $subtitle = '';
@@ -18,6 +18,6 @@ class GuestLayout extends Component
 
     public function render(): View
     {
-        return view('layouts.guest');
+        return view('layouts.applicant-guest');
     }
 }

@@ -1,8 +1,5 @@
 @php
     use Carbon\Carbon;
-    $startOfWeek = Carbon::now()->startOfWeek();
-    $startOfMonth = Carbon::now()->startOfMonth();
-    $startOfYear = Carbon::now()->startOfYear();
 @endphp
 @extends('layouts.admin')
 @section('title', 'Dashboard - Ghana Armed Forces')
@@ -28,9 +25,8 @@
                 <div class="w-10 h-10 rounded-lg bg-gaf-green/10 flex items-center justify-center group-hover:bg-gaf-green/20 transition-colors">
                     <svg class="w-5 h-5 text-gaf-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"/></svg>
                 </div>
-                <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-gaf-green/10 text-gaf-green">+{{ rand(1,8) }}%</span>
             </div>
-            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $totalApplicants ?? 0 }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $totalApplicants ?? 0 }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $totalApplicants }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $totalApplicants }}</p>
             <p class="text-xs text-gray-500 mt-1">Total Applicants</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
@@ -38,9 +34,8 @@
                 <div class="w-10 h-10 rounded-lg bg-gaf-dark-green/10 flex items-center justify-center group-hover:bg-gaf-dark-green/20 transition-colors">
                     <svg class="w-5 h-5 text-gaf-dark-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-gaf-dark-green/10 text-gaf-dark-green">{{ rand(5,15) }}%</span>
             </div>
-            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $approvedCount ?? 0 }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $approvedCount ?? 0 }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $approvedCount }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $approvedCount }}</p>
             <p class="text-xs text-gray-500 mt-1">Approved</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
@@ -48,9 +43,8 @@
                 <div class="w-10 h-10 rounded-lg bg-gaf-khaki/15 flex items-center justify-center group-hover:bg-gaf-khaki/25 transition-colors">
                     <svg class="w-5 h-5 text-gaf-khaki" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-600">{{ rand(10,30) }}%</span>
             </div>
-            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $pendingCount ?? 0 }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $pendingCount ?? 0 }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $pendingCount }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $pendingCount }}</p>
             <p class="text-xs text-gray-500 mt-1">Pending Review</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
@@ -58,9 +52,8 @@
                 <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
                     <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 </div>
-                <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">{{ rand(1,5) }}%</span>
             </div>
-            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $screenedCount ?? 0 }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $screenedCount ?? 0 }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $screenedCount }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $screenedCount }}</p>
             <p class="text-xs text-gray-500 mt-1">Screened</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
@@ -68,9 +61,8 @@
                 <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
                     <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
-                <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">{{ rand(5,20) }}%</span>
             </div>
-            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $shortlistedCount ?? 0 }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $shortlistedCount ?? 0 }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $shortlistedCount }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $shortlistedCount }}</p>
             <p class="text-xs text-gray-500 mt-1">Shortlisted</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
@@ -78,27 +70,26 @@
                 <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
                     <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </div>
-                <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-500">{{ rand(1,10) }}%</span>
             </div>
-            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $rejectedCount ?? 0 }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $rejectedCount ?? 0 }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-init="$el.textContent = '0'; (function(el){ let target={{ $rejectedCount }}, current=0, step=Math.ceil(target/30); let i=setInterval(function(){ current+=step; if(current>=target){ current=target; clearInterval(i); }; el.textContent=current.toLocaleString(); }, 40); }($el))">{{ $rejectedCount }}</p>
             <p class="text-xs text-gray-500 mt-1">Rejected</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:col-span-2">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-sm font-heading font-bold text-gaf-dark-green">Applications <span class="text-gray-400 font-normal">by Region</span></h3>
-                <span class="text-xs text-gray-400">This month</span>
+                <span class="text-xs text-gray-400">All time</span>
             </div>
-            <canvas id="regionChart" height="180"></canvas>
+            <canvas id="regionChart" height="200"></canvas>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-sm font-heading font-bold text-gaf-dark-green">Gender <span class="text-gray-400 font-normal">Distribution</span></h3>
-                <span class="text-xs text-gray-400">{{ $totalApplicants ?? 0 }} total</span>
+                <span class="text-xs text-gray-400">{{ $totalApplicants }} total</span>
             </div>
-            <canvas id="genderChart" height="180"></canvas>
+            <canvas id="genderChart" height="200"></canvas>
         </div>
     </div>
 
@@ -136,47 +127,27 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    @forelse($recentApplicants ?? [] as $applicant)
+                    @forelse($recentApplicants as $applicant)
                     <tr class="hover:bg-gray-50/50 transition-colors">
                         <td class="px-5 py-3.5">
                             <div class="flex items-center space-x-3">
-                                <div class="w-8 h-8 rounded-lg bg-gaf-green/10 flex items-center justify-center text-xs font-bold text-gaf-green">{{ substr($applicant->name ?? 'U', 0, 1) }}</div>
-                                <span class="font-medium text-gray-900">{{ $applicant->name ?? 'Unknown' }}</span>
+                                <div class="w-8 h-8 rounded-lg bg-gaf-green/10 flex items-center justify-center text-xs font-bold text-gaf-green">{{ substr($applicant->name, 0, 1) }}</div>
+                                <span class="font-medium text-gray-900">{{ $applicant->name }}</span>
                             </div>
                         </td>
-                        <td class="px-5 py-3.5 text-gray-500">{{ $applicant->region ?? 'N/A' }}</td>
+                        <td class="px-5 py-3.5 text-gray-500">{{ $applicant->region }}</td>
                         <td class="px-5 py-3.5">
-                            @php $status = $applicant->status ?? 'pending'; @endphp
-                            @if($status === 'approved')
-                            <span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gaf-green/10 text-gaf-dark-green">
-                                <span class="w-1.5 h-1.5 rounded-full bg-gaf-dark-green"></span>
-                                <span>Approved</span>
+                            @php $s = optional($applicant->application)->status ?? 'registered'; @endphp
+                            @php $statusMap = ['registered' => ['Registered', 'bg-gray-100 text-gray-500'], 'draft' => ['Draft', 'bg-gray-100 text-gray-500'], 'submitted' => ['Submitted', 'bg-blue-50 text-blue-600'], 'eligibility_passed' => ['Eligible', 'bg-gaf-green/10 text-gaf-dark-green'], 'eligibility_failed' => ['Ineligible', 'bg-red-50 text-red-600'], 'shortlisted' => ['Shortlisted', 'bg-amber-50 text-amber-600'], 'appointment_scheduled' => ['Appointment Set', 'bg-indigo-50 text-indigo-600'], 'screening_completed' => ['Screened', 'bg-emerald-50 text-emerald-600'], 'selected' => ['Selected', 'bg-gaf-dark-green/10 text-gaf-dark-green'], 'rejected' => ['Rejected', 'bg-red-50 text-red-600']]; @endphp
+                            @php [$label, $classes] = $statusMap[$s] ?? [ucfirst($s), 'bg-gray-100 text-gray-500']; @endphp
+                            <span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $classes }}">
+                                <span class="w-1.5 h-1.5 rounded-full bg-current opacity-60"></span>
+                                <span>{{ $label }}</span>
                             </span>
-                            @elseif($status === 'rejected')
-                            <span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                                <span>Rejected</span>
-                            </span>
-                            @elseif($status === 'screened')
-                            <span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Screened</span>
-                            </span>
-                            @elseif($status === 'shortlisted')
-                            <span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-600">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                <span>Shortlisted</span>
-                            </span>
-                            @else
-                            <span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                                <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                <span>{{ ucfirst($status) }}</span>
-                            </span>
-                            @endif
                         </td>
-                        <td class="px-5 py-3.5 text-gray-500 text-xs">{{ $applicant->created_at ? $applicant->created_at->diffForHumans() : 'N/A' }}</td>
+                        <td class="px-5 py-3.5 text-gray-500 text-xs">{{ $applicant->created_at->diffForHumans() }}</td>
                         <td class="px-5 py-3.5 text-right">
-                            <a href="{{ route('admin.applications.detail', ['id' => $applicant->id ?? 0]) }}" class="inline-flex items-center space-x-1 text-xs text-gaf-green hover:text-gaf-dark-green font-medium transition-colors">
+                            <a href="{{ route('admin.applications.detail', $applicant->application?->id ?? 0) }}" class="inline-flex items-center space-x-1 text-xs text-gaf-green hover:text-gaf-dark-green font-medium transition-colors">
                                 <span>Review</span>
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                             </a>
@@ -242,10 +213,10 @@ document.addEventListener('DOMContentLoaded', function () {
         new Chart(regionCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Greater Accra', 'Ashanti', 'Northern', 'Volta', 'Eastern', 'Central'],
+                labels: {!! json_encode($regionLabels) !!},
                 datasets: [{
-                    data: [45, 28, 15, 10, 20, 18],
-                    backgroundColor: ['#2e6b3e', '#4a7f55', '#6b9b76', '#8fb89a', '#b5d1bd', '#d4e6d9'],
+                    data: {!! json_encode($regionData) !!},
+                    backgroundColor: ['#2e6b3e', '#4a7f55', '#6b9b76', '#8fb89a', '#b5d1bd', '#d4e6d9', '#14532d', '#166534', '#4ade80', '#86efac'],
                     borderWidth: 2,
                     borderColor: '#ffffff'
                 }]
@@ -268,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
             data: {
                 labels: ['Male', 'Female'],
                 datasets: [{
-                    data: [58, 42],
+                    data: [{{ $maleCount }}, {{ $femaleCount }}],
                     backgroundColor: ['#2e6b3e', '#8fb89a'],
                     borderRadius: 6,
                     borderSkipped: false,
@@ -295,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function () {
             data: {
                 labels: ['Applied', 'Screened', 'Shortlisted', 'Approved'],
                 datasets: [{
-                    data: [150, 98, 45, 28],
+                    data: [{{ $funnelApplied }}, {{ $funnelScreened }}, {{ $funnelShortlisted }}, {{ $funnelApproved }}],
                     backgroundColor: ['#2e6b3e', '#4a7f55', '#8fb89a', '#b5d1bd'],
                     borderRadius: 6,
                     borderSkipped: false
@@ -315,14 +286,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const dailyCtx = document.getElementById('dailyChart');
     if (dailyCtx) {
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const data = days.map(() => Math.floor(Math.random() * 20) + 5);
         new Chart(dailyCtx, {
             type: 'line',
             data: {
-                labels: days,
+                labels: {!! json_encode($dailyLabels) !!},
                 datasets: [{
-                    data: data,
+                    data: {!! json_encode($dailyData) !!},
                     borderColor: '#2e6b3e',
                     backgroundColor: 'rgba(46, 107, 62, 0.08)',
                     fill: true,

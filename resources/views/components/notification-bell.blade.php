@@ -1,21 +1,135 @@
-<div
-    x-data="notificationBell"
-    @click.away="open = false"
-    class="relative"
->
+<div x-data="{
+    open: false,
+    loading: false,
+    items: [],
+    unread: 0,
+    expanded: null,
+    showAll: false,
+    allLoading: false,
+    allItems: [],
+    allPage: 1,
+    total: 0,
+    allHasMore: false,
+    allExpanded: null,
+
+    init() {
+        this.fetch();
+        setInterval(() => { this.fetchUnreadCount(); }, 30000);
+    },
+
+    async fetchUnreadCount() {
+        try {
+            let resp = await fetch('/notifications/unread-count');
+            let data = await resp.json();
+            if (data.count !== undefined) this.unread = data.count;
+        } catch (e) {}
+    },
+
+    async fetch() {
+        this.loading = true;
+        try {
+            let resp = await fetch('/notifications/fetch?per_page=5');
+            let json = await resp.json();
+            this.items = json.data || [];
+            this.unread = json.meta?.unread_count || 0;
+        } catch (e) {
+            this.items = [];
+        } finally {
+            this.loading = false;
+        }
+    },
+
+    toggle() {
+        this.open = !this.open;
+        if (this.open && this.items.length === 0) this.fetch();
+    },
+
+    toggleExpand(i, item) {
+        if (this.expanded === i) { this.expanded = null; return; }
+        this.expanded = i;
+        if (!item.read_at) this.markRead(item);
+    },
+
+    async markRead(item) {
+        item.read_at = new Date().toISOString();
+        this.unread = Math.max(0, this.unread - 1);
+        try {
+            await fetch('/notifications/' + item.id + '/read', {
+                method: 'PUT',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '', 'Content-Type': 'application/json' }
+            });
+        } catch (e) {}
+    },
+
+    async markAllRead() {
+        try {
+            await fetch('/notifications/read-all', {
+                method: 'PUT',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '', 'Content-Type': 'application/json' }
+            });
+            this.items.forEach(i => i.read_at = new Date().toISOString());
+            this.unread = 0;
+        } catch (e) {}
+    },
+
+    initAll() {
+        this.allPage = 1;
+        this.allItems = [];
+        this.allLoading = true;
+        this.allHasMore = false;
+        fetch('/notifications/fetch?per_page=10')
+            .then(r => r.json())
+            .then(json => {
+                this.allItems = json.data || [];
+                this.allHasMore = (json.meta?.current_page || 1) < (json.meta?.last_page || 1);
+                this.total = json.meta?.total || 0;
+            })
+            .finally(() => { this.allLoading = false; });
+    },
+
+    async loadMore() {
+        this.allPage++;
+        this.allLoading = true;
+        try {
+            let resp = await fetch('/notifications/fetch?per_page=10&page=' + this.allPage);
+            let json = await resp.json();
+            this.allItems = [...this.allItems, ...(json.data || [])];
+            this.allHasMore = (json.meta?.current_page || 1) < (json.meta?.last_page || 1);
+        } catch (e) {
+            this.allHasMore = false;
+        } finally {
+            this.allLoading = false;
+        }
+    },
+
+    expandAll(i, item) {
+        if (this.allExpanded === i) { this.allExpanded = null; return; }
+        this.allExpanded = i;
+        if (!item.read_at) this.markRead(item);
+    },
+
+    timeAgo(dateStr) {
+        if (!dateStr) return '';
+        let d = new Date(dateStr);
+        let now = new Date();
+        let s = Math.floor((now - d) / 1000);
+        if (s < 60) return 'just now';
+        if (s < 3600) return Math.floor(s / 60) + 'm ago';
+        if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+        if (s < 2592000) return Math.floor(s / 86400) + 'd ago';
+        return d.toLocaleDateString();
+    }
+}" @click.away="open = false" class="relative">
     <button @click="toggle()" class="relative p-2 text-gray-500 hover:text-gray-700 transition rounded-lg hover:bg-gray-100 focus:outline-none">
         <svg class="w-6 h-6" :class="{'animate-breathing': unread > 0}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
-        <span x-show="unread > 0" x-cloak class="absolute -top-0.5 -right-0.5 w-5 h-5 bg-gaf-red text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm" x-text="unread"></span>
+        <span x-show="unread > 0" x-cloak class="absolute -top-0.5 -right-0.5 w-5 h-5 bg-gaf-red text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm" x-text="unread">3</span>
     </button>
 
     <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-2" class="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 max-h-[80vh] flex flex-col">
         <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-            <div>
-                <span class="text-sm font-heading font-bold text-gray-900">Notifications</span>
-                <span x-show="unread > 0" class="ml-2 text-xs text-gray-400" x-text="`(${unread} unread)`"></span>
-            </div>
+            <span class="text-sm font-heading font-bold text-gray-900">Notifications</span>
             <button x-show="unread > 0" @click="markAllRead()" class="text-[11px] text-gaf-khaki hover:underline font-medium">Mark all read</button>
         </div>
 
@@ -44,7 +158,7 @@
                         </div>
                         <div class="flex items-center space-x-2 ml-3 flex-shrink-0">
                             <div x-show="!item.read_at" class="w-2 h-2 rounded-full bg-gaf-red flex-shrink-0"></div>
-                            <svg class="w-3.5 h-3.5 text-gray-300 transition-transform duration-200" :class="{'rotate-180': expanded === i, 'rotate-0': expanded !== i}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="w-3.5 h-3.5 text-gray-300 transition-transform duration-200" :class="{'rotate-180': expanded === i}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </div>
                     </div>
                 </div>
@@ -105,14 +219,4 @@
         </div>
     </div>
 
-    <style>
-        @keyframes breathing {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.12); }
-        }
-        .animate-breathing {
-            animation: breathing 2s ease-in-out infinite;
-            transform-origin: center;
-        }
-    </style>
 </div>
