@@ -50,7 +50,7 @@
         </div>
     </nav>
     <div class="auth-split">
-        <div class="auth-split-left" style="background:linear-gradient(135deg,rgba(20,83,45,0.92),rgba(15,47,31,0.95)),url('{{ asset("assets/images/hero/img.png") }}') no-repeat center center/cover;position:relative;">
+        <div class="auth-split-left" style="background:linear-gradient(rgba(20,92,49,0.12),rgba(20,92,49,0.12)),url('{{ asset("assets/images/hero/img.png") }}') no-repeat center center/cover;position:relative;">
             <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
                 <div style="position:absolute;top:-20%;left:-10%;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(212,175,55,0.06),transparent 70%);"></div>
                 <div style="position:absolute;bottom:-20%;right:-10%;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(95,164,137,0.06),transparent 70%);"></div>

@@ -9,22 +9,23 @@
 .slide-img.anim-zoom { animation: bgZoom 6s ease forwards; }
 .slide-img.anim-slide-right { animation: bgSlideRight 5s ease forwards; }
 .slide-img.anim-slide-up { animation: bgSlideUp 5s ease forwards; }
-@keyframes bgFade { 0% { opacity: 0; } 15% { opacity: 0.03; } 85% { opacity: 0.03; } 100% { opacity: 0; } }
-@keyframes bgZoom { 0% { opacity: 0; transform: scale(1); } 10% { opacity: 0.03; transform: scale(1); } 90% { opacity: 0.03; transform: scale(1.15); } 100% { opacity: 0; transform: scale(1.2); } }
-@keyframes bgSlideRight { 0% { opacity: 0; transform: translateX(-30px); } 15% { opacity: 0.03; transform: translateX(0); } 85% { opacity: 0.03; transform: translateX(0); } 100% { opacity: 0; transform: translateX(30px); } }
-@keyframes bgSlideUp { 0% { opacity: 0; transform: translateY(30px); } 15% { opacity: 0.03; transform: translateY(0); } 85% { opacity: 0.03; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
+@keyframes bgFade { 0% { opacity: 0.08; } 15% { opacity: 0.35; } 85% { opacity: 0.35; } 100% { opacity: 0.08; } }
+@keyframes bgZoom { 0% { opacity: 0.08; transform: scale(1); } 10% { opacity: 0.35; transform: scale(1); } 90% { opacity: 0.35; transform: scale(1.15); } 100% { opacity: 0.08; transform: scale(1.2); } }
+@keyframes bgSlideRight { 0% { opacity: 0.08; transform: translateX(-30px); } 15% { opacity: 0.35; transform: translateX(0); } 85% { opacity: 0.35; transform: translateX(0); } 100% { opacity: 0.08; transform: translateX(30px); } }
+@keyframes bgSlideUp { 0% { opacity: 0.08; transform: translateY(30px); } 15% { opacity: 0.35; transform: translateY(0); } 85% { opacity: 0.35; transform: translateY(0); } 100% { opacity: 0.08; transform: translateY(-30px); } }
 .slide-indicator { transition: all 0.5s ease; }
 </style>
 @endpush
 
 @section('hero')
 <div class="flag-strip"></div>
-<div class="bg-gaf-green text-white relative overflow-hidden" x-data="heroSlideshow()">
-    <div class="absolute inset-0">
+<div class="text-white relative overflow-hidden" x-data="heroSlideshow()">
+    <div class="absolute inset-0" style="background:rgb(20,92,49);">
         <template x-for="(slide, i) in slides" :key="i">
             <img :src="slide.src" :class="['slide-img', slide.cls]" :alt="slide.alt" x-show="i === currentIndex || i === prevIndex">
         </template>
     </div>
+    <div class="absolute inset-0 z-[5]" style="background:rgba(20,92,49,0.12);pointer-events:none;"></div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 relative z-10">
         <div class="flex flex-col md:flex-row items-center justify-between">
             <div class="md:w-1/2 text-center md:text-left mb-8 md:mb-0">
