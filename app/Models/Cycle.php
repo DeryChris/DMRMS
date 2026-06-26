@@ -16,6 +16,7 @@ class Cycle extends Model
         'end_date',
         'application_deadline',
         'total_vacancies',
+        'voucher_price',
         'requirements',
         'ai_enabled',
         'status',
@@ -27,6 +28,7 @@ class Cycle extends Model
         return [
             'requirements' => 'array',
             'ai_enabled' => 'boolean',
+            'voucher_price' => 'decimal:2',
             'start_date' => 'date',
             'end_date' => 'date',
             'application_deadline' => 'datetime',

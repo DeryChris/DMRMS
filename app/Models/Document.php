@@ -27,6 +27,8 @@ class Document extends Model
         'ai_extracted_data',
     ];
 
+    protected $appends = ['file_url'];
+
     protected function casts(): array
     {
         return [

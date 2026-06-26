@@ -26,6 +26,8 @@
         </template>
     </div>
     <div class="absolute inset-0 z-[5]" style="background:rgba(20,92,49,0.12);pointer-events:none;"></div>
+    <div class="absolute inset-0 z-[3] pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22 viewBox=%220 0 200 200%22%3E%3Cg fill=%22%23D4AF37%22 fill-opacity=%220.05%22%3E%3Cpath d=%22M0 0 L200 0 L200 200 L0 200 Z M30 30 Q60 10 100 30 Q140 50 170 30%22/%3E%3Cpath d=%22M10 80 Q40 60 80 80 Q120 100 160 80%22/%3E%3Cpath d=%22M20 130 Q60 110 100 130 Q140 150 180 130%22/%3E%3C/g%3E%3C/svg%3E'); background-repeat: repeat; background-size: 200px;"></div>
+    <x-deco-shapes count="3" class="z-[4]" />
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 relative z-10">
         <div class="flex flex-col md:flex-row items-center justify-between">
             <div class="md:w-1/2 text-center md:text-left mb-8 md:mb-0">
@@ -35,9 +37,9 @@
                 </div>
                 <h1 class="font-heading font-bold text-3xl md:text-5xl leading-tight mb-4">Ghana Armed Forces<br>Recruitment Portal</h1>
                 <p class="text-gray-300 text-lg mb-8">Join the ranks of the brave. Apply now for the current recruitment cycle.</p>
+                @if($activeCycle)
                 <div x-data="{ countdown: { days: 0, hours: 0, minutes: 0, seconds: 0 }, init() {
-                    let end = new Date();
-                    end.setDate(end.getDate() + 30);
+                    let end = new Date('{{ $activeCycle->application_deadline }}');
                     setInterval(() => {
                         let diff = end - new Date();
                         if(diff <= 0) return;
@@ -47,14 +49,18 @@
                         this.countdown.seconds = Math.floor((diff / 1000) % 60);
                     }, 1000);
                 }}">
-                    <div class="flex space-x-4 justify-center md:justify-start mb-8">
+                    <p class="text-xs text-gaf-khaki/80 mb-2 font-medium">Deadline for {{ $activeCycle->name }}</p>
+                    <div class="flex space-x-4 justify-center md:justify-start mb-6">
                         <div class="text-center"><span class="text-3xl font-heading font-bold text-gaf-khaki" x-text="countdown.days">0</span><p class="text-xs text-gray-400">Days</p></div>
                         <div class="text-center"><span class="text-3xl font-heading font-bold text-gaf-khaki" x-text="countdown.hours">0</span><p class="text-xs text-gray-400">Hours</p></div>
                         <div class="text-center"><span class="text-3xl font-heading font-bold text-gaf-khaki" x-text="countdown.minutes">0</span><p class="text-xs text-gray-400">Min</p></div>
                         <div class="text-center"><span class="text-3xl font-heading font-bold text-gaf-khaki" x-text="countdown.seconds">0</span><p class="text-xs text-gray-400">Sec</p></div>
                     </div>
                 </div>
-                <a href="{{ route('applicant.register') }}" class="inline-block bg-gaf-khaki text-gaf-dark-green px-8 py-4 rounded-lg font-heading font-bold text-lg hover:bg-yellow-500 transition transform hover:scale-105 shadow-lg">Apply Now</a>
+                <a href="{{ route('recruitment.portal') }}" class="inline-block bg-gaf-khaki text-gaf-dark-green px-8 py-4 rounded-lg font-heading font-bold text-lg hover:bg-yellow-500 transition transform hover:scale-105 shadow-lg">View Details & Apply</a>
+                @else
+                <a href="{{ route('recruitment.portal') }}" class="inline-block bg-gaf-khaki text-gaf-dark-green px-8 py-4 rounded-lg font-heading font-bold text-lg hover:bg-yellow-500 transition transform hover:scale-105 shadow-lg">View Recruitment Portal</a>
+                @endif
             </div>
             <div class="md:w-1/2 flex justify-center">
                 <img src="{{ asset('assets/images/hero/img1.png') }}" alt="GAF Recruitment" class="w-full max-w-md rounded-xl shadow-2xl border-4 border-gaf-khaki/30">
@@ -66,6 +72,11 @@
             <button @click="goTo(i)" :class="['w-2.5 h-2.5 rounded-full slide-indicator', i === currentIndex ? 'bg-gaf-khaki w-6' : 'bg-white/40 hover:bg-white/70']"></button>
         </template>
     </div>
+    @if($unsplashPhoto && ($unsplashPhoto['attribution']['name'] ?? '') !== 'Unsplash')
+    <div class="absolute bottom-4 right-4 z-20 text-xs text-white/50">
+        Photo by <a href="{{ ($unsplashPhoto['attribution']['link'] ?? '#') }}?utm_source=dmrms&utm_medium=referral" target="_blank" class="underline hover:text-white/90" rel="noopener noreferrer">{{ $unsplashPhoto['attribution']['name'] ?? 'Unknown' }}</a> on <a href="https://unsplash.com/?utm_source=dmrms&utm_medium=referral" target="_blank" class="underline hover:text-white/90" rel="noopener noreferrer">Unsplash</a>
+    </div>
+    @endif
 </div>
 <script>
 function heroSlideshow() {
@@ -76,6 +87,7 @@ function heroSlideshow() {
         prevIndex: -1,
         timer: null,
         init() {
+            if (!this.slides.length) return;
             this.slides.forEach((s, i) => s.cls = anims[i % anims.length]);
             this.start();
         },
@@ -105,7 +117,7 @@ function heroSlideshow() {
 <div x-data="{
     stats: { total: 0, shortlisted: 0, screening: 0, selected: 0 },
     init() {
-        let targets = { total: 15420, shortlisted: 3200, screening: 1800, selected: 750 };
+        let targets = { total: {{ $totalApplicants }}, shortlisted: {{ $shortlistedCount }}, screening: {{ $screeningCount }}, selected: {{ $selectedCount }} };
         let duration = 2000, steps = 60, interval = duration / steps;
         let step = 0;
         let timer = setInterval(() => {
@@ -119,30 +131,30 @@ function heroSlideshow() {
     }
 }" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <div class="bg-white rounded-xl shadow-lg p-6 text-center border-t-4 border-gaf-red">
+        <div class="bg-gradient-card rounded-xl shadow-lg p-6 text-center border-t-4 border-gaf-red">
             <p class="text-4xl font-heading font-bold text-gaf-green" x-text="stats.total.toLocaleString()">0</p>
             <p class="text-sm text-gray-500 mt-1">Total Applicants</p>
         </div>
-        <div class="bg-white rounded-xl shadow-lg p-6 text-center border-t-4 border-gaf-khaki">
+        <div class="bg-gradient-card rounded-xl shadow-lg p-6 text-center border-t-4 border-gaf-khaki">
             <p class="text-4xl font-heading font-bold text-gaf-green" x-text="stats.shortlisted.toLocaleString()">0</p>
             <p class="text-sm text-gray-500 mt-1">Shortlisted</p>
         </div>
-        <div class="bg-white rounded-xl shadow-lg p-6 text-center border-t-4 border-gaf-green">
+        <div class="bg-gradient-card rounded-xl shadow-lg p-6 text-center border-t-4 border-gaf-green">
             <p class="text-4xl font-heading font-bold text-gaf-green" x-text="stats.screening.toLocaleString()">0</p>
             <p class="text-sm text-gray-500 mt-1">Screening</p>
         </div>
-        <div class="bg-white rounded-xl shadow-lg p-6 text-center border-t-4 border-gaf-green">
+        <div class="bg-gradient-card rounded-xl shadow-lg p-6 text-center border-t-4 border-gaf-green">
             <p class="text-4xl font-heading font-bold text-gaf-green" x-text="stats.selected.toLocaleString()">0</p>
             <p class="text-sm text-gray-500 mt-1">Selected</p>
         </div>
     </div>
 </div>
 
-<div class="bg-gray-100 py-16">
+<div class="section-gradient-light py-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="font-heading font-bold text-3xl text-center text-gaf-green mb-4">Check Your Eligibility</h2>
         <p class="text-gray-500 text-center text-sm mb-12">Quickly check if you meet the basic requirements before applying.</p>
-        <div x-data="{ age: '', nationality: '', education: '', result: null }" class="max-w-lg mx-auto bg-white rounded-xl shadow-lg p-8">
+        <div x-data="{ age: '', nationality: '', education: '', result: null }" class="max-w-lg mx-auto bg-white/90 glass-strong rounded-xl shadow-lg p-8">
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
@@ -193,12 +205,41 @@ function heroSlideshow() {
     </div>
 </div>
 
-<div class="bg-gray-100 py-12">
+@if($recentNews && $recentNews->count() > 0)
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h2 class="font-heading font-bold text-3xl text-gaf-green">Latest News</h2>
+            <p class="text-gray-500 text-sm mt-1">Updates from the Ghana Armed Forces</p>
+        </div>
+        <a href="{{ route('announcements') }}" class="text-sm text-gaf-green hover:underline font-medium">View All &rarr;</a>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        @foreach($recentNews as $news)
+        <a href="{{ route('announcements.detail', $news->id) }}" class="card-hover group gradient-border rounded-xl overflow-hidden">
+            @if($news->featured_image)
+            <div class="h-40 bg-gray-100 overflow-hidden">
+                <img src="{{ asset('storage/' . $news->featured_image) }}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+            </div>
+            @endif
+            <div class="p-4">
+                <span class="text-xs font-semibold text-gaf-green uppercase">{{ $news->category }}</span>
+                <h3 class="font-semibold text-gray-900 mt-1 text-sm group-hover:text-gaf-green transition">{{ $news->title }}</h3>
+                <p class="text-xs text-gray-500 mt-1">{{ Str::limit($news->excerpt ?? strip_tags($news->content), 80) }}</p>
+                <span class="text-xs text-gray-400 mt-2 block">{{ $news->published_at?->format('M j, Y') }}</span>
+            </div>
+        </a>
+        @endforeach
+    </div>
+</div>
+@endif
+
+<div class="section-gradient-light py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-wrap items-center justify-center gap-8">
-            <div class="flex items-center space-x-2 bg-white px-6 py-3 rounded-lg shadow"><svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg><span class="text-sm font-medium">No Middlemen</span></div>
-            <div class="flex items-center space-x-2 bg-white px-6 py-3 rounded-lg shadow"><svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="text-sm font-medium">Free Application</span></div>
-            <div class="flex items-center space-x-2 bg-white px-6 py-3 rounded-lg shadow"><svg class="w-6 h-6 text-gaf-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg><span class="text-sm font-medium">Ghana Government</span></div>
+            <div class="flex items-center space-x-2 bg-white/90 glass-strong px-6 py-3 rounded-lg shadow-sm"><svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg><span class="text-sm font-medium">No Middlemen</span></div>
+            <div class="flex items-center space-x-2 bg-white/90 glass-strong px-6 py-3 rounded-lg shadow-sm"><svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="text-sm font-medium">Free Application</span></div>
+            <div class="flex items-center space-x-2 bg-white/90 glass-strong px-6 py-3 rounded-lg shadow-sm"><svg class="w-6 h-6 text-gaf-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg><span class="text-sm font-medium">Ghana Government</span></div>
         </div>
     </div>
 </div>

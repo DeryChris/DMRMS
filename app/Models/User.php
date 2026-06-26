@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     protected $table = 'administrators';
 
@@ -62,27 +63,28 @@ class User extends Authenticatable
 
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'super_admin';
+        return $this->hasRole('super_admin') || $this->role === 'super_admin';
     }
 
     public function isAdmin(): bool
     {
-        return in_array($this->role, ['admin', 'super_admin', 'recruitment_officer', 'screening_officer', 'scheduling_officer']);
+        $adminRoles = ['super_admin', 'admin', 'recruitment_officer', 'screening_officer', 'scheduling_officer'];
+        return $this->hasAnyRole($adminRoles) || in_array($this->role, $adminRoles);
     }
 
     public function isRecruitmentOfficer(): bool
     {
-        return $this->role === 'recruitment_officer';
+        return $this->hasRole('recruitment_officer');
     }
 
     public function isScreeningOfficer(): bool
     {
-        return $this->role === 'screening_officer';
+        return $this->hasRole('screening_officer');
     }
 
     public function isSchedulingOfficer(): bool
     {
-        return $this->role === 'scheduling_officer';
+        return $this->hasRole('scheduling_officer');
     }
 
     public function hasActiveSubscription(): bool

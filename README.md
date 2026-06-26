@@ -41,7 +41,7 @@ DMRMS is a comprehensive, AI-powered web platform that digitizes the Ghana Armed
 |-------|------------|
 | **Backend** | PHP 8.2+, Laravel 12 |
 | **Frontend** | Blade, Tailwind CSS 3, Alpine.js, Chart.js |
-| **Database** | PostgreSQL 16 (MySQL 8 compatible) |
+| **Database** | PostgreSQL 16 |
 | **AI Service** | Python 3.9+, FastAPI, OpenAI API |
 | **Queue** | Laravel Queue (database driver) |
 | **Auth** | Laravel Sanctum (API) + Session (Web) |
@@ -101,7 +101,7 @@ dmrms/
 ### Prerequisites
 
 - PHP 8.2+, Composer, Node.js 18+, Python 3.9+
-- PostgreSQL 16 (or MySQL 8)
+- PostgreSQL 16
 - XAMPP (optional — for Apache + PHP)
 
 ### Installation

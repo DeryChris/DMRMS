@@ -9,6 +9,7 @@ use App\Models\Document;
 use App\Models\VerificationCode;
 use App\Models\Appointment;
 use App\Services\Ai\AiGateway;
+use App\Services\Eligibility\EligibilityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,10 +18,12 @@ use Illuminate\Support\Facades\Validator;
 class ApplicantController extends Controller
 {
     protected AiGateway $aiGateway;
+    protected EligibilityService $eligibilityService;
 
-    public function __construct(AiGateway $aiGateway)
+    public function __construct(AiGateway $aiGateway, EligibilityService $eligibilityService)
     {
         $this->aiGateway = $aiGateway;
+        $this->eligibilityService = $eligibilityService;
     }
 
     public function profile(Request $request): JsonResponse
@@ -108,13 +111,11 @@ class ApplicantController extends Controller
             return response()->json(['message' => 'Application is already submitted.'], 422);
         }
 
-        $application->update(['status' => 'submitted']);
-
-        $this->aiGateway->analyzeEligibility($application);
+        $application->update(['status' => 'submitted', 'submitted_at' => now()]);
 
         return response()->json([
             'message'     => 'Application submitted successfully.',
-            'application' => $application,
+            'application' => $application->fresh(),
         ]);
     }
 

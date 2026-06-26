@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\ReserveList;
 
 class Application extends Model
 {
@@ -27,10 +28,16 @@ class Application extends Model
         'criminal_record',
         'fitness_status',
         'status',
+        'current_step',
         'submitted_at',
         'ai_eligibility_score',
         'ai_ranking_score',
         'ai_verified_at',
+        'returned_count',
+        'last_returned_from',
+        'last_returned_to',
+        'last_return_reason',
+        'last_returned_at',
     ];
 
     protected function casts(): array
@@ -41,6 +48,7 @@ class Application extends Model
             'application_date' => 'datetime',
             'submitted_at' => 'datetime',
             'ai_verified_at' => 'datetime',
+            'last_returned_at' => 'datetime',
         ];
     }
 
@@ -99,5 +107,10 @@ class Application extends Model
     public function finalDecision(): HasOne
     {
         return $this->hasOne(FinalDecision::class);
+    }
+
+    public function reserveList(): HasOne
+    {
+        return $this->hasOne(ReserveList::class);
     }
 }

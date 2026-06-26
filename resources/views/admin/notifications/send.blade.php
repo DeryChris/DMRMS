@@ -8,14 +8,7 @@
         <p class="text-sm text-gray-500 mt-1">Broadcast a notification to applicants or staff members.</p>
     </div>
 
-    @if(session('success'))
-    <div class="bg-green-50 border border-green-200 rounded-xl px-5 py-4 mb-6 flex items-center space-x-3">
-        <svg class="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <p class="text-sm text-green-700 font-medium">{{ session('success') }}</p>
-    </div>
-    @endif
-
-    <form method="POST" action="{{ route('admin.notifications.send') }}" x-data="{ target: 'applicants' }" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
+    <form method="POST" action="{{ route('admin.notifications.send') }}" x-data="{ target: 'applicants', regionsOpen: false, rolesOpen: false, selectedRegions: [], selectedRoles: [], toggleRegion(val) { let i = this.selectedRegions.indexOf(val); if (i === -1) this.selectedRegions.push(val); else this.selectedRegions.splice(i, 1); }, toggleRole(val) { let i = this.selectedRoles.indexOf(val); if (i === -1) this.selectedRoles.push(val); else this.selectedRoles.splice(i, 1); }, selectAllRegions(v) { this.selectedRegions = v ? [''] : []; }, selectAllRoles(v) { this.selectedRoles = v ? [''] : []; }, regionLabel() { if (this.selectedRegions.includes('')) return 'All Regions'; if (this.selectedRegions.length === 0) return 'Filter by region...'; if (this.selectedRegions.length <= 2) return this.selectedRegions.join(', '); return this.selectedRegions.length + ' regions selected'; }, roleLabel() { if (this.selectedRoles.includes('')) return 'All Roles'; if (this.selectedRoles.length === 0) return 'Filter by role...'; if (this.selectedRoles.length <= 2) return this.selectedRoles.map(v => ({super_admin:'Super Admin',admin:'Admin',recruitment_officer:'Recruitment Officer',screening_officer:'Screening Officer',scheduling_officer:'Scheduling Officer'})[v]).join(', '); return this.selectedRoles.length + ' roles selected'; } }" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
         @csrf
 
         <div>
@@ -35,23 +28,55 @@
         </div>
 
         <div x-show="target === 'applicants'" x-cloak>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Region <span class="text-gray-400 font-normal">(optional — leave blank for all regions)</span></label>
-            <select name="region" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-green focus:border-gaf-green">
-                <option value="">All Regions</option>
-                @foreach($regions as $region)
-                <option value="{{ $region }}">{{ $region }}</option>
-                @endforeach
-            </select>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Regions <span class="text-gray-400 font-normal">(optional — select one or more)</span></label>
+            <div class="relative">
+                <button type="button" @click="regionsOpen = !regionsOpen" @click.outside="regionsOpen = false" class="w-full flex items-center justify-between border border-gray-300 rounded-lg px-4 py-2.5 text-sm bg-white hover:border-gray-400 transition text-left">
+                    <span :class="selectedRegions.length === 0 ? 'text-gray-400' : 'text-gray-700'" x-text="regionLabel()">Filter by region...</span>
+                    <svg class="w-4 h-4 text-gray-400 transition-transform" :class="regionsOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div x-show="regionsOpen" x-cloak x-transition class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto p-1.5">
+                    <label class="flex items-center space-x-2.5 px-3 py-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" :checked="selectedRegions.includes('')" @change="selectAllRegions($el.checked)" class="rounded border-gray-300 text-gaf-green focus:ring-gaf-green">
+                        <span class="text-sm font-medium text-gray-700">All Regions</span>
+                    </label>
+                    <hr class="border-gray-100 my-1">
+                    <template x-for="r in {{ Js::from($regions) }}" :key="r">
+                        <label class="flex items-center space-x-2.5 px-3 py-2 rounded hover:bg-gray-50 cursor-pointer">
+                            <input type="checkbox" :checked="selectedRegions.includes(r)" @change="toggleRegion(r)" class="rounded border-gray-300 text-gaf-green focus:ring-gaf-green">
+                            <span class="text-sm text-gray-600" x-text="r"></span>
+                        </label>
+                    </template>
+                </div>
+                <template x-for="r in selectedRegions" :key="r">
+                    <input type="hidden" name="regions[]" :value="r">
+                </template>
+            </div>
         </div>
 
         <div x-show="target === 'admins'" x-cloak>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Admin Role <span class="text-gray-400 font-normal">(optional — leave blank for all roles)</span></label>
-            <select name="role" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-green focus:border-gaf-green">
-                <option value="">All Roles</option>
-                @foreach($adminRoles as $val => $label)
-                <option value="{{ $val }}">{{ $label }}</option>
-                @endforeach
-            </select>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Admin Roles <span class="text-gray-400 font-normal">(optional — select one or more)</span></label>
+            <div class="relative">
+                <button type="button" @click="rolesOpen = !rolesOpen" @click.outside="rolesOpen = false" class="w-full flex items-center justify-between border border-gray-300 rounded-lg px-4 py-2.5 text-sm bg-white hover:border-gray-400 transition text-left">
+                    <span :class="selectedRoles.length === 0 ? 'text-gray-400' : 'text-gray-700'" x-text="roleLabel()">Filter by role...</span>
+                    <svg class="w-4 h-4 text-gray-400 transition-transform" :class="rolesOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div x-show="rolesOpen" x-cloak x-transition class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto p-1.5">
+                    <label class="flex items-center space-x-2.5 px-3 py-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" :checked="selectedRoles.includes('')" @change="selectAllRoles($el.checked)" class="rounded border-gray-300 text-gaf-green focus:ring-gaf-green">
+                        <span class="text-sm font-medium text-gray-700">All Roles</span>
+                    </label>
+                    <hr class="border-gray-100 my-1">
+                    @foreach($adminRoles as $val => $label)
+                    <label class="flex items-center space-x-2.5 px-3 py-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" :checked="selectedRoles.includes('{{ $val }}')" @change="toggleRole('{{ $val }}')" class="rounded border-gray-300 text-gaf-green focus:ring-gaf-green">
+                        <span class="text-sm text-gray-600">{{ $label }}</span>
+                    </label>
+                    @endforeach
+                </div>
+                <template x-for="r in selectedRoles" :key="r">
+                    <input type="hidden" name="roles[]" :value="r">
+                </template>
+            </div>
         </div>
 
         <div>

@@ -10,7 +10,9 @@ use App\Models\Appointment;
 use App\Models\Cycle;
 use App\Models\Document;
 use App\Models\FinalDecision;
+use App\Models\ReserveList;
 use App\Models\ScreeningResult;
+use App\Models\VerificationCode;
 use App\Models\AiUsage;
 use App\Services\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
@@ -77,7 +79,7 @@ class AdminController extends Controller
     public function applications(Request $request, $id = null): JsonResponse
     {
         if ($id) {
-            $application = Application::with(['applicant', 'cycle', 'documents', 'eligibility', 'appointment', 'finalDecision'])
+            $application = Application::with(['applicant', 'cycle', 'documents', 'eligibilityResult', 'appointment', 'finalDecision'])
                 ->findOrFail($id);
 
             return response()->json(['data' => $application]);
@@ -109,7 +111,7 @@ class AdminController extends Controller
     public function updateApplicationStatus(Request $request, $id): JsonResponse
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:draft,submitted,reviewing,shortlisted,qualified,disqualified,selected,rejected',
+            'status' => 'required|string|in:draft,submitted,documents_verified,eligibility_passed,eligibility_failed,shortlisted,appointment_scheduled,screening_completed,final_decision_pending,selected,rejected',
             'remarks' => 'nullable|string|max:500',
         ]);
 
@@ -132,27 +134,39 @@ class AdminController extends Controller
             'applicant_ids.*' => 'exists:applicants,id',
         ]);
 
-        $updated = Application::whereIn('applicant_id', $validated['applicant_ids'])
-            ->where('status', 'submitted')
-            ->update(['status' => 'shortlisted']);
+        $applications = Application::whereIn('applicant_id', $validated['applicant_ids'])
+            ->where('status', 'eligibility_passed')
+            ->get();
 
-        $applicants = Applicant::whereIn('id', $validated['applicant_ids'])->get();
+        $processed = [];
 
-        foreach ($applicants as $applicant) {
-            $code = strtoupper(Str::random(8));
-            $applicant->verificationCodes()->create([
-                'type'       => 'eligibility',
-                'code'       => $code,
-                'expires_at' => now()->addDays(30),
-                'used'       => false,
+        foreach ($applications as $app) {
+            $app->update(['status' => 'shortlisted']);
+
+            $codeValue = strtoupper(\Illuminate\Support\Str::random(12));
+
+            VerificationCode::create([
+                'application_id' => $app->id,
+                'applicant_id' => $app->applicant_id,
+                'code_value' => $codeValue,
+                'type' => 'entry',
+                'issue_date' => now(),
+                'expiry_date' => now()->addMonths(6),
+                'used_status' => false,
             ]);
 
-            $this->notificationService->sendShortlistNotification($applicant, $code);
+            $this->notificationService->shortlisted($app, $codeValue);
+
+            $processed[] = [
+                'application_id' => $app->id,
+                'gaf_id' => $app->gaf_id,
+                'verification_code' => $codeValue,
+            ];
         }
 
         return response()->json([
-            'message'           => "{$updated} applicants shortlisted successfully.",
-            'codes_generated'   => $applicants->count(),
+            'message'    => count($processed) . ' applicants shortlisted successfully.',
+            'processed'  => $processed,
         ]);
     }
 
@@ -264,12 +278,10 @@ class AdminController extends Controller
         );
 
         if (($validated['overall_status'] ?? null) === 'qualified') {
-            Application::where('applicant_id', $validated['applicant_id'])
-                ->where('status', 'shortlisted')
-                ->update(['status' => 'qualified']);
+            $application->update(['status' => 'final_decision_pending']);
+            $this->notificationService->finalDecisionPending($application->fresh());
         } elseif (($validated['overall_status'] ?? null) === 'disqualified') {
-            Application::where('applicant_id', $validated['applicant_id'])
-                ->update(['status' => 'disqualified']);
+            $application->update(['status' => 'disqualified']);
         }
 
         return response()->json([
@@ -283,25 +295,45 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'applicant_id' => 'required|exists:applicants,id',
-            'status'       => 'required|in:selected,rejected,waitlisted',
+            'status'       => 'required|in:selected,rejected,reserve',
             'remarks'      => 'nullable|string|max:1000',
             'offer_letter' => 'nullable|file|mimes:pdf|max:10240',
         ]);
 
         $application = Application::where('applicant_id', $validated['applicant_id'])->firstOrFail();
 
+        $statusMapping = [
+            'selected' => ['decision' => 'admitted', 'app_status' => 'selected'],
+            'rejected' => ['decision' => 'rejected', 'app_status' => 'rejected'],
+            'reserve' => ['decision' => 'reserve', 'app_status' => 'reserve'],
+        ];
+
+        $mapped = $statusMapping[$validated['status']];
+
         $decision = FinalDecision::updateOrCreate(
             ['application_id' => $application->id],
             [
-                'decision'         => $validated['status'] === 'selected' ? 'admitted' : ($validated['status'] === 'rejected' ? 'rejected' : 'waitlisted'),
+                'decision'         => $mapped['decision'],
                 'decision_reason'  => $validated['remarks'] ?? null,
                 'committee_members' => [$request->user()->id],
+                'committee_approved_at' => now(),
+                'committee_approved_by' => $request->user()->id,
                 'decision_date'    => now(),
             ]
         );
 
         Application::where('applicant_id', $validated['applicant_id'])
-            ->update(['status' => $validated['status'] === 'selected' ? 'selected' : 'rejected']);
+            ->update(['status' => $mapped['app_status']]);
+
+        if ($validated['status'] === 'reserve') {
+            $lastPosition = ReserveList::max('position') ?? 0;
+            ReserveList::create([
+                'application_id' => $application->id,
+                'priority_score' => $application->ai_ranking_score ?? 0,
+                'position' => $lastPosition + 1,
+                'notes' => $validated['remarks'] ?? null,
+            ]);
+        }
 
         return response()->json([
             'success' => true,

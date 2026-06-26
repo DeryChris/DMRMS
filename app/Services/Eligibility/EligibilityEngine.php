@@ -54,8 +54,8 @@ class EligibilityEngine
     {
         $age = Carbon::parse($dob)->age;
 
-        $minAge = $cycleRequirements['age_min'] ?? config('recruitment.age_min', 18);
-        $maxAge = $cycleRequirements['age_max'] ?? config('recruitment.age_max_regular', 25);
+        $minAge = $cycleRequirements['min_age'] ?? config('recruitment.age_min', 18);
+        $maxAge = $cycleRequirements['max_age'] ?? config('recruitment.age_max_regular', 25);
 
         if (isset($cycleRequirements['category'])) {
             $category = $cycleRequirements['category'];
@@ -78,24 +78,24 @@ class EligibilityEngine
         $allowed = $cycleRequirements['education_levels'] ?? [
             'WASSCE', 'SSSCE', 'GCE Advanced Level', 'Diploma', 'Degree',
         ];
+        $allowed = is_array($allowed) ? $allowed : preg_split('/\s*,\s*/', $allowed);
 
         return in_array(strtoupper($educationLevel), array_map('strtoupper', $allowed));
     }
 
     public function checkHeight($height, $gender, array $cycleRequirements = []): bool
     {
-        $minHeight = $cycleRequirements['height_min'] ?? (
-            strtolower($gender) === 'male'
-                ? config('recruitment.height_min_male', 1.65)
-                : config('recruitment.height_min_female', 1.58)
-        );
+        $minHeight = strtolower($gender) === 'male'
+            ? ($cycleRequirements['min_height_male'] ?? config('recruitment.height_min_male', 1.65))
+            : ($cycleRequirements['min_height_female'] ?? config('recruitment.height_min_female', 1.58));
 
         return $height >= $minHeight;
     }
 
     public function checkMaritalStatus($status, array $cycleRequirements = []): bool
     {
-        $allowed = $cycleRequirements['marital_statuses'] ?? ['Single', 'Never Married'];
+        $allowed = $cycleRequirements['marital_status'] ?? ['Single', 'Never Married'];
+        $allowed = is_array($allowed) ? $allowed : preg_split('/\s*,\s*/', $allowed);
 
         return in_array(ucfirst(strtolower($status)), $allowed);
     }
@@ -107,7 +107,7 @@ class EligibilityEngine
 
     public function checkDocuments(Application $application): bool
     {
-        $requiredDocs = ['birth_certificate', 'educational_certificate', 'national_id', 'passport_photograph'];
+        $requiredDocs = ['birth_certificate', 'certificate', 'national_id', 'photograph'];
 
         $uploaded = $application->documents()
             ->whereIn('document_type', $requiredDocs)

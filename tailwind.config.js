@@ -37,11 +37,26 @@ export default {
             fontFamily: {
                 sans: ['Inter', 'Montserrat', ...defaultTheme.fontFamily.sans],
             },
+            backgroundImage: {
+                'gradient-hero': 'linear-gradient(135deg, #14532d 0%, #0f2f1f 50%, #000000 100%)',
+                'gradient-card': 'linear-gradient(135deg, #ffffff 0%, #f0f7f0 100%)',
+                'gradient-section': 'linear-gradient(180deg, #14532d 0%, #166534 100%)',
+                'gradient-auth': 'linear-gradient(135deg, #14532d 0%, #0f2f1f 70%, #9B2226 100%)',
+                'gradient-gold': 'linear-gradient(135deg, #D4AF37 0%, #fcd116 100%)',
+                'gradient-success': 'linear-gradient(135deg, #166534 0%, #14532d 100%)',
+                'gradient-red': 'linear-gradient(135deg, #9B2226 0%, #7F1D1D 100%)',
+                'gradient-amber': 'linear-gradient(135deg, #D97706 0%, #92400E 100%)',
+                'gradient-teal': 'linear-gradient(135deg, #0D9488 0%, #115E59 100%)',
+            },
             animation: {
                 'count-up': 'countUp 2s ease-out forwards',
                 'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
                 'slide-in': 'slideIn 0.3s ease-out forwards',
                 'fade-in': 'fadeIn 0.3s ease-out forwards',
+                'float': 'float 8s ease-in-out infinite',
+                'float-slow': 'float 12s ease-in-out infinite',
+                'gradient-shift': 'gradientShift 15s ease infinite',
+                'pulse-soft': 'pulseSoft 3s ease-in-out infinite',
             },
             keyframes: {
                 countUp: {
@@ -59,6 +74,20 @@ export default {
                 fadeIn: {
                     '0%': { opacity: '0' },
                     '100%': { opacity: '1' },
+                },
+                float: {
+                    '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
+                    '33%': { transform: 'translateY(-15px) rotate(1deg)' },
+                    '66%': { transform: 'translateY(5px) rotate(-1deg)' },
+                },
+                gradientShift: {
+                    '0%': { backgroundPosition: '0% 50%' },
+                    '50%': { backgroundPosition: '100% 50%' },
+                    '100%': { backgroundPosition: '0% 50%' },
+                },
+                pulseSoft: {
+                    '0%, 100%': { opacity: '1' },
+                    '50%': { opacity: '0.7' },
                 },
             },
         },

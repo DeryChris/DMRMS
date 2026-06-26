@@ -4,9 +4,9 @@
 
 @section('content')
 <div x-data="{ aiEnabled: {{ $aiSettings['ai_enabled'] ? 'true' : 'false' }}, provider: '{{ $aiSettings['provider'] }}' }" class="space-y-6">
-    <h1 class="font-heading font-bold text-2xl text-gray-800">AI Configuration</h1>
+    <h1 class="font-heading font-bold text-2xl text-gray-800 gradient-border pb-4">AI Configuration</h1>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
         <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">AI Features</h3>
         <div class="space-y-4">
             <label class="flex items-center justify-between">
@@ -31,7 +31,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
             <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Provider Settings</h3>
             <div class="space-y-4">
                 <div><label class="block text-sm font-medium text-gray-700 mb-1">AI Provider</label>
@@ -42,11 +42,15 @@
                     </select>
                 </div>
                 <div><label class="block text-sm font-medium text-gray-700 mb-1">Model</label><input type="text" value="{{ $aiSettings['model'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
+                <div class="flex items-center space-x-2 text-sm">
+                    <span class="w-2.5 h-2.5 rounded-full {{ $aiHealth ?? true ? 'bg-green-500' : 'bg-red-500' }} inline-block"></span>
+                    <span class="text-gray-600">{{ $aiHealth ?? true ? 'Connected' : 'Disconnected' }}</span>
+                </div>
                 <button class="px-6 py-2 bg-gaf-green text-white rounded-lg text-sm font-medium hover:bg-gaf-dark-green transition">Save Provider Settings</button>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
             <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Usage Statistics</h3>
             <div class="space-y-4">
                 <div class="flex justify-between py-2 border-b"><span class="text-sm text-gray-600">Tokens Used (Today)</span><span class="font-semibold">{{ number_format($aiStats->tokens_today ?? 0) }}</span></div>
@@ -59,7 +63,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
             <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Budget Settings</h3>
             <div class="space-y-4">
                 <div><label class="block text-sm font-medium text-gray-700 mb-1">Monthly Budget Cap ($)</label><input type="number" value="{{ $aiSettings['monthly_budget_cap'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
@@ -67,7 +71,7 @@
                 <button class="px-6 py-2 bg-gaf-green text-white rounded-lg text-sm font-medium hover:bg-gaf-dark-green transition">Save Budget</button>
             </div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
             <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Rate Limiting</h3>
             <div class="space-y-4">
                 <div><label class="block text-sm font-medium text-gray-700 mb-1">Max Requests Per Minute</label><input type="number" value="{{ $aiSettings['max_requests_per_minute'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>

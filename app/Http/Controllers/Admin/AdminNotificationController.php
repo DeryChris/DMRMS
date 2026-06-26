@@ -42,8 +42,10 @@ class AdminNotificationController extends Controller
             'target_type' => ['required', 'in:applicants,admins'],
             'subject' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string'],
-            'role' => ['nullable', 'string'],
-            'region' => ['nullable', 'string'],
+            'roles' => ['nullable', 'array'],
+            'roles.*' => ['string', 'in:super_admin,admin,recruitment_officer,screening_officer,scheduling_officer'],
+            'regions' => ['nullable', 'array'],
+            'regions.*' => ['string'],
         ]);
 
         $subject = $validated['subject'];
@@ -53,8 +55,9 @@ class AdminNotificationController extends Controller
         if ($validated['target_type'] === 'applicants') {
             $query = Applicant::query();
 
-            if (!empty($validated['region'])) {
-                $query->where('region', $validated['region']);
+            $regions = $validated['regions'] ?? [];
+            if (!empty($regions) && !in_array('', $regions, true)) {
+                $query->whereIn('region', $regions);
             }
 
             $applicants = $query->get();
@@ -73,8 +76,9 @@ class AdminNotificationController extends Controller
         } else {
             $query = Administrator::query();
 
-            if (!empty($validated['role'])) {
-                $query->where('role', $validated['role']);
+            $roles = $validated['roles'] ?? [];
+            if (!empty($roles) && !in_array('', $roles, true)) {
+                $query->whereIn('role', $roles);
             }
 
             $admins = $query->get();

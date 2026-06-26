@@ -12,7 +12,9 @@ class VerificationCode extends Model
 
     protected $fillable = [
         'application_id',
+        'applicant_id',
         'code_value',
+        'type',
         'qr_code_path',
         'issue_date',
         'expiry_date',
@@ -33,6 +35,11 @@ class VerificationCode extends Model
     public function application(): BelongsTo
     {
         return $this->belongsTo(Application::class);
+    }
+
+    public function applicant(): BelongsTo
+    {
+        return $this->belongsTo(Applicant::class);
     }
 
     public function scopeValid(Builder $query): Builder

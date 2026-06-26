@@ -34,6 +34,8 @@ class Applicant extends Authenticatable
         'password',
         'remember_token',
         'email_verified_at',
+        'email_verification_code',
+        'email_verification_sent_at',
         'phone_verified',
         'status',
         'last_login',
@@ -49,6 +51,7 @@ class Applicant extends Authenticatable
         return [
             'date_of_birth' => 'date',
             'email_verified_at' => 'datetime',
+            'email_verification_sent_at' => 'datetime',
             'phone_verified' => 'boolean',
             'last_login' => 'datetime',
             'password' => 'hashed',

@@ -6,6 +6,7 @@ use App\Models\Applicant;
 use App\Models\Application;
 use App\Models\Appointment;
 use App\Models\Notification;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -60,17 +61,40 @@ class NotificationService
         ]);
     }
 
+    public function notifyAdminsByRole(array|string $roles, string $type, string $subject, string $message): void
+    {
+        $roles = (array) $roles;
+
+        $admins = User::where(function ($q) use ($roles) {
+            $q->whereHas('roles', fn($r) => $r->whereIn('name', $roles))
+              ->orWhereIn('role', $roles);
+        })->get();
+
+        foreach ($admins as $admin) {
+            Notification::create([
+                'admin_id' => $admin->id,
+                'type' => $type,
+                'subject' => $subject,
+                'message' => $message,
+                'channel' => 'dashboard',
+                'sent_at' => Carbon::now(),
+            ]);
+        }
+    }
+
+    public function registrationWelcome(Applicant $applicant): void
+    {
+        $subject = 'Welcome to Ghana Armed Forces Recruitment';
+        $message = "Dear {$applicant->first_name}, thank you for registering with the Ghana Armed Forces Recruitment Portal. Your account is now active. You can log in and start your application.";
+        $this->sendEmail($applicant, $subject, 'emails.account-activated', ['applicant' => $applicant, 'subject' => $subject, 'message' => $message]);
+        $this->sendDashboard($applicant->id, 'registration_welcome', $subject, $message);
+    }
+
     public function accountActivated(Applicant $applicant): void
     {
         $subject = 'Account Activated';
         $message = "Dear {$applicant->first_name}, your account has been activated successfully. You can now log in and apply.";
-
-        $this->sendEmail($applicant, $subject, 'emails.account-activated', [
-            'applicant' => $applicant,
-            'subject'   => $subject,
-            'message'   => $message,
-        ]);
-
+        $this->sendEmail($applicant, $subject, 'emails.account-activated', ['applicant' => $applicant, 'subject' => $subject, 'message' => $message]);
         $this->sendDashboard($applicant->id, 'account_activated', $subject, $message);
     }
 
@@ -79,14 +103,7 @@ class NotificationService
         $applicant = $app->applicant;
         $subject = 'Application Submitted';
         $message = "Dear {$applicant->first_name}, your application (GAF ID: {$app->gaf_id}) has been received successfully.";
-
-        $this->sendEmail($applicant, $subject, 'emails.application-submitted', [
-            'applicant' => $applicant,
-            'application' => $app,
-            'subject'   => $subject,
-            'message'   => $message,
-        ]);
-
+        $this->sendEmail($applicant, $subject, 'emails.application-submitted', ['applicant' => $applicant, 'application' => $app, 'subject' => $subject, 'message' => $message]);
         $this->sendDashboard($applicant->id, 'application_submitted', $subject, $message);
     }
 
@@ -95,20 +112,11 @@ class NotificationService
         $applicant = $app->applicant;
         $result = $app->eligibilityResult;
         $status = $result->overall_status ?? 'unknown';
-
         $subject = $status === 'eligible' ? 'Eligibility Passed' : 'Eligibility Failed';
         $message = $status === 'eligible'
             ? "Dear {$applicant->first_name}, you have passed the eligibility check for application {$app->gaf_id}."
             : "Dear {$applicant->first_name}, unfortunately you did not pass the eligibility check for application {$app->gaf_id}. Reasons: " . implode('; ', $result->rejection_reasons ?? []);
-
-        $this->sendEmail($applicant, $subject, 'emails.eligibility-result', [
-            'applicant' => $applicant,
-            'application' => $app,
-            'result'    => $result,
-            'subject'   => $subject,
-            'message'   => $message,
-        ]);
-
+        $this->sendEmail($applicant, $subject, 'emails.eligibility-result', ['applicant' => $applicant, 'application' => $app, 'result' => $result, 'subject' => $subject, 'message' => $message]);
         $this->sendDashboard($applicant->id, 'eligibility_result', $subject, $message);
     }
 
@@ -117,17 +125,8 @@ class NotificationService
         $applicant = $app->applicant;
         $subject = 'Shortlisted';
         $message = "Dear {$applicant->first_name}, congratulations! You have been shortlisted for {$app->cycle->name}. Your verification code: {$code}.";
-
-        $this->sendEmail($applicant, $subject, 'emails.shortlisted', [
-            'applicant'   => $applicant,
-            'application' => $app,
-            'code'        => $code,
-            'subject'     => $subject,
-            'message'     => $message,
-        ]);
-
+        $this->sendEmail($applicant, $subject, 'emails.shortlisted', ['applicant' => $applicant, 'application' => $app, 'code' => $code, 'subject' => $subject, 'message' => $message]);
         $this->sendSms($applicant->contact_number, $message);
-
         $this->sendDashboard($applicant->id, 'shortlisted', $subject, $message);
     }
 
@@ -136,17 +135,8 @@ class NotificationService
         $applicant = $app->applicant;
         $subject = 'Appointment Scheduled';
         $message = "Dear {$applicant->first_name}, your screening appointment is scheduled for {$apt->scheduled_date} at {$apt->scheduled_time}, venue: {$apt->venue}.";
-
-        $this->sendEmail($applicant, $subject, 'emails.appointment-scheduled', [
-            'applicant'   => $applicant,
-            'application' => $app,
-            'appointment' => $apt,
-            'subject'     => $subject,
-            'message'     => $message,
-        ]);
-
+        $this->sendEmail($applicant, $subject, 'emails.appointment-scheduled', ['applicant' => $applicant, 'application' => $app, 'appointment' => $apt, 'subject' => $subject, 'message' => $message]);
         $this->sendSms($applicant->contact_number, $message);
-
         $this->sendDashboard($applicant->id, 'appointment_scheduled', $subject, $message);
     }
 
@@ -155,39 +145,97 @@ class NotificationService
         $applicant = $app->applicant;
         $subject = 'Screening Reminder';
         $message = "Reminder: Your screening is tomorrow ({$apt->scheduled_date}) at {$apt->scheduled_time}, {$apt->venue}. Please arrive on time.";
-
-        $this->sendEmail($applicant, $subject, 'emails.screening-reminder', [
-            'applicant'   => $applicant,
-            'application' => $app,
-            'appointment' => $apt,
-            'subject'     => $subject,
-            'message'     => $message,
-        ]);
-
+        $this->sendEmail($applicant, $subject, 'emails.screening-reminder', ['applicant' => $applicant, 'application' => $app, 'appointment' => $apt, 'subject' => $subject, 'message' => $message]);
         $this->sendSms($applicant->contact_number, $message);
-
         $this->sendDashboard($applicant->id, 'screening_reminder', $subject, $message);
+    }
+
+    public function documentsVerified(Application $app): void
+    {
+        $applicant = $app->applicant;
+        $subject = 'Documents Verified';
+        $message = "Dear {$applicant->first_name}, all your required documents have been verified for application {$app->gaf_id}. Eligibility check is in progress.";
+        $this->sendEmail($applicant, $subject, 'emails.documents-verified', ['applicant' => $applicant, 'application' => $app, 'subject' => $subject, 'message' => $message]);
+        $this->sendDashboard($applicant->id, 'documents_verified', $subject, $message);
+    }
+
+    public function finalDecisionPending(Application $app): void
+    {
+        $applicant = $app->applicant;
+        $subject = 'Final Decision Pending';
+        $message = "Dear {$applicant->first_name}, your screening process is complete for application {$app->gaf_id}. Your application is now pending final committee review.";
+        $this->sendEmail($applicant, $subject, 'emails.final-decision-pending', ['applicant' => $applicant, 'application' => $app, 'subject' => $subject, 'message' => $message]);
+        $this->sendDashboard($applicant->id, 'final_decision_pending', $subject, $message);
     }
 
     public function finalDecision(Application $app): void
     {
         $applicant = $app->applicant;
         $decision = $app->finalDecision;
-        $status = $decision->decision ?? 'unknown';
+        if (!$decision) {
+            return;
+        }
 
-        $subject = $status === 'approved' ? 'Application Approved' : 'Application Rejected';
-        $message = $status === 'approved'
-            ? "Dear {$applicant->first_name}, we are pleased to inform you that your application ({$app->gaf_id}) has been approved."
-            : "Dear {$applicant->first_name}, we regret to inform you that your application ({$app->gaf_id}) has been rejected.";
+        $status = $decision->decision;
 
-        $this->sendEmail($applicant, $subject, 'emails.final-decision', [
-            'applicant'   => $applicant,
+        $messages = [
+            'admitted' => [
+                'subject' => 'Congratulations — You\'ve Been Selected',
+                'message' => "Dear {$applicant->first_name}, we are pleased to inform you that your application ({$app->gaf_id}) has been approved. Welcome to the Ghana Armed Forces. Further instructions will be sent to you.",
+            ],
+            'rejected' => [
+                'subject' => 'Application Status Update',
+                'message' => "Dear {$applicant->first_name}, we regret to inform you that your application ({$app->gaf_id}) has been rejected. We wish you the best in your future endeavors.",
+            ],
+            'deferred' => [
+                'subject' => 'Application Under Further Review',
+                'message' => "Dear {$applicant->first_name}, your application ({$app->gaf_id}) has been deferred for further review. You will be notified of the final decision.",
+            ],
+            'reserve' => [
+                'subject' => 'You\'ve Been Placed on the Reserve List',
+                'message' => "Dear {$applicant->first_name}, your application ({$app->gaf_id}) has been placed on the reserve list. You may be promoted if vacancies become available.",
+            ],
+        ];
+
+        $info = $messages[$status] ?? [
+            'subject' => 'Application Decision',
+            'message' => "Dear {$applicant->first_name}, a decision has been made on your application ({$app->gaf_id}).",
+        ];
+
+        $this->sendEmail($applicant, $info['subject'], 'emails.final-decision', [
+            'applicant' => $applicant,
             'application' => $app,
-            'decision'    => $decision,
-            'subject'     => $subject,
-            'message'     => $message,
+            'decision' => $decision,
+            'subject' => $info['subject'],
+            'message' => $info['message'],
         ]);
+        $this->sendDashboard($applicant->id, "final_decision_{$status}", $info['subject'], $info['message']);
+    }
 
-        $this->sendDashboard($applicant->id, "final_decision_{$status}", $subject, $message);
+    public function sendBack(Application $app, string $fromStatus, string $reason): void
+    {
+        $applicant = $app->applicant;
+        $subject = 'Application Returned for Re-review';
+        $toLabel = str_replace('_', ' ', $app->status);
+        $fromLabel = str_replace('_', ' ', $fromStatus);
+        $message = "Dear {$applicant->first_name}, your application ({$app->gaf_id}) has been returned from '{$fromLabel}' to '{$toLabel}' for re-review. Reason: {$reason}";
+
+        $this->sendEmail($applicant, $subject, 'emails.send-back', [
+            'applicant' => $applicant,
+            'application' => $app,
+            'fromStatus' => $fromLabel,
+            'toStatus' => $toLabel,
+            'reason' => $reason,
+            'subject' => $subject,
+            'message' => $message,
+        ]);
+        $this->sendDashboard($applicant->id, 'send_back', $subject, $message);
+
+        $this->notifyAdminsByRole(
+            ['admin', 'super_admin', 'recruitment_officer'],
+            'send_back',
+            'Applicant Returned for Re-review',
+            "{$applicant->name} ({$app->gaf_id}) returned from {$fromLabel} to {$toLabel} by " . (auth()->user()->name ?? 'System') . ". Reason: {$reason}"
+        );
     }
 }

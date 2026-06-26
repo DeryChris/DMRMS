@@ -18,6 +18,13 @@ class Voucher extends Model
         'used_at',
         'status',
         'expires_at',
+        'purchaser_name',
+        'purchaser_email',
+        'purchaser_phone',
+        'payment_method',
+        'payment_reference',
+        'payment_status',
+        'cost',
     ];
 
     protected function casts(): array
@@ -26,6 +33,7 @@ class Voucher extends Model
             'purchased_at' => 'datetime',
             'used_at' => 'datetime',
             'expires_at' => 'datetime',
+            'cost' => 'decimal:2',
         ];
     }
 

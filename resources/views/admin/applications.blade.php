@@ -4,12 +4,12 @@
 
 @section('content')
 <div x-data="{ selectAll: false, selected: [] }" class="space-y-6">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gradient-border pb-4">
         <h1 class="font-heading font-bold text-2xl text-gray-800">Applications</h1>
     </div>
 
     <form method="GET" action="{{ route('admin.applications') }}">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div class="glass-strong rounded-xl shadow-sm p-4">
             <div class="flex flex-wrap gap-3">
                 <select name="status" class="border border-gray-300 rounded-lg px-4 py-2 text-sm">
                     <option value="">All Status</option>
@@ -39,18 +39,18 @@
         </div>
     </form>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="glass-strong rounded-xl shadow-sm overflow-hidden">
         <table class="w-full text-sm">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-4 text-left"><input type="checkbox" @click="selectAll = !selectAll; selected = selectAll ? ['all'] : []" class="rounded border-gray-300"></th>
-                    <th class="px-6 py-4 text-left font-medium text-gray-700">GAF ID</th>
-                    <th class="px-6 py-4 text-left font-medium text-gray-700">Name</th>
-                    <th class="px-6 py-4 text-left font-medium text-gray-700">Cycle</th>
-                    <th class="px-6 py-4 text-left font-medium text-gray-700">Status</th>
-                    <th class="px-6 py-4 text-left font-medium text-gray-700">Region</th>
-                    <th class="px-6 py-4 text-left font-medium text-gray-700">Date</th>
-                    <th class="px-6 py-4 text-right font-medium text-gray-700">Actions</th>
+            <thead>
+                <tr class="table-header-gradient">
+                    <th class="px-6 py-4 text-left text-white"><input type="checkbox" @click="selectAll = !selectAll; selected = selectAll ? ['all'] : []" class="rounded border-gray-300"></th>
+                    <th class="px-6 py-4 text-left text-white/90">GAF ID</th>
+                    <th class="px-6 py-4 text-left text-white/90">Name</th>
+                    <th class="px-6 py-4 text-left text-white/90">Cycle</th>
+                    <th class="px-6 py-4 text-left text-white/90">Status</th>
+                    <th class="px-6 py-4 text-left text-white/90">Region</th>
+                    <th class="px-6 py-4 text-left text-white/90">Date</th>
+                    <th class="px-6 py-4 text-right text-white/90">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -61,14 +61,16 @@
                     <td class="px-6 py-4">{{ $app->applicant->name ?? 'N/A' }}</td>
                     <td class="px-6 py-4">{{ $app->cycle->code ?? 'N/A' }}</td>
                     <td class="px-6 py-4">
-                        @php $map = ['registered' => ['Registered', 'bg-gray-100 text-gray-500'], 'draft' => ['Draft', 'bg-gray-100 text-gray-500'], 'submitted' => ['Submitted', 'bg-blue-50 text-blue-600'], 'eligibility_passed' => ['Eligible', 'bg-green-100 text-green-700'], 'eligibility_failed' => ['Ineligible', 'bg-red-100 text-red-700'], 'shortlisted' => ['Shortlisted', 'bg-amber-50 text-amber-600'], 'appointment_scheduled' => ['Appointment Set', 'bg-indigo-50 text-indigo-600'], 'screening_completed' => ['Screened', 'bg-emerald-50 text-emerald-600'], 'selected' => ['Selected', 'bg-green-100 text-green-700'], 'rejected' => ['Rejected', 'bg-red-100 text-red-700']]; @endphp
-                        @php [$label, $classes] = $map[$app->status] ?? [ucfirst($app->status), 'bg-gray-100 text-gray-500']; @endphp
-                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ $classes }}">{{ $label }}</span>
+                        @php $map = config('recruitment.statuses'); @endphp
+                        {!! status_badge($app->status) !!}
                     </td>
                     <td class="px-6 py-4">{{ $app->applicant->region ?? 'N/A' }}</td>
                     <td class="px-6 py-4">{{ $app->created_at->format('Y-m-d') }}</td>
                     <td class="px-6 py-4 text-right">
-                        <a href="{{ route('admin.applications.detail', $app->id) }}" class="text-gaf-khaki hover:underline text-sm font-medium">View</a>
+                        <a href="{{ route('admin.applications.detail', $app->id) }}" class="relative group p-1.5 rounded-lg hover:bg-gaf-khaki/10 text-gaf-khaki transition-colors inline-flex items-center" title="View">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">View</span>
+                        </a>
                     </td>
                 </tr>
                 @empty

@@ -2,13 +2,26 @@
 
 @section('title', 'Eligibility Checker - Ghana Armed Forces')
 
-@section('content')
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="text-center mb-10">
-        <h1 class="font-heading font-bold text-3xl text-gaf-green mb-2">eligibility pre-Checker</h1>
-        <p class="text-gray-600">Check if you meet the basic requirements before applying.</p>
-    </div>
+@php $unsplashPhoto = $unsplashPhoto ?? unsplash_hero(); @endphp
 
+@section('hero')
+<div class="relative overflow-hidden" style="min-height:200px;">
+    <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ $unsplashPhoto['regular_url'] ?? '' }}');"></div>
+    <div class="absolute inset-0" style="background:linear-gradient(135deg, rgba(20,83,45,0.9) 0%, rgba(15,47,31,0.85) 70%, rgba(155,34,38,0.75) 100%);"></div>
+    <div class="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center">
+        <h1 class="font-heading font-bold text-3xl text-white mb-2">Eligibility Pre-Checker</h1>
+        <p class="text-gaf-khaki/80">Check if you meet the basic requirements before applying.</p>
+    </div>
+    @if($unsplashPhoto && ($unsplashPhoto['attribution']['name'] ?? '') !== 'Unsplash')
+    <div class="absolute bottom-2 right-4 z-20 text-xs text-white/40">
+        Photo by <a href="{{ ($unsplashPhoto['attribution']['link'] ?? '#') }}?utm_source=dmrms&utm_medium=referral" target="_blank" class="underline hover:text-white/80" rel="noopener noreferrer">{{ $unsplashPhoto['attribution']['name'] ?? 'Unknown' }}</a> on <a href="https://unsplash.com/?utm_source=dmrms&utm_medium=referral" target="_blank" class="underline hover:text-white/80" rel="noopener noreferrer">Unsplash</a>
+    </div>
+    @endif
+</div>
+@endsection
+
+@section('content')
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
     <div x-data="{
         dob: '',
         nationality: '',
@@ -30,7 +43,7 @@
         get educationPass() { return this.education === 'ssce' || this.education === 'tertiary'; },
         get overallPass() { return this.agePass && this.nationalityPass && this.genderPass && this.heightPass && this.educationPass; },
         check() { this.showResults = true; }
-    }" class="bg-white rounded-xl shadow-lg p-8">
+    }" class="bg-white/90 glass-strong rounded-xl shadow-lg p-8">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
@@ -101,8 +114,8 @@
                 <span class="text-sm">Education Level</span>
                 <span :class="educationPass ? 'text-green-600' : 'text-red-600'" class="font-semibold text-sm" x-text="educationPass ? 'PASS' : 'FAIL'"></span>
             </div>
-            <div class="mt-6 p-4 rounded-lg text-center" :class="overallPass ? 'bg-green-100 border-2 border-green-400' : 'bg-red-100 border-2 border-red-400'">
-                <p class="font-heading font-bold text-xl" :class="overallPass ? 'text-green-800' : 'text-red-800'" x-text="overallPass ? 'You are eligible to apply!' : 'You do not meet the requirements.'"></p>
+            <div class="mt-6 p-6 rounded-lg text-center text-white" :class="overallPass ? 'bg-gradient-success' : 'bg-gradient-red'">
+                <p class="font-heading font-bold text-xl" x-text="overallPass ? 'You are eligible to apply!' : 'You do not meet the requirements.'"></p>
                 <p class="text-xs text-gray-500 mt-2">This is a preliminary check only. Official eligibility is determined after application submission.</p>
             </div>
         </div>

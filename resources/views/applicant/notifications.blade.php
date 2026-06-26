@@ -3,12 +3,10 @@
 @section('title', 'Notifications - Ghana Armed Forces')
 
 @section('content')
-<div class="max-w-3xl mx-auto">
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="font-heading font-bold text-2xl text-gray-800">Notifications</h1>
-            <p class="text-gray-500 text-sm">Stay informed about your application.</p>
-        </div>
+<div class="max-w-4xl mx-auto px-4">
+    <div class="gradient-border pb-4 mb-6">
+        <h1 class="font-heading font-bold text-2xl text-gray-800">Notifications</h1>
+        <p class="text-gray-500 text-sm mt-1">Stay informed about your application.</p>
     </div>
 
     <div class="space-y-3">
@@ -20,7 +18,7 @@
             <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between">
                     <p class="text-sm font-medium {{ !$n->read_at ? 'text-gray-900' : 'text-gray-600' }}">{{ $n->subject ?? 'Notification' }}</p>
-                    <span class="text-xs text-gray-400 flex-shrink-0 ml-2">{{ $n->created_at?->diffForHumans() ?? '' }}</span>
+                    <span class="text-xs text-gray-400 flex-shrink-0 ml-2">{{ $n->sent_at?->diffForHumans() ?? '' }}</span>
                 </div>
                 <p class="text-sm text-gray-500 mt-1">{{ $n->message ?? $n->subject }}</p>
             </div>

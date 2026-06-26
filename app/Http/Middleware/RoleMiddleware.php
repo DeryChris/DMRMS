@@ -26,10 +26,10 @@ class RoleMiddleware
             abort(403, 'Unauthorized action.');
         }
 
-        if (!in_array($user->role, $roles)) {
-            abort(403, 'Unauthorized action. Required role: ' . implode(', ', $roles));
+        if ($user->hasAnyRole($roles) || (isset($user->role) && in_array($user->role, $roles))) {
+            return $next($request);
         }
 
-        return $next($request);
+        abort(403, 'Unauthorized action. Required role: ' . implode(', ', $roles));
     }
 }

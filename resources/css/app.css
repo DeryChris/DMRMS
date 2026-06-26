@@ -234,6 +234,96 @@
     transform-origin: center;
 }
 
+.glass {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-strong {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.gradient-border {
+    position: relative;
+}
+.gradient-border::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(to right, var(--gaf-green), var(--gaf-khaki), var(--gaf-flag-red));
+}
+
+.gradient-border-left {
+    position: relative;
+}
+.gradient-border-left::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--gaf-green), var(--gaf-khaki));
+}
+
+.gold-accent {
+    border-bottom: 2px solid var(--gaf-khaki);
+}
+
+.card-gradient-header {
+    background: linear-gradient(135deg, var(--gaf-green), var(--gaf-dark-green));
+    @apply text-white px-6 py-4;
+}
+
+.table-header-gradient {
+    background: linear-gradient(135deg, var(--gaf-green), var(--gaf-dark-green));
+    @apply text-white text-xs font-semibold uppercase tracking-wider;
+}
+
+.hero-overlay {
+    background: linear-gradient(135deg, rgba(20, 83, 45, 0.92) 0%, rgba(15, 47, 31, 0.88) 50%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+.section-gradient-light {
+    background: linear-gradient(180deg, #ffffff 0%, #f8faf8 50%, #f0f7f0 100%);
+}
+
+.deco-circle {
+    @apply absolute rounded-full pointer-events-none;
+    animation: float 8s ease-in-out infinite;
+}
+
+.deco-dot {
+    @apply absolute rounded-full pointer-events-none opacity-20;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+.animate-gradient-shift {
+    background-size: 200% 200%;
+    animation: gradientShift 15s ease infinite;
+}
+
+.animate-float {
+    animation: float 8s ease-in-out infinite;
+}
+
 @layer utilities {
     .text-balance {
         text-wrap: balance;

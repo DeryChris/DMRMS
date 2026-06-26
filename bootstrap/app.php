@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'subscription' => \App\Http\Middleware\SubscriptionMiddleware::class,
             'ai.rate.limit' => \App\Http\Middleware\AiRateLimitMiddleware::class,
+            'applicant.access' => \App\Http\Middleware\CheckApplicantAccess::class,
         ]);
 
         RedirectIfAuthenticated::redirectUsing(function (Request $request) {

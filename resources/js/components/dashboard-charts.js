@@ -15,9 +15,9 @@ export function initRegionalChart(canvasId, data) {
                 label: 'Applicants by Region',
                 data: values,
                 backgroundColor: [
-                    '#2D6A4F', '#1B4332', '#40916C', '#52B788',
-                    '#6B8E23', '#C4A882', '#2D6A4F', '#1B4332',
-                    '#40916C', '#52B788',
+                    '#6366f1', '#06b6d4', '#f43f5e', '#22c55e',
+                    '#f97316', '#a855f7', '#ec4899', '#eab308',
+                    '#14b8a6', '#3b82f6',
                 ],
                 borderWidth: 0,
                 borderRadius: 4,
@@ -62,7 +62,7 @@ export function initGenderChart(canvasId, data) {
             labels: data.map(d => d.gender),
             datasets: [{
                 data: data.map(d => d.count),
-                backgroundColor: ['#1B4332', '#52B788'],
+                backgroundColor: ['#6366f1', '#ec4899'],
                 borderWidth: 0,
             }],
         },
@@ -111,7 +111,7 @@ export function initFunnelChart(canvasId, data) {
                 data: counts,
                 backgroundColor: counts.map((c, i) => {
                     const alpha = c / maxCount;
-                    return `rgba(45, 106, 79, ${alpha})`;
+                    return `rgba(99, 102, 241, ${alpha})`;
                 }),
                 borderWidth: 0,
                 borderRadius: 4,
@@ -161,18 +161,18 @@ export function initTrendChart(canvasId, data) {
                 {
                     label: 'Applications',
                     data: data.map(d => d.applications),
-                    borderColor: '#2D6A4F',
-                    backgroundColor: 'rgba(45, 106, 79, 0.1)',
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
                     fill: true,
                     tension: 0.4,
                     pointRadius: 3,
-                    pointBackgroundColor: '#2D6A4F',
+                    pointBackgroundColor: '#6366f1',
                 },
                 {
                     label: 'Approved',
                     data: data.map(d => d.approved),
-                    borderColor: '#52B788',
-                    backgroundColor: 'rgba(82, 183, 136, 0.1)',
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
                     fill: true,
                     tension: 0.4,
                     pointRadius: 3,

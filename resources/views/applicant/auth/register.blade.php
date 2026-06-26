@@ -1,41 +1,13 @@
-<x-applicant-guest-layout title="Create Account" subtitle="Register with your voucher to begin your recruitment journey">
+<x-applicant-guest-layout title="Create Account" subtitle="Enter your voucher and personal details to begin">
     <form method="POST" action="{{ route('applicant.register') }}" style="display:flex;flex-direction:column;gap:14px;">
         @csrf
 
-        <div>
-            <label for="email" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
-            <input id="email" type="email" name="email" :value="old('email')" placeholder="your@email.com" required autofocus
-                   style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
-                   onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                   onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-            <x-input-error :messages="$errors->get('email')" style="font-size:12px;color:#dc2626;margin-top:4px;" />
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div>
-                <label for="password" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Password</label>
-                <input id="password" type="password" name="password" placeholder="Min 8 characters" required autocomplete="new-password"
-                       style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
-                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-                <x-input-error :messages="$errors->get('password')" style="font-size:12px;color:#dc2626;margin-top:4px;" />
-            </div>
-            <div>
-                <label for="password_confirmation" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Confirm Password</label>
-                <input id="password_confirmation" type="password" name="password_confirmation" placeholder="Confirm password" required autocomplete="new-password"
-                       style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
-                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-                <x-input-error :messages="$errors->get('password_confirmation')" style="font-size:12px;color:#dc2626;margin-top:4px;" />
-            </div>
-        </div>
-
-        <div style="border-top:2px dashed #e2e8f0;padding-top:14px;margin-top:4px;">
-            <p style="font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Voucher Details</p>
+        <div style="border:2px dashed #e2e8f0;border-radius:14px;padding:16px;background:#fafdfb;">
+            <p style="font-size:11px;font-weight:700;color:#4a7a65;margin:0 0 10px;text-transform:uppercase;letter-spacing:0.5px;">Voucher Details</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div>
                     <label for="serial_number" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Serial Number</label>
-                    <input id="serial_number" type="text" name="serial_number" :value="old('serial_number')" placeholder="e.g. GAF-SN-2026-XXXX" required
+                    <input id="serial_number" type="text" name="serial_number" :value="old('serial_number', request('serial'))" placeholder="DMRMS-XXXXXXXX" required
                            style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
                            onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
@@ -43,7 +15,7 @@
                 </div>
                 <div>
                     <label for="pin_code" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">PIN Code</label>
-                    <input id="pin_code" type="text" name="pin_code" :value="old('pin_code')" placeholder="e.g. 123456" required
+                    <input id="pin_code" type="text" name="pin_code" :value="old('pin_code', request('pin'))" placeholder="Enter your PIN" required
                            style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
                            onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
@@ -51,6 +23,108 @@
                 </div>
             </div>
             <x-input-error :messages="$errors->get('voucher')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+        </div>
+
+        <p style="font-size:11px;font-weight:700;color:#4a7a65;margin:2px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Personal Details</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+                <label for="first_name" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">First Name</label>
+                <input id="first_name" type="text" name="first_name" :value="old('first_name')" placeholder="John" required
+                       style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                <x-input-error :messages="$errors->get('first_name')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+            </div>
+            <div>
+                <label for="last_name" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Last Name</label>
+                <input id="last_name" type="text" name="last_name" :value="old('last_name')" placeholder="Doe" required
+                       style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                <x-input-error :messages="$errors->get('last_name')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+            </div>
+            <div>
+                <label for="contact_number" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Phone Number</label>
+                <input id="contact_number" type="tel" name="contact_number" :value="old('contact_number')" placeholder="0244000000" required
+                       style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                <x-input-error :messages="$errors->get('contact_number')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+            </div>
+            <div>
+                <label for="date_of_birth" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Date of Birth</label>
+                <input id="date_of_birth" type="date" name="date_of_birth" :value="old('date_of_birth')" required
+                       style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                <x-input-error :messages="$errors->get('date_of_birth')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+            </div>
+            <div>
+                <label for="gender" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Gender</label>
+                <select id="gender" name="gender" required
+                        style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                        onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                    <option value="" disabled {{ old('gender') ? '' : 'selected' }}>Select</option>
+                    <option value="Male" {{ old('gender') === 'Male' ? 'selected' : '' }}>Male</option>
+                    <option value="Female" {{ old('gender') === 'Female' ? 'selected' : '' }}>Female</option>
+                </select>
+                <x-input-error :messages="$errors->get('gender')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+            </div>
+            <div>
+                <label for="email" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
+                <input id="email" type="email" name="email" :value="old('email')" placeholder="your@email.com" required
+                       style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                <x-input-error :messages="$errors->get('email')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+            </div>
+        </div>
+
+        <p style="font-size:11px;font-weight:700;color:#4a7a65;margin:2px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Password</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+                <label for="password" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Create Password</label>
+                <div style="position:relative;" x-data="{ showPassword: false }">
+                    <input id="password" :type="showPassword ? 'text' : 'password'" name="password" placeholder="Min 8 characters" required autocomplete="new-password"
+                           style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                           onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                    <button type="button" @click="showPassword = !showPassword"
+                            style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:#94a3b8;display:flex;align-items:center;justify-content:center;"
+                            :aria-label="showPassword ? 'Hide password' : 'Show password'" tabindex="-1">
+                        <svg x-show="!showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        <svg x-show="showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                        </svg>
+                    </button>
+                </div>
+                <x-input-error :messages="$errors->get('password')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+            </div>
+            <div>
+                <label for="password_confirmation" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Confirm Password</label>
+                <div style="position:relative;" x-data="{ showPassword: false }">
+                    <input id="password_confirmation" :type="showPassword ? 'text' : 'password'" name="password_confirmation" placeholder="Confirm password" required autocomplete="new-password"
+                           style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                           onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                    <button type="button" @click="showPassword = !showPassword"
+                            style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:#94a3b8;display:flex;align-items:center;justify-content:center;"
+                            :aria-label="showPassword ? 'Hide password' : 'Show password'" tabindex="-1">
+                        <svg x-show="!showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        <svg x-show="showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                        </svg>
+                    </button>
+                </div>
+                <x-input-error :messages="$errors->get('password_confirmation')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+            </div>
         </div>
 
         <button type="submit"

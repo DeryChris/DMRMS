@@ -1,3 +1,7 @@
+@php
+    $activeCycle = \App\Models\Cycle::where('status', 'active')->orderBy('start_date', 'desc')->first();
+    $deadlineDate = $activeCycle?->application_deadline?->format('F j, Y') ?? 'TBD';
+@endphp
 <div x-data="{
     open: false,
     messages: [
@@ -12,9 +16,9 @@
         setTimeout(() => {
             let responses = {
                 'eligibility': 'To check eligibility, visit the eligibility Checker page or ensure you are a Ghanaian citizen aged 18-35 with at least SSCE/WASSCE.',
-                'apply': 'To apply, create an account, complete the 4-step application form, upload documents, and Submit before the deadline.',
-                'deadline': 'The current application deadline is July 31, 2026.',
-                'documents': 'Required documents: girth Certificate, National ID, WASSCE/SSCE Certificate, Passport Photo, Medical Reporttt, and Police Clearance.',
+                'apply': 'To apply, create an account, complete the 4-step application form, upload documents, and submit before the deadline.',
+                'deadline': 'The current application deadline is {{ $deadlineDate }}.',
+                'documents': 'Required documents: Birth Certificate, National ID, WASSCE/SSCE Certificate, Passport Photo, Medical Report, and Police Clearance.',
                 'status': 'You can track your application status from your applicant dashboard after logging in.',
             };
             let answer = 'I am an AI assistant. For specific questions, please contact GAF recruitment office or check the FAQ page.';
