@@ -92,8 +92,8 @@
                             <input type="number" name="weight_kg" step="0.1" min="30" max="200" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">BMI (auto-calc)</label>
-                            <input type="number" name="bmi" step="0.1" readonly class="w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-3 text-sm">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">BMI</label>
+                            <input type="number" name="bmi" step="0.1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                     </div>
 

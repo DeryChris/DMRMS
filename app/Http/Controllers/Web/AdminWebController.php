@@ -239,6 +239,33 @@ class AdminWebController extends Controller
         return view('admin.application-detail', compact('application', 'auditLogs'));
     }
 
+    public function refreshEligibility($id): RedirectResponse
+    {
+        $application = Application::with('applicant', 'cycle', 'eligibilityResult')->findOrFail($id);
+
+        $oldStatus = $application->eligibilityResult?->overall_status;
+
+        $result = $this->eligibilityService->reEvaluate($application);
+
+        $newOverall = $result['result']->overall_status;
+
+        $application->refresh();
+        $application->load('eligibilityResult');
+
+        if ($oldStatus === $newOverall) {
+            $msg = 'Eligibility re-run complete. No change in status (' . ucfirst($newOverall) . ').';
+        } elseif ($newOverall === 'eligible') {
+            $application->update(['status' => 'eligibility_passed']);
+            $msg = 'Applicant now meets eligibility criteria. Status advanced to eligibility_passed.';
+        } else {
+            $application->update(['status' => 'eligibility_failed']);
+            $msg = 'Applicant no longer meets eligibility criteria. Status reversed to eligibility_failed.';
+        }
+
+        return redirect()->route('admin.applications.detail', $id)
+            ->with('success', $msg);
+    }
+
     public function cycles(): View
     {
         $cycles = Cycle::withCount('applications')->orderBy('start_date', 'desc')->get();
@@ -319,6 +346,38 @@ class AdminWebController extends Controller
             $count > 0 ? 'success' : 'error',
             $count > 0 ? "{$count} applicants shortlisted successfully." : 'No eligible applicants found to shortlist.'
         );
+    }
+
+    public function dismissFromShortlist(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'application_id' => 'required|exists:applications,id',
+        ]);
+
+        $application = Application::findOrFail($validated['application_id']);
+
+        if ($application->status !== 'eligibility_passed') {
+            return redirect()->route('admin.selection')
+                ->with('error', 'Applicant is not in the shortlisting pool.');
+        }
+
+        $application->update(['status' => 'documents_verified']);
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'user_type' => 'admin',
+            'action' => 'dismiss_shortlist',
+            'details' => [
+                'application_id' => $application->id,
+                'gaf_id' => $application->gaf_id,
+                'applicant_name' => $application->applicant?->name,
+                'previous_status' => 'eligibility_passed',
+            ],
+            'ip_address' => request()->ip(),
+        ]);
+
+        return redirect()->route('admin.selection')
+            ->with('success', 'Applicant sent back to document verification stage.');
     }
 
     public function finalizeDecision(Request $request): RedirectResponse
@@ -1435,7 +1494,12 @@ class AdminWebController extends Controller
         $name = $applicant->name;
 
         DB::transaction(function () use ($applicant) {
-            $applicant->load('application.documents');
+            $applicant->load('application.documents', 'voucher');
+
+            // Delete the voucher if the applicant used one
+            if ($voucher = $applicant->voucher) {
+                $voucher->delete();
+            }
 
             if ($application = $applicant->application) {
                 foreach ($application->documents as $document) {

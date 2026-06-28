@@ -12,7 +12,6 @@ use App\Models\Document;
 use App\Models\FinalDecision;
 use App\Models\ReserveList;
 use App\Models\ScreeningResult;
-use App\Models\VerificationCode;
 use App\Models\AiUsage;
 use App\Services\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
@@ -143,24 +142,11 @@ class AdminController extends Controller
         foreach ($applications as $app) {
             $app->update(['status' => 'shortlisted']);
 
-            $codeValue = strtoupper(\Illuminate\Support\Str::random(12));
-
-            VerificationCode::create([
-                'application_id' => $app->id,
-                'applicant_id' => $app->applicant_id,
-                'code_value' => $codeValue,
-                'type' => 'entry',
-                'issue_date' => now(),
-                'expiry_date' => now()->addMonths(6),
-                'used_status' => false,
-            ]);
-
-            $this->notificationService->shortlisted($app, $codeValue);
+            $this->notificationService->shortlisted($app);
 
             $processed[] = [
                 'application_id' => $app->id,
                 'gaf_id' => $app->gaf_id,
-                'verification_code' => $codeValue,
             ];
         }
 

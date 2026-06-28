@@ -120,22 +120,34 @@ class NotificationService
         $this->sendDashboard($applicant->id, 'eligibility_result', $subject, $message);
     }
 
-    public function shortlisted(Application $app, $code): void
+    public function shortlisted(Application $app): void
     {
         $applicant = $app->applicant;
         $subject = 'Shortlisted';
-        $message = "Dear {$applicant->first_name}, congratulations! You have been shortlisted for {$app->cycle->name}. Your verification code: {$code}.";
-        $this->sendEmail($applicant, $subject, 'emails.shortlisted', ['applicant' => $applicant, 'application' => $app, 'code' => $code, 'subject' => $subject, 'message' => $message]);
+        $message = "Dear {$applicant->first_name}, congratulations! You have been shortlisted for {$app->cycle->name}. You will receive your screening appointment and verification code shortly.";
+        $this->sendEmail($applicant, $subject, 'emails.shortlisted', ['applicant' => $applicant, 'application' => $app, 'subject' => $subject, 'message' => $message]);
         $this->sendSms($applicant->contact_number, $message);
         $this->sendDashboard($applicant->id, 'shortlisted', $subject, $message);
     }
 
-    public function appointmentScheduled(Application $app, Appointment $apt): void
+    public function appointmentScheduled(Application $app, Appointment $apt, ?\App\Models\VerificationCode $verificationCode = null): void
     {
         $applicant = $app->applicant;
+        $code = $verificationCode?->code_value;
+        $qrPath = $verificationCode?->qr_code_path;
+        $codeText = $code ? " Your verification code: {$code}." : '';
         $subject = 'Appointment Scheduled';
-        $message = "Dear {$applicant->first_name}, your screening appointment is scheduled for {$apt->scheduled_date} at {$apt->scheduled_time}, venue: {$apt->venue}.";
-        $this->sendEmail($applicant, $subject, 'emails.appointment-scheduled', ['applicant' => $applicant, 'application' => $app, 'appointment' => $apt, 'subject' => $subject, 'message' => $message]);
+        $message = "Dear {$applicant->first_name}, your screening appointment is scheduled for {$apt->scheduled_date} at {$apt->scheduled_time}, venue: {$apt->venue}.{$codeText}";
+        $this->sendEmail($applicant, $subject, 'emails.appointment-scheduled', [
+            'applicant' => $applicant,
+            'application' => $app,
+            'appointment' => $apt,
+            'verificationCode' => $verificationCode,
+            'code' => $code,
+            'qrPath' => $qrPath,
+            'subject' => $subject,
+            'message' => $message,
+        ]);
         $this->sendSms($applicant->contact_number, $message);
         $this->sendDashboard($applicant->id, 'appointment_scheduled', $subject, $message);
     }

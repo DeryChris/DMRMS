@@ -116,7 +116,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">BMI</label>
-                    <input type="number" x-model="form.medical.bmi" step="0.1" readonly class="w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-3 text-sm">
+                    <input type="number" x-model="form.medical.bmi" step="0.1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
             </div>
             <div class="mt-4">

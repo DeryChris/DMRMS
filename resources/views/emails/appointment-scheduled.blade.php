@@ -19,19 +19,33 @@ Your screening appointment has been scheduled. Please find the details below.
 **Slot Number:** {{ $appointment->slot_number ?? 'N/A' }}
 </x-mail::panel>
 
+@if($code)
+<x-mail::panel>
+### ✅ Your Verification Code
+
+**Present this code at the screening centre.**
+
+# **{{ $code }}**
+
+@if($qrPath)
+![QR Code]({{ asset($qrPath) }})
+@endif
+</x-mail::panel>
+@endif
+
 **Items to Bring:**
 - Printed copy of this appointment notice
 - Valid National ID or Passport
 - Original educational certificates and transcripts
-- Verification Code (provided in your shortlisting email)
+- Your verification code (above)
 - Medical fitness report
 - 4 recent passport-sized photographs
 - Writing materials (pen, pencil, eraser)
 
 **Please arrive at least 30 minutes before your scheduled time.**
 
-<x-mail::button :url="'https://maps.google.com/?q=' . urlencode($appointment->venue)" color="primary">
-Get Directions
+<x-mail::button :url="config('app.url') . '/applicant/appointment'" color="primary">
+View Appointment Card
 </x-mail::button>
 
 **Need to Reschedule?**

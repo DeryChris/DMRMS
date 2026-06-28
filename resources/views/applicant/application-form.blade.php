@@ -62,13 +62,12 @@
 
     async doAutoSave() {
         this.autoSaveStatus = 'saving';
-        const formEl = document.getElementById('application-form');
-        const fd = new FormData(formEl);
-        fd.set('action', 'save');
-        fd.set('current_step', this.step);
         try {
-            const res = await fetch(formEl.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-            if (!res.ok) throw new Error('Save failed');
+            const formEl = document.getElementById('application-form');
+            const fd = new FormData(formEl);
+            fd.set('action', 'save');
+            fd.set('current_step', this.step);
+            const res = await window.axios.post(formEl.action, fd);
             this.autoSaveStatus = 'saved';
             setTimeout(() => { if (this.autoSaveStatus === 'saved') this.autoSaveStatus = ''; }, 3000);
         } catch (e) {

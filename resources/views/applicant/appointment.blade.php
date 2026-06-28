@@ -42,29 +42,33 @@
     </div>
 
     @if($verificationCode)
-    <div class="bg-white border border-gray-200 rounded-xl p-8 mb-6" x-data="verificationCard" data-code="{{ $verificationCode->code_value }}">
-        <div class="flex flex-col items-center mb-6">
-            <template x-if="qrDataUrl">
-                <img :src="qrDataUrl" alt="Verification QR Code" class="w-48 h-48">
-            </template>
-            <template x-if="!qrDataUrl">
-                <div class="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <span class="text-xs text-gray-400">Generating QR...</span>
+    <div class="bg-white border border-gray-200 rounded-xl p-8 mb-6" x-data="verificationCard" data-code="{{ $verificationCode->code_value }}" data-name="{{ $applicant->first_name }} {{ $applicant->last_name }}" data-gaf="{{ $application->gaf_id }}" data-date="{{ $appointment->scheduled_date?->format('F j, Y') ?? 'N/A' }}" data-time="{{ $appointment->scheduled_time ?? 'N/A' }}" data-venue="{{ $appointment->venue ?? 'N/A' }}">
+        <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
+            <div class="flex flex-col items-center">
+                <template x-if="qrDataUrl">
+                    <img :src="qrDataUrl" alt="Verification QR Code" class="w-48 h-48">
+                </template>
+                <template x-if="!qrDataUrl">
+                    <div class="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <span class="text-xs text-gray-400">Generating QR...</span>
+                    </div>
+                </template>
+            </div>
+            <div class="flex-1 text-center md:text-left">
+                <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Verification Code</p>
+                <p class="font-heading font-bold text-3xl text-gray-800 tracking-[0.25em] font-mono select-all mb-4">{{ $verificationCode->code_value }}</p>
+                <div class="flex flex-wrap gap-2 justify-center md:justify-start mb-4">
+                    <button @click="copyCode" class="inline-flex items-center space-x-1.5 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span x-text="copyLabel">Copy Code</span>
+                    </button>
+                    <button @click="downloadCard" class="inline-flex items-center space-x-1.5 bg-gaf-green text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gaf-dark-green transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>Download Card</span>
+                    </button>
                 </div>
-            </template>
-        </div>
-
-        <div class="text-center mb-6">
-            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Verification Code</p>
-            <p class="font-heading font-bold text-3xl text-gray-800 tracking-[0.25em] font-mono select-all">{{ $verificationCode->code_value }}</p>
-        </div>
-
-        <div class="text-center">
-            <p class="text-xs text-gray-400 mb-4">Present this QR code and verification code at the screening venue.</p>
-            <button @click="downloadCard" class="inline-flex items-center space-x-2 bg-gaf-green text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-gaf-dark-green transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Download Appointment Card</span>
-            </button>
+                <p class="text-xs text-gray-400">Present this QR code and verification code at the screening venue.</p>
+            </div>
         </div>
     </div>
     @endif

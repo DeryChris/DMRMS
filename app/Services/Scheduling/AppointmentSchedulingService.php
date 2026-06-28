@@ -4,14 +4,18 @@ namespace App\Services\Scheduling;
 
 use App\Models\Application;
 use App\Models\Appointment;
+use App\Models\VerificationCode;
 use App\Services\Notification\NotificationService;
+use App\Services\ShortlistingService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AppointmentSchedulingService
 {
     public function __construct(
         protected NotificationService $notificationService,
+        protected ShortlistingService $shortlistingService,
     ) {}
 
     public function createSlots(string $date, string $time, string $venue, int $capacity): array
@@ -36,7 +40,9 @@ class AppointmentSchedulingService
 
                 $app->update(['status' => 'appointment_scheduled']);
 
-                $this->notificationService->appointmentScheduled($app, $appointment);
+                $verificationCode = $this->createVerificationCode($app);
+
+                $this->notificationService->appointmentScheduled($app, $appointment, $verificationCode);
 
                 $slots[] = $appointment;
             }
@@ -59,12 +65,32 @@ class AppointmentSchedulingService
 
             $app->update(['status' => 'appointment_scheduled']);
 
-            $this->notificationService->appointmentScheduled($app, $appointment);
+            $verificationCode = $this->createVerificationCode($app);
+
+            $this->notificationService->appointmentScheduled($app, $appointment, $verificationCode);
 
             return $appointment;
         });
 
         return $appointment;
+    }
+
+    private function createVerificationCode(Application $app): VerificationCode
+    {
+        $codeValue = strtoupper(Str::random(12));
+
+        $qrPath = $this->shortlistingService->generateQrCode($codeValue);
+
+        return VerificationCode::create([
+            'application_id' => $app->id,
+            'applicant_id' => $app->applicant_id,
+            'code_value' => $codeValue,
+            'type' => 'entry',
+            'qr_code_path' => $qrPath,
+            'issue_date' => Carbon::now(),
+            'expiry_date' => Carbon::now()->addMonths(6),
+            'used_status' => false,
+        ]);
     }
 
     public function getAvailableSlots(string $date): int

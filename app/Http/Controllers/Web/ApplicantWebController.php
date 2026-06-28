@@ -296,7 +296,7 @@ class ApplicantWebController extends Controller
     public function status(): View
     {
         $applicant = Auth::guard('applicant')->user();
-        $application = $applicant->application()->with(['eligibilityResult', 'screeningResult', 'finalDecision', 'appointment'])->first();
+        $application = $applicant->application()->with(['eligibilityResult', 'screeningResult', 'finalDecision', 'appointment', 'verificationCode'])->first();
 
         $stageMap = [
             'registered' => 1,

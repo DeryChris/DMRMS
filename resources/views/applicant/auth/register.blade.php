@@ -7,7 +7,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div>
                     <label for="serial_number" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Serial Number</label>
-                    <input id="serial_number" type="text" name="serial_number" :value="old('serial_number', request('serial'))" placeholder="DMRMS-XXXXXXXX" required
+                    <input id="serial_number" type="text" name="serial_number" value="{{ old('serial_number', request('serial')) }}" placeholder="DMRMS-XXXXXXXX" required
                            style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
                            onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
@@ -15,7 +15,7 @@
                 </div>
                 <div>
                     <label for="pin_code" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">PIN Code</label>
-                    <input id="pin_code" type="text" name="pin_code" :value="old('pin_code', request('pin'))" placeholder="Enter your PIN" required
+                    <input id="pin_code" type="text" name="pin_code" value="{{ old('pin_code', request('pin')) }}" placeholder="Enter your PIN" required
                            style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
                            onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">

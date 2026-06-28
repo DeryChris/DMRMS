@@ -86,6 +86,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_ad
     // Applications (read) — all roles (recruitment_officer needs list + detail for doc verify)
     Route::get('/applications', [AdminWebController::class, 'applications'])->name('applications');
     Route::get('/applications/{id}', [AdminWebController::class, 'applicationDetail'])->name('applications.detail');
+    Route::post('/applications/{id}/refresh-eligibility', [AdminWebController::class, 'refreshEligibility'])->name('applications.refresh-eligibility');
     Route::post('/documents/{id}/verify', [AdminWebController::class, 'verifyDocument'])->name('documents.verify');
     Route::get('/documents/{id}/view', [AdminWebController::class, 'viewDocument'])->name('documents.view');
 
@@ -136,6 +137,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_ad
         Route::get('/selection', [AdminWebController::class, 'selection'])->name('selection');
         Route::get('/selection/stats', [AdminWebController::class, 'selectionStats'])->name('selection.stats');
         Route::post('/selection/shortlist', [AdminWebController::class, 'shortlist'])->name('selection.shortlist');
+        Route::post('/selection/dismiss', [AdminWebController::class, 'dismissFromShortlist'])->name('selection.dismiss');
         Route::post('/selection/finalize', [AdminWebController::class, 'finalizeDecision'])->name('selection.finalize');
     });
 

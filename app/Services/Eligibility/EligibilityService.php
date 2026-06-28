@@ -76,4 +76,50 @@ class EligibilityService
             'rejection_reasons' => $result['rejection_reasons'],
         ];
     }
+
+    public function reEvaluate(Application $app): array
+    {
+        $result = $this->engine->evaluate($app);
+
+        $eligibilityResult = EligibilityResult::updateOrCreate(
+            ['application_id' => $app->id],
+            [
+                'age_check' => $result['checks']['age']['passed'],
+                'nationality_check' => $result['checks']['nationality']['passed'],
+                'education_check' => $result['checks']['education']['passed'],
+                'height_check' => $result['checks']['height']['passed'],
+                'criminal_check' => $result['checks']['criminal_record']['passed'],
+                'document_check' => $result['checks']['documents']['passed'],
+                'marital_check' => $result['checks']['marital_status']['passed'],
+                'overall_status' => $result['overall_status'],
+                'rejection_reasons' => $result['rejection_reasons'],
+                'evaluation_date' => Carbon::now(),
+            ]
+        );
+
+        $newStatus = $result['overall_status'] === 'eligible' ? 'eligibility_passed' : 'eligibility_failed';
+
+        $app->load('eligibilityResult');
+
+        AuditLog::create([
+            'user_id' => auth()->id() ?? $app->applicant_id,
+            'user_type' => 'admin',
+            'action' => 'eligibility_refresh_' . $result['overall_status'],
+            'details' => [
+                'application_id' => $app->id,
+                'overall_status' => $result['overall_status'],
+                'checks' => $result['checks'],
+                'rejection_reasons' => $result['rejection_reasons'],
+                'refreshed_by' => auth()->user()?->email ?? 'system',
+            ],
+            'ip_address' => Request::ip(),
+        ]);
+
+        return [
+            'status' => $newStatus,
+            'result' => $eligibilityResult,
+            'checks' => $result['checks'],
+            'rejection_reasons' => $result['rejection_reasons'],
+        ];
+    }
 }

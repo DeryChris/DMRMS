@@ -60,14 +60,11 @@ class ShortlistingService
                     'updated_at' => Carbon::now(),
                 ]);
 
-                $code = $this->generateVerificationCode($app->id);
-
-                $this->notificationService->shortlisted($app, $code);
+                $this->notificationService->shortlisted($app);
 
                 $processed[] = [
                     'application_id' => $app->id,
                     'gaf_id'         => $app->gaf_id,
-                    'verification_code' => $code,
                 ];
             }
         });

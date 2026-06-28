@@ -128,6 +128,7 @@
                     <td class="px-6 py-4">{{ $app->cycle?->name ?? 'N/A' }}</td>
                     <td class="px-6 py-4">{!! status_badge($app->eligibilityResult?->overall_status ?? 'pending', 'screening') !!}</td>
                     <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end space-x-1">
                         <form method="POST" action="{{ route('admin.selection.shortlist') }}" class="inline">
                             @csrf
                             <input type="hidden" name="application_ids[]" value="{{ $app->id }}">
@@ -136,6 +137,15 @@
                                 <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Shortlist</span>
                             </button>
                         </form>
+                        <form method="POST" action="{{ route('admin.selection.dismiss') }}" x-ref="dismissForm{{ $app->id }}" class="inline">
+                            @csrf
+                            <input type="hidden" name="application_id" value="{{ $app->id }}">
+                            <button type="button" @click="if(confirm('Dismiss this applicant from the shortlisting pool?')) $refs.dismissForm{{ $app->id }}.submit()" class="relative group p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Dismiss">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Dismiss</span>
+                            </button>
+                        </form>
+                        </div>
                     </td>
                 </tr>
                 @empty

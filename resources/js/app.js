@@ -222,6 +222,9 @@ document.addEventListener('alpine:init', () => {
             this.fileSize = file.size < 1048576
                 ? (file.size / 1024).toFixed(1) + ' KB'
                 : (file.size / 1048576).toFixed(2) + ' MB';
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            document.getElementById('fileInput').files = dt.files;
         },
 
         clearFile() {
@@ -404,13 +407,26 @@ document.addEventListener('alpine:init', () => {
         qrDataUrl: null,
         qrCanvas: null,
         code: '',
+        copyLabel: 'Copy Code',
+        name: '',
+        gafId: '',
+        appDate: '',
+        appTime: '',
+        appVenue: '',
 
         init() {
-            this.code = this.$el.dataset.code;
+            this.code = this.$el.dataset.code || '';
+            this.name = this.$el.dataset.name || '';
+            this.gafId = this.$el.dataset.gaf || '';
+            this.appDate = this.$el.dataset.date || '';
+            this.appTime = this.$el.dataset.time || '';
+            this.appVenue = this.$el.dataset.venue || '';
+
             if (this.code) {
                 QRCode.toDataURL(this.code, { width: 200, margin: 2 })
                     .then(url => { this.qrDataUrl = url; })
                     .catch(() => { this.qrDataUrl = null; });
+
                 const cvs = document.createElement('canvas');
                 QRCode.toCanvas(cvs, this.code, { width: 200, margin: 2 })
                     .then(() => { this.qrCanvas = cvs; })
@@ -418,32 +434,85 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        copyCode() {
+            if (!this.code) return;
+            navigator.clipboard.writeText(this.code).then(() => {
+                this.copyLabel = 'Copied!';
+                setTimeout(() => { this.copyLabel = 'Copy Code'; }, 2000);
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = this.code;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                this.copyLabel = 'Copied!';
+                setTimeout(() => { this.copyLabel = 'Copy Code'; }, 2000);
+            });
+        },
+
         downloadCard() {
             if (!this.qrCanvas || !this.code) return;
-            const pad = 40;
-            const qrSize = 200;
-            const textGap = 20;
-            const codeHeight = 70;
-            const w = qrSize + pad * 2;
-            const h = qrSize + textGap + codeHeight + pad * 2;
+            const w = 420;
+            const h = 600;
             const c = document.createElement('canvas');
             c.width = w;
             c.height = h;
             const ctx = c.getContext('2d');
+
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = '#14532d';
+            ctx.fillRect(0, 0, w, 60);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 18px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('GHANA ARMED FORCES', w / 2, 28);
+            ctx.font = '11px sans-serif';
+            ctx.fillText('RECRUITMENT SCREENING CARD', w / 2, 48);
+
+            const qrSize = 180;
             const qx = (w - qrSize) / 2;
-            ctx.drawImage(this.qrCanvas, qx, pad);
+            ctx.drawImage(this.qrCanvas, qx, 80);
+
             ctx.fillStyle = '#6b7280';
-            ctx.font = '12px sans-serif';
+            ctx.font = '10px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('Verification Code', w / 2, pad + qrSize + textGap);
+            ctx.fillText('VERIFICATION CODE', w / 2, 290);
+
             ctx.fillStyle = '#111827';
-            ctx.font = 'bold 32px "Courier New", monospace';
+            ctx.font = 'bold 28px "Courier New", monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(this.code, w / 2, pad + qrSize + textGap + codeHeight - 10);
+            ctx.fillText(this.code, w / 2, 330);
+
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(30, 355);
+            ctx.lineTo(w - 30, 355);
+            ctx.stroke();
+
+            ctx.fillStyle = '#374151';
+            ctx.font = '13px sans-serif';
+            ctx.textAlign = 'left';
+            let ly = 380;
+            if (this.name) { ctx.fillText('Name: ' + this.name, 40, ly); ly += 24; }
+            if (this.gafId) { ctx.fillText('GAF ID: ' + this.gafId, 40, ly); ly += 24; }
+            if (this.appDate) { ctx.fillText('Date: ' + this.appDate, 40, ly); ly += 24; }
+            if (this.appTime) { ctx.fillText('Time: ' + this.appTime, 40, ly); ly += 24; }
+            if (this.appVenue) {
+                ctx.font = '12px sans-serif';
+                ctx.fillText('Venue: ' + this.appVenue, 40, ly);
+            }
+
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Present this card at the screening centre', w / 2, h - 25);
+
             const link = document.createElement('a');
-            link.download = 'appointment-card.png';
+            link.download = 'screening-card.png';
             link.href = c.toDataURL('image/png');
             link.click();
         },
@@ -542,6 +611,17 @@ document.addEventListener('alpine:init', () => {
             this.$watch('form.medical', () => this.triggerAutoSave('medical'), { deep: true });
             this.$watch('form.fitness', () => this.triggerAutoSave('fitness'), { deep: true });
             this.$watch('form.interview', () => this.triggerAutoSave('interview'), { deep: true });
+
+            this.$watch('form.medical.height_cm', () => this.calcBmi());
+            this.$watch('form.medical.weight_kg', () => this.calcBmi());
+        },
+
+        calcBmi() {
+            const h = parseFloat(this.form.medical.height_cm);
+            const w = parseFloat(this.form.medical.weight_kg);
+            if (h > 0 && w > 0) {
+                this.form.medical.bmi = Math.round((w / (h * h)) * 10) / 10;
+            }
         },
 
         triggerAutoSave(step) {
@@ -553,14 +633,14 @@ document.addEventListener('alpine:init', () => {
             this.saveTimer = setTimeout(() => this.doAutoSave(step), 3000);
         },
 
-        async doAutoSave(step) {
+        async doAutoSave(step, retries = 1) {
             this.autoSaveStatus = 'saving';
+            const endpoints = {
+                medical: '/admin/screening/save-medical',
+                fitness: '/admin/screening/save-fitness',
+                interview: '/admin/screening/save-interview',
+            };
             try {
-                const endpoints = {
-                    medical: '/admin/screening/save-medical',
-                    fitness: '/admin/screening/save-fitness',
-                    interview: '/admin/screening/save-interview',
-                };
                 await window.axios.post(endpoints[step], {
                     application_id: this.applicant.application_id,
                     ...this.form[step],
@@ -568,8 +648,12 @@ document.addEventListener('alpine:init', () => {
                 this.autoSaveStatus = 'saved';
                 setTimeout(() => { if (this.autoSaveStatus === 'saved') this.autoSaveStatus = ''; }, 3000);
             } catch (e) {
-                this.autoSaveStatus = 'error';
-                setTimeout(() => { if (this.autoSaveStatus === 'error') this.autoSaveStatus = ''; }, 5000);
+                if (retries > 0) {
+                    setTimeout(() => this.doAutoSave(step, retries - 1), 2000);
+                } else {
+                    this.autoSaveStatus = 'error';
+                    setTimeout(() => { if (this.autoSaveStatus === 'error') this.autoSaveStatus = ''; }, 5000);
+                }
             }
         },
 
