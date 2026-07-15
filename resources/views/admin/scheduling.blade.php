@@ -16,22 +16,21 @@
         <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Create Screening Slots</h3>
         <form method="POST" action="{{ route('admin.scheduling.create-slots') }}">
             @csrf
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                    <input type="date" name="scheduled_date" required min="{{ now()->format('Y-m-d') }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="date" name="scheduled_date" required min="{{ now()->format('Y-m-d') }}" value="{{ old('scheduled_date') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('scheduled_date') ? 'border-red-500' : 'border-gray-300' }}">
+                    @error('scheduled_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                    <input type="time" name="scheduled_time" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Venue</label>
-                    <input type="text" name="venue" placeholder="e.g. Burma Camp" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="time" name="scheduled_time" required value="{{ old('scheduled_time') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('scheduled_time') ? 'border-red-500' : 'border-gray-300' }}">
+                    @error('scheduled_time') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
-                    <input type="number" name="capacity" min="1" max="500" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" name="capacity" min="1" max="500" required value="{{ old('capacity') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('capacity') ? 'border-red-500' : 'border-gray-300' }}">
+                    @error('capacity') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
             <button type="submit" class="mt-4 px-6 py-2 bg-gaf-green text-white rounded-lg text-sm font-medium hover:bg-gaf-dark-green transition">Create & Auto-Assign Slots</button>

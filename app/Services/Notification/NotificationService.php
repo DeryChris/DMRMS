@@ -7,6 +7,7 @@ use App\Models\Application;
 use App\Models\Appointment;
 use App\Models\Notification;
 use App\Models\User;
+use App\Mail\EmailVerificationMail;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -190,10 +191,20 @@ class NotificationService
 
         $status = $decision->decision;
 
+        $battalion = $app->training_battalion ?? config('recruitment.auto_recruit.default_training_battalion', 'GAF Training Depot');
+
         $messages = [
+            'selected' => [
+                'subject' => 'Congratulations — You\'ve Been Selected',
+                'message' => "Dear {$applicant->first_name}, we are pleased to inform you that your application ({$app->gaf_id}) has been approved. Welcome to the Ghana Armed Forces. Further instructions will be sent to you.",
+            ],
             'admitted' => [
                 'subject' => 'Congratulations — You\'ve Been Selected',
                 'message' => "Dear {$applicant->first_name}, we are pleased to inform you that your application ({$app->gaf_id}) has been approved. Welcome to the Ghana Armed Forces. Further instructions will be sent to you.",
+            ],
+            'recruited' => [
+                'subject' => 'You\'ve Been Recruited — Report for Training',
+                'message' => "Dear {$applicant->first_name}, congratulations! You have been officially recruited into the Ghana Armed Forces. Report to {$battalion} for training. Your enrollment has been processed.",
             ],
             'rejected' => [
                 'subject' => 'Application Status Update',
@@ -224,6 +235,23 @@ class NotificationService
         $this->sendDashboard($applicant->id, "final_decision_{$status}", $info['subject'], $info['message']);
     }
 
+    public function cohortExpanded(Application $app, string $cycleName, int $newTotal): void
+    {
+        $applicant = $app->applicant;
+        $subject = 'Cohort Expanded — Additional Selections Made';
+        $message = "Dear {$applicant->first_name}, additional candidates have been selected from the reserve list to fill remaining vacancies in the {$cycleName} cycle. Your cohort has been expanded to {$newTotal} candidates.";
+
+        $this->sendEmail($applicant, $subject, 'emails.cohort-expanded', [
+            'applicant' => $applicant,
+            'application' => $app,
+            'cycleName' => $cycleName,
+            'newTotal' => $newTotal,
+            'subject' => $subject,
+            'message' => $message,
+        ]);
+        $this->sendDashboard($applicant->id, 'cohort_expanded', $subject, $message);
+    }
+
     public function sendBack(Application $app, string $fromStatus, string $reason): void
     {
         $applicant = $app->applicant;
@@ -249,5 +277,33 @@ class NotificationService
             'Applicant Returned for Re-review',
             "{$applicant->name} ({$app->gaf_id}) returned from {$fromLabel} to {$toLabel} by " . (auth()->user()->name ?? 'System') . ". Reason: {$reason}"
         );
+    }
+
+    public function documentNeedsReview(\App\Models\Document $document): void
+    {
+        $app = $document->application;
+        $applicantName = $app?->applicant?->name ?? 'Unknown';
+        $gafId = $app?->gaf_id ?? 'N/A';
+        $typeLabel = str_replace('_', ' ', ucfirst($document->document_type));
+        $subject = 'Document Needs Manual Review';
+        $message = "{$typeLabel} for {$applicantName} ({$gafId}) requires manual review. AI confidence: " . ($document->ai_confidence ?? 'N/A');
+
+        $this->notifyAdminsByRole(
+            ['admin', 'super_admin', 'recruitment_officer'],
+            'document_needs_review',
+            $subject,
+            $message
+        );
+    }
+
+    public function sendEmailVerificationCode(Applicant $applicant, string $code): void
+    {
+        Mail::to($applicant)->send(new EmailVerificationMail($applicant, $code));
+    }
+
+    public function sendSmsVerificationCode(Applicant $applicant, string $code): void
+    {
+        $message = "Your verification code is: {$code}. Valid for 30 minutes.";
+        $this->sendSms($applicant->contact_number, $message);
     }
 }

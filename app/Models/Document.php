@@ -25,16 +25,24 @@ class Document extends Model
         'fraud_flags',
         'ai_verified',
         'ai_extracted_data',
+        'ai_confidence',
+        'extracted_data',
+        'cross_reference_results',
+        'ai_verified_at',
+        'ai_verification_attempts',
     ];
 
-    protected $appends = ['file_url'];
+    protected $appends = ['file_url', 'view_url'];
 
     protected function casts(): array
     {
         return [
             'fraud_flags' => 'array',
             'ai_extracted_data' => 'array',
+            'extracted_data' => 'array',
+            'cross_reference_results' => 'array',
             'ai_verified' => 'boolean',
+            'ai_verified_at' => 'datetime',
             'upload_date' => 'datetime',
             'verified_at' => 'datetime',
         ];
@@ -48,5 +56,10 @@ class Document extends Model
     public function getFileUrlAttribute(): string
     {
         return Storage::url($this->file_path);
+    }
+
+    public function getViewUrlAttribute(): string
+    {
+        return route('documents.view', $this->id);
     }
 }

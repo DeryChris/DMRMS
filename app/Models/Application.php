@@ -15,11 +15,13 @@ class Application extends Model
     protected $fillable = [
         'applicant_id',
         'cycle_id',
+        'selected_sector_id',
         'gaf_id',
         'application_date',
         'education_level',
         'institution_name',
         'qualification',
+        'degree_field',
         'year_obtained',
         'certificate_number',
         'height',
@@ -72,6 +74,16 @@ class Application extends Model
     public function cycle(): BelongsTo
     {
         return $this->belongsTo(Cycle::class);
+    }
+
+    public function selectedSector(): BelongsTo
+    {
+        return $this->belongsTo(Sector::class, 'selected_sector_id');
+    }
+
+    public function corpSelections(): HasMany
+    {
+        return $this->hasMany(ApplicantCorpSelection::class);
     }
 
     public function documents(): HasMany

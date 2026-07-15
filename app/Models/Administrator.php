@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 
 class Administrator extends Model
 {
-    use Notifiable;
+    use Notifiable, SoftDeletes;
 
     protected $table = 'administrators';
 
@@ -18,7 +19,7 @@ class Administrator extends Model
         'password',
         'remember_token',
         'role',
-        'permissions',
+        'legacy_permissions',
         'subscription_tier',
         'subscription_expires_at',
         'ai_usage_limit',
@@ -34,9 +35,10 @@ class Administrator extends Model
     protected function casts(): array
     {
         return [
-            'permissions' => 'array',
+            'legacy_permissions' => 'array',
             'subscription_expires_at' => 'datetime',
             'last_login' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 

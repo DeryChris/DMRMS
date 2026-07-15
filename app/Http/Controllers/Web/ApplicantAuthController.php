@@ -83,8 +83,8 @@ class ApplicantAuthController extends Controller
             'contact_number' => ['required', 'string', 'max:15'],
             'date_of_birth' => ['required', 'date', 'before:18 years ago'],
             'gender'        => ['required', 'in:Male,Female'],
-            'email'         => 'required|email|max:255|unique:applicants,email',
-            'password'      => ['required', 'confirmed', Rules\Password::defaults()],
+            'email'         => 'required|email|max:255|unique:applicants,email,NULL,id,deleted_at,NULL',
+            'password'      => app(\App\Services\Security\PasswordPolicyService::class)->getValidationRules(),
         ]);
 
         $voucherValidation = $this->voucherService->validate($validated['serial_number'], $validated['pin_code']);

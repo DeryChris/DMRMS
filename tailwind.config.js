@@ -3,6 +3,7 @@ import forms from '@tailwindcss/forms';
 
 /** @type {import('tailwindcss').Config} */
 export default {
+    darkMode: 'class',
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
@@ -57,6 +58,7 @@ export default {
                 'float-slow': 'float 12s ease-in-out infinite',
                 'gradient-shift': 'gradientShift 15s ease infinite',
                 'pulse-soft': 'pulseSoft 3s ease-in-out infinite',
+                'bounce': 'bounce 1s infinite',
             },
             keyframes: {
                 countUp: {
@@ -88,6 +90,16 @@ export default {
                 pulseSoft: {
                     '0%, 100%': { opacity: '1' },
                     '50%': { opacity: '0.7' },
+                },
+                bounce: {
+                    '0%, 100%': {
+                        transform: 'translateY(-25%)',
+                        animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)',
+                    },
+                    '50%': {
+                        transform: 'translateY(0)',
+                        animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)',
+                    },
                 },
             },
         },

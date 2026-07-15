@@ -8,9 +8,9 @@
                 <div>
                     <label for="serial_number" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Serial Number</label>
                     <input id="serial_number" type="text" name="serial_number" value="{{ old('serial_number', request('serial')) }}" placeholder="DMRMS-XXXXXXXX" required
-                           style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('serial_number') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                           onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                           onblur="this.style.borderColor='{{ $errors->has('serial_number') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
                     <x-input-error :messages="$errors->get('serial_number')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
                 </div>
                 <div>
@@ -26,70 +26,70 @@
         </div>
 
         <p style="font-size:11px;font-weight:700;color:#4a7a65;margin:2px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Personal Details</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div>
-                <label for="first_name" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">First Name</label>
-                <input id="first_name" type="text" name="first_name" :value="old('first_name')" placeholder="John" required
-                       style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
-                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-                <x-input-error :messages="$errors->get('first_name')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div style="{{ $errors->has('first_name') ? 'border:1px solid #dc2626;border-radius:10px;padding:1px;' : '' }}">
+                    <label for="first_name" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">First Name</label>
+                    <input id="first_name" type="text" name="first_name" value="{{ old('first_name') }}" placeholder="John" required
+                           style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('first_name') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                           onblur="this.style.borderColor='{{ $errors->has('first_name') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
+                    <x-input-error :messages="$errors->get('first_name')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+                </div>
+                <div style="{{ $errors->has('last_name') ? 'border:1px solid #dc2626;border-radius:10px;padding:1px;' : '' }}">
+                    <label for="last_name" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Last Name</label>
+                    <input id="last_name" type="text" name="last_name" value="{{ old('last_name') }}" placeholder="Doe" required
+                           style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('last_name') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                           onblur="this.style.borderColor='{{ $errors->has('last_name') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
+                    <x-input-error :messages="$errors->get('last_name')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+                </div>
+                <div style="{{ $errors->has('contact_number') ? 'border:1px solid #dc2626;border-radius:10px;padding:1px;' : '' }}">
+                    <label for="contact_number" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Phone Number</label>
+                    <input id="contact_number" type="tel" name="contact_number" value="{{ old('contact_number') }}" placeholder="0244000000" required
+                           style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('contact_number') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                           onblur="this.style.borderColor='{{ $errors->has('contact_number') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
+                    <x-input-error :messages="$errors->get('contact_number')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+                </div>
+                <div style="{{ $errors->has('date_of_birth') ? 'border:1px solid #dc2626;border-radius:10px;padding:1px;' : '' }}">
+                    <label for="date_of_birth" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Date of Birth</label>
+                    <input id="date_of_birth" type="date" name="date_of_birth" value="{{ old('date_of_birth') }}" required
+                           style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('date_of_birth') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                           onblur="this.style.borderColor='{{ $errors->has('date_of_birth') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
+                    <x-input-error :messages="$errors->get('date_of_birth')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+                </div>
+                <div style="{{ $errors->has('gender') ? 'border:1px solid #dc2626;border-radius:10px;padding:1px;' : '' }}">
+                    <label for="gender" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Gender</label>
+                    <select id="gender" name="gender" required
+                            style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('gender') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                            onblur="this.style.borderColor='{{ $errors->has('gender') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
+                        <option value="" disabled {{ old('gender') ? '' : 'selected' }}>Select</option>
+                        <option value="Male" {{ old('gender') === 'Male' ? 'selected' : '' }}>Male</option>
+                        <option value="Female" {{ old('gender') === 'Female' ? 'selected' : '' }}>Female</option>
+                    </select>
+                    <x-input-error :messages="$errors->get('gender')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+                </div>
+                <div style="{{ $errors->has('email') ? 'border:1px solid #dc2626;border-radius:10px;padding:1px;' : '' }}">
+                    <label for="email" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
+                    <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="your@email.com" required
+                           style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('email') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
+                           onblur="this.style.borderColor='{{ $errors->has('email') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
+                    <x-input-error :messages="$errors->get('email')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
+                </div>
             </div>
-            <div>
-                <label for="last_name" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Last Name</label>
-                <input id="last_name" type="text" name="last_name" :value="old('last_name')" placeholder="Doe" required
-                       style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
-                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-                <x-input-error :messages="$errors->get('last_name')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
-            </div>
-            <div>
-                <label for="contact_number" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Phone Number</label>
-                <input id="contact_number" type="tel" name="contact_number" :value="old('contact_number')" placeholder="0244000000" required
-                       style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
-                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-                <x-input-error :messages="$errors->get('contact_number')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
-            </div>
-            <div>
-                <label for="date_of_birth" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Date of Birth</label>
-                <input id="date_of_birth" type="date" name="date_of_birth" :value="old('date_of_birth')" required
-                       style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
-                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-                <x-input-error :messages="$errors->get('date_of_birth')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
-            </div>
-            <div>
-                <label for="gender" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Gender</label>
-                <select id="gender" name="gender" required
-                        style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
-                        onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                        onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-                    <option value="" disabled {{ old('gender') ? '' : 'selected' }}>Select</option>
-                    <option value="Male" {{ old('gender') === 'Male' ? 'selected' : '' }}>Male</option>
-                    <option value="Female" {{ old('gender') === 'Female' ? 'selected' : '' }}>Female</option>
-                </select>
-                <x-input-error :messages="$errors->get('gender')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
-            </div>
-            <div>
-                <label for="email" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
-                <input id="email" type="email" name="email" :value="old('email')" placeholder="your@email.com" required
-                       style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
-                       onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                       onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-                <x-input-error :messages="$errors->get('email')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
-            </div>
-        </div>
 
         <p style="font-size:11px;font-weight:700;color:#4a7a65;margin:2px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Password</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div>
+            <div style="{{ $errors->has('password') ? 'border:1px solid #dc2626;border-radius:10px;padding:1px;' : '' }}">
                 <label for="password" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Create Password</label>
                 <div style="position:relative;" x-data="{ showPassword: false }">
                     <input id="password" :type="showPassword ? 'text' : 'password'" name="password" placeholder="Min 8 characters" required autocomplete="new-password"
-                           style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('password') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                           onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                           onblur="this.style.borderColor='{{ $errors->has('password') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
                     <button type="button" @click="showPassword = !showPassword"
                             style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:#94a3b8;display:flex;align-items:center;justify-content:center;"
                             :aria-label="showPassword ? 'Hide password' : 'Show password'" tabindex="-1">
@@ -104,13 +104,13 @@
                 </div>
                 <x-input-error :messages="$errors->get('password')" style="font-size:11px;color:#dc2626;margin-top:2px;" />
             </div>
-            <div>
+            <div style="{{ $errors->has('password_confirmation') ? 'border:1px solid #dc2626;border-radius:10px;padding:1px;' : '' }}">
                 <label for="password_confirmation" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Confirm Password</label>
                 <div style="position:relative;" x-data="{ showPassword: false }">
                     <input id="password_confirmation" :type="showPassword ? 'text' : 'password'" name="password_confirmation" placeholder="Confirm password" required autocomplete="new-password"
-                           style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('password_confirmation') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                           onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                           onblur="this.style.borderColor='{{ $errors->has('password_confirmation') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
                     <button type="button" @click="showPassword = !showPassword"
                             style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:#94a3b8;display:flex;align-items:center;justify-content:center;"
                             :aria-label="showPassword ? 'Hide password' : 'Show password'" tabindex="-1">

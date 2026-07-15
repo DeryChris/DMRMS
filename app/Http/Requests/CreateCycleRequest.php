@@ -30,6 +30,11 @@ class CreateCycleRequest extends FormRequest
             'total_vacancies' => ['required', 'integer', 'min:1'],
             'voucher_price' => ['nullable', 'numeric', 'min:0'],
             'requirements' => ['nullable', 'array'],
+            'scoring_weights' => ['nullable', 'array'],
+            'scoring_weights.medical' => ['nullable', 'numeric', 'min:0', 'max:1'],
+            'scoring_weights.interview' => ['nullable', 'numeric', 'min:0', 'max:1'],
+            'scoring_weights.fitness' => ['nullable', 'numeric', 'min:0', 'max:1'],
+            'scoring_weights.eligibility' => ['nullable', 'numeric', 'min:0', 'max:1'],
             'ai_enabled' => ['boolean'],
         ];
     }

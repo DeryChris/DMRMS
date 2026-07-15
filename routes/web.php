@@ -15,6 +15,7 @@ Route::get('/recruitment', [WebController::class, 'recruitmentPortal'])->name('r
 Route::get('/voucher/buy', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'showPurchaseForm'])->name('voucher.buy');
 Route::post('/voucher/buy', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'purchase'])->name('voucher.purchase');
 Route::get('/voucher/{voucher}/confirmation', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'confirmation'])->name('voucher.confirmation');
+Route::post('/voucher/buy/lookup', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'lookupVoucher'])->name('voucher.lookup');
 Route::get('/eligibility-checker', [WebController::class, 'eligibilityChecker'])->name('eligibility.checker');
 Route::get('/announcements', [WebController::class, 'announcements'])->name('announcements');
 Route::get('/announcements/{id}', [WebController::class, 'announcementDetail'])->name('announcements.detail');
@@ -26,13 +27,14 @@ Route::get('/contact', [WebController::class, 'contact'])->name('contact');
 // Breeze auth routes
 require __DIR__ . '/auth.php';
 
-// Notification AJAX routes (for bell component) — works with both guards
+// Shared auth routes — works with both guards
 Route::middleware('auth:applicant,web')->group(function () {
     Route::get('/notifications/fetch', [\App\Http\Controllers\NotificationWebController::class, 'index']);
     Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationWebController::class, 'unreadCount']);
     Route::put('/notifications/{id}/read', [\App\Http\Controllers\NotificationWebController::class, 'markAsRead']);
     Route::put('/notifications/read-all', [\App\Http\Controllers\NotificationWebController::class, 'markAllAsRead']);
     Route::get('/notifications', [\App\Http\Controllers\NotificationWebController::class, 'allNotifications'])->name('notifications.all');
+    Route::get('/documents/{id}/view', [AdminWebController::class, 'streamDocument'])->name('documents.view');
 });
 
 // Applicant auth routes
@@ -56,7 +58,7 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
     });
 
     // Applicant routes (authenticated)
-    Route::middleware(['auth:applicant', 'applicant.access'])->group(function () {
+    Route::middleware(['auth:applicant', 'applicant.access', 'password.expiry'])->group(function () {
         Route::post('logout', [\App\Http\Controllers\Web\ApplicantAuthController::class, 'logout'])->name('logout');
         Route::get('/dashboard', [ApplicantWebController::class, 'dashboard'])->name('dashboard');
         Route::get('/application', [ApplicantWebController::class, 'applicationForm'])->name('application');
@@ -65,8 +67,10 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/documents', [ApplicantWebController::class, 'documents'])->name('documents');
         Route::post('/documents/upload', [ApplicantWebController::class, 'uploadDocument'])->name('documents.upload');
         Route::delete('/documents/{id}', [ApplicantWebController::class, 'deleteDocument'])->name('documents.delete');
+        Route::post('/documents/finalize', [ApplicantWebController::class, 'finalizeDocuments'])->name('documents.finalize');
         Route::get('/status', [ApplicantWebController::class, 'status'])->name('status');
         Route::get('/appointment', [ApplicantWebController::class, 'appointment'])->name('appointment');
+        Route::get('/offer-letter', [ApplicantWebController::class, 'offerLetter'])->name('offer-letter');
         Route::get('/notifications', [ApplicantWebController::class, 'notifications'])->name('notifications');
     });
 });
@@ -78,17 +82,23 @@ Route::middleware('auth')->group(function () {
 });
 
 // Admin routes — broad gate: any admin role
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_admin,recruitment_officer,screening_officer,scheduling_officer'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_admin,recruitment_officer,screening_officer,scheduling_officer', 'password.expiry'])->group(function () {
 
     // Dashboard — all roles
     Route::get('/dashboard', [AdminWebController::class, 'dashboard'])->name('dashboard');
+
+    // Profile — all roles
+    Route::get('/profile', [AdminWebController::class, 'showProfile'])->name('profile');
+    Route::post('/profile', [AdminWebController::class, 'updateProfile'])->name('profile.update');
 
     // Applications (read) — all roles (recruitment_officer needs list + detail for doc verify)
     Route::get('/applications', [AdminWebController::class, 'applications'])->name('applications');
     Route::get('/applications/{id}', [AdminWebController::class, 'applicationDetail'])->name('applications.detail');
     Route::post('/applications/{id}/refresh-eligibility', [AdminWebController::class, 'refreshEligibility'])->name('applications.refresh-eligibility');
+    Route::post('/applications/{id}/recheck-voucher', [AdminWebController::class, 'recheckVoucher'])->name('applications.recheck-voucher');
     Route::post('/documents/{id}/verify', [AdminWebController::class, 'verifyDocument'])->name('documents.verify');
-    Route::get('/documents/{id}/view', [AdminWebController::class, 'viewDocument'])->name('documents.view');
+    Route::post('/applications/{id}/verify-all-documents', [AdminWebController::class, 'verifyAllDocuments'])->name('applications.verify-all-documents');
+    Route::post('/documents/bulk-verify-needs-review', [AdminWebController::class, 'bulkVerifyNeedsReview'])->name('documents.bulk-verify-needs-review');
 
     // Applicant account management — admin + super_admin + recruitment_officer
     Route::middleware('role:admin,super_admin,recruitment_officer')->group(function () {
@@ -139,6 +149,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_ad
         Route::post('/selection/shortlist', [AdminWebController::class, 'shortlist'])->name('selection.shortlist');
         Route::post('/selection/dismiss', [AdminWebController::class, 'dismissFromShortlist'])->name('selection.dismiss');
         Route::post('/selection/finalize', [AdminWebController::class, 'finalizeDecision'])->name('selection.finalize');
+        Route::post('/selection/process-decisions', [AdminWebController::class, 'processDecisions'])->name('selection.process-decisions');
     });
 
     // Dashboard stats — all admin roles
@@ -211,7 +222,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_ad
 });
 
 // Screening officer routes
-Route::prefix('screening')->name('screening.')->middleware('auth')->group(function () {
+Route::prefix('screening')->name('screening.')->middleware(['auth', 'role:admin,super_admin,screening_officer'])->group(function () {
     Route::get('/dashboard', [ScreeningWebController::class, 'dashboard'])->name('dashboard');
     Route::get('/verify', [ScreeningWebController::class, 'verify'])->name('verify');
     Route::post('/verify-entry', [ScreeningWebController::class, 'verifyEntry'])->name('verify-entry');

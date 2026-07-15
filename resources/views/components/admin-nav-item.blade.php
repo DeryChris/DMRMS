@@ -3,8 +3,8 @@
     $active = request()->routeIs($route);
 @endphp
 <a href="{{ route($route) }}" 
-   class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative"
-   x-bind:class="sidebarCollapsed ? 'justify-center' : ''"
+    class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative"
+    x-bind:class="sidebarCollapsed ? 'justify-center' : ''"
    @class([
        'text-white bg-white/15 shadow-sm' => $active,
        'text-white/60 hover:text-white hover:bg-white/10' => !$active,

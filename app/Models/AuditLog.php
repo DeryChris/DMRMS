@@ -92,24 +92,73 @@ class AuditLog extends Model
             return $details;
         }
 
+        $checkLabels = [
+            'age' => 'Age',
+            'nationality' => 'Nationality',
+            'education' => 'Education',
+            'height' => 'Height',
+            'marital_status' => 'Marital',
+            'criminal_record' => 'Criminal',
+            'documents' => 'Documents',
+        ];
+
         $parts = [];
+
         foreach ($details as $key => $value) {
             if (is_null($value) || $value === '') {
                 continue;
             }
+
+            // Handle eligibility checks (nested array from EligibilityEngine)
+            if ($key === 'checks' && is_array($value)) {
+                $checkParts = [];
+                foreach ($value as $checkKey => $checkVal) {
+                    $label = $checkLabels[$checkKey] ?? ucfirst(str_replace('_', ' ', $checkKey));
+                    $passed = $checkVal['passed'] ?? $checkVal;
+                    if (is_bool($passed)) {
+                        $checkParts[] = ($passed ? '✓' : '✗') . ' ' . $label;
+                    }
+                }
+                if (!empty($checkParts)) {
+                    $parts[] = implode(', ', $checkParts);
+                }
+                continue;
+            }
+
+            // Handle rejection_reasons as a readable list
+            if ($key === 'rejection_reasons' && is_array($value)) {
+                $reasons = array_filter($value, fn($v) => is_string($v) && !empty($v));
+                if (!empty($reasons)) {
+                    $parts[] = 'Rejected: ' . implode('; ', $reasons);
+                }
+                continue;
+            }
+
+            // Skip verbose/internal fields
+            if (in_array($key, ['refreshed_by', 'returned_count'], true)) {
+                continue;
+            }
+
+            // Format boolean values
             if (is_bool($value)) {
                 $value = $value ? 'Yes' : 'No';
             } elseif (is_array($value)) {
-                $value = json_encode($value);
+                $value = '[' . count($value) . ' items]';
             }
-            if (str_contains($key, '_id') && strlen($key) <= 10) {
-                $label = str_replace('_id', '', $key);
-                $label = ucfirst(str_replace('_', ' ', $label));
-                $parts[] = "$label: #$value";
-            } else {
-                $label = ucfirst(str_replace('_', ' ', $key));
-                $parts[] = "$label: $value";
-            }
+
+            // Clean up common keys for display
+            $label = match ($key) {
+                'overall_status' => 'Status',
+                'previous_status' => 'Previous',
+                'to_status' => 'To',
+                'from_status' => 'From',
+                'applicant_name' => 'Applicant',
+                'gaf_id' => 'GAF ID',
+                'application_id' => 'Application',
+                default => ucfirst(str_replace(['_id', '_'], [' ID', ' '], $key)),
+            };
+
+            $parts[] = "$label: $value";
         }
 
         return implode(', ', $parts);

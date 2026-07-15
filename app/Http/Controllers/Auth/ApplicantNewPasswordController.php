@@ -26,7 +26,7 @@ class ApplicantNewPasswordController extends Controller
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => app(\App\Services\Security\PasswordPolicyService::class)->getValidationRules(),
         ]);
 
         $status = Password::broker('applicants')->reset(

@@ -89,7 +89,7 @@
                 <div class="space-y-5">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Region</label>
-                        <select name="region" x-model="form.region" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition" required>
+                        <select name="region" x-model="form.region" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition {{ $errors->has('region') ? 'border-red-500' : 'border-gray-300' }}" required>
                             <option value="">Select Region</option>
                             @foreach($regions as $region)
                             <option value="{{ $region }}" x-bind:selected="form.region === '{{ $region }}'">{{ $region }}</option>
@@ -100,13 +100,13 @@
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Barrack / Camp Name</label>
-                        <input type="text" name="name" x-model="form.name" placeholder="e.g. Burma Camp" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition" required>
+                        <input type="text" name="name" x-model="form.name" placeholder="e.g. Burma Camp" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition {{ $errors->has('name') ? 'border-red-500' : 'border-gray-300' }}" required>
                         @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Location <span class="text-gray-400">(optional)</span></label>
-                        <input type="text" name="location" x-model="form.location" placeholder="e.g. Accra" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition">
+                        <input type="text" name="location" x-model="form.location" placeholder="e.g. Accra" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition {{ $errors->has('location') ? 'border-red-500' : 'border-gray-300' }}">
                         @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 

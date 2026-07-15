@@ -17,6 +17,34 @@
     --gaf-flag-gold: #fcd116;
     --gaf-flag-green: #006b3f;
     --gaf-section: #2d3748;
+
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8faf8;
+    --bg-tertiary: #f0f7f0;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-muted: #9ca3af;
+    --border-color: #e5e7eb;
+    --sidebar-bg: #ffffff;
+    --sidebar-text: #374151;
+    --sidebar-hover: #f3f4f6;
+    --card-bg: #ffffff;
+    --header-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+    --bg-primary: #111827;
+    --bg-secondary: #1f2937;
+    --bg-tertiary: #374151;
+    --text-primary: #f3f4f6;
+    --text-secondary: #d1d5db;
+    --text-muted: #6b7280;
+    --border-color: #374151;
+    --sidebar-bg: #1f2937;
+    --sidebar-text: #d1d5db;
+    --sidebar-hover: #374151;
+    --card-bg: #1f2937;
+    --header-bg: #1f2937;
 }
 
 @layer components {
@@ -176,6 +204,40 @@
     .auth-form-container {
         @apply w-full max-w-[420px];
     }
+
+    @media (max-width: 767px) {
+        .auth-split {
+            flex-direction: column;
+            min-height: auto;
+        }
+        .auth-split-left {
+            flex: none;
+            min-height: 200px;
+            padding: 1.5rem;
+        }
+        .auth-split-right {
+            flex: none;
+            padding: 2rem 1.25rem;
+            box-shadow: none;
+            border-top: 3px solid rgba(20,83,45,0.15);
+        }
+        .auth-info-box {
+            padding: 1rem;
+            max-width: 100%;
+        }
+        .auth-info-box h1 {
+            font-size: 14px;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+        }
+        .auth-info-box li {
+            font-size: 12px;
+            margin-bottom: 0.5rem;
+        }
+        .auth-info-box .gaf-brand-text {
+            font-size: 12px;
+        }
+    }
     .auth-form-header {
         @apply flex flex-col items-center gap-2.5 pb-3 mb-7 w-full relative;
     }
@@ -322,6 +384,254 @@
 
 .animate-float {
     animation: float 8s ease-in-out infinite;
+}
+
+.dark {
+    --gaf-green: #22c55e;
+    --gaf-dark-green: #166534;
+    --gaf-dark-green-green: #166534;
+    --gaf-khaki-green: #22c55e;
+    --gaf-accent: #6ee7b7;
+    --gaf-olive: #86efac;
+    --gaf-khaki: #eab308;
+    --gaf-gold: #eab308;
+    --gaf-red: #ef4444;
+    --gaf-brown: #d97706;
+    --gaf-section: #1e293b;
+}
+
+.dark body {
+    @apply bg-slate-900 text-slate-100;
+}
+
+.dark .glass {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .glass-strong {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .section-gradient-light {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+.dark .card {
+    @apply bg-slate-800 border-slate-700;
+}
+
+.dark .card-hover:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+}
+
+.dark .timeline-dot {
+    @apply ring-slate-800;
+}
+
+.dark .timeline-line {
+    @apply bg-slate-700;
+}
+
+.dark .status-pending {
+    @apply text-yellow-200 bg-yellow-900/40;
+}
+
+.dark .status-completed {
+    @apply text-green-200 bg-green-900/40;
+}
+
+.dark .status-rejected {
+    @apply text-red-200 bg-red-900/40;
+}
+
+.dark .form-input {
+    @apply bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400;
+}
+
+.dark .form-error {
+    @apply text-red-400;
+}
+
+.dark .step-num {
+    background: #475569;
+    color: #94a3b8;
+}
+
+.dark .step-num.active {
+    background: var(--gaf-dark-green);
+    color: #ffffff;
+}
+
+.dark .step-label {
+    color: #94a3b8;
+}
+
+.dark .step-label.active {
+    color: #f1f5f9;
+}
+
+.dark .step-connector {
+    background: #475569;
+}
+
+.dark .split-card {
+    @apply bg-slate-800 border-slate-700;
+}
+
+.dark .split-card-form {
+    @apply bg-slate-800;
+}
+
+.dark .auth-split-right {
+    background: #1e293b !important;
+}
+
+.dark .auth-input-group label {
+    color: var(--gaf-khaki);
+}
+
+.dark .auth-input-group input {
+    @apply text-slate-100;
+    border-color: #475569;
+}
+
+.dark .auth-input-group input:focus {
+    border-color: var(--gaf-green);
+}
+
+.dark .auth-input-group select {
+    @apply text-slate-100 bg-slate-800;
+    border-color: #475569;
+}
+
+.dark .auth-form-header::after {
+    background: linear-gradient(to right, #ef4444 0%, #ef4444 45%, #475569 45%, #475569 55%, #3b82f6 55%, #3b82f6 100%);
+}
+
+.dark .table-header-gradient {
+    background: linear-gradient(135deg, #166534, #0f3d1a);
+}
+
+/* ─── Global utility overrides (catches all view files without explicit dark: classes) ─── */
+.dark .bg-white { background-color: #1e293b; }
+.dark .bg-white\/5 { background-color: rgba(30, 41, 59, 0.05); }
+.dark .bg-white\/10 { background-color: rgba(30, 41, 59, 0.1); }
+.dark .bg-white\/15 { background-color: rgba(30, 41, 59, 0.15); }
+.dark .bg-white\/20 { background-color: rgba(30, 41, 59, 0.2); }
+.dark .bg-white\/30 { background-color: rgba(30, 41, 59, 0.3); }
+.dark .bg-white\/40 { background-color: rgba(30, 41, 59, 0.4); }
+.dark .bg-white\/60 { background-color: rgba(30, 41, 59, 0.6); }
+.dark .bg-white\/70 { background-color: rgba(30, 41, 59, 0.7); }
+.dark .bg-white\/80 { background-color: rgba(30, 41, 59, 0.8); }
+.dark .bg-white\/90 { background-color: rgba(30, 41, 59, 0.9); }
+.dark .bg-gray-50 { background-color: #1e293b; }
+.dark .bg-gray-100 { background-color: #1e293b; }
+.dark .bg-gray-200 { background-color: #334155; }
+.dark .bg-gray-300 { background-color: #475569; }
+.dark .bg-gray-800 { background-color: #334155; }
+
+.dark .text-gray-900 { color: #f1f5f9; }
+.dark .text-gray-800 { color: #e2e8f0; }
+.dark .text-gray-700 { color: #cbd5e1; }
+.dark .text-gray-600 { color: #94a3b8; }
+.dark .text-gray-500 { color: #94a3b8; }
+.dark .text-gray-400 { color: #64748b; }
+
+.dark .border-gray-100 { border-color: #334155; }
+.dark .border-gray-200 { border-color: #334155; }
+.dark .border-gray-300 { border-color: #475569; }
+
+.dark .divide-gray-100 > * + * { border-color: #334155; }
+.dark .divide-gray-200 > * + * { border-color: #475569; }
+
+
+
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-50\/50:hover,
+.dark .hover\:bg-gray-50\/70:hover { background-color: #334155; }
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-gray-100\/80:hover { background-color: #334155; }
+.dark .hover\:bg-gray-200:hover { background-color: #475569; }
+.dark .hover\:bg-gray-300:hover { background-color: #64748b; }
+
+.dark .hover\:text-gray-600:hover { color: #94a3b8; }
+.dark .hover\:text-gray-700:hover { color: #cbd5e1; }
+.dark .hover\:text-gray-800:hover { color: #e2e8f0; }
+.dark .hover\:text-gray-900:hover { color: #f1f5f9; }
+
+.dark .ring-white { --tw-ring-color: #475569; }
+.dark .ring-white\/20 { --tw-ring-color: rgba(71, 85, 105, 0.2); }
+
+.dark .focus\:bg-gray-100:focus { background-color: #334155; }
+.dark .focus\:text-gray-500:focus { color: #94a3b8; }
+.dark .focus\:text-gray-800:focus { color: #e2e8f0; }
+.dark .focus\:border-gray-300:focus { border-color: #475569; }
+
+.dark .hover\:border-gray-300:hover { border-color: #475569; }
+.dark .focus\:border-gray-300:focus { border-color: #475569; }
+
+/* ─── Override inline gradient backgrounds that defeat dark mode (inline styles win over Tailwind classes) ─── */
+.dark body[style*="background"],
+.dark main[style*="background"] {
+    background: #0f172a !important;
+}
+.dark header[style*="background"] {
+    background: #1e293b !important;
+}
+.dark div[style*="background"][class*="min-h-screen"] {
+    background: #0f172a !important;
+}
+
+/* ─── Override semantic text colors for dark mode (green, blue, amber, etc.) ─── */
+.dark .text-green-400 { color: #86efac; }
+.dark .text-green-500 { color: #4ade80; }
+.dark .text-green-600 { color: #22c55e; }
+.dark .text-green-700 { color: #22c55e; }
+.dark .text-green-800 { color: #4ade80; }
+
+.dark .text-emerald-500 { color: #34d399; }
+.dark .text-emerald-600 { color: #34d399; }
+
+.dark .text-teal-600 { color: #14b8a6; }
+.dark .text-teal-700 { color: #2dd4bf; }
+
+.dark .text-blue-400 { color: #93c5fd; }
+.dark .text-blue-500 { color: #60a5fa; }
+.dark .text-blue-600 { color: #60a5fa; }
+.dark .text-blue-700 { color: #93c5fd; }
+.dark .text-blue-800 { color: #bfdbfe; }
+
+.dark .text-amber-400 { color: #fbbf24; }
+.dark .text-amber-600 { color: #fbbf24; }
+.dark .text-amber-700 { color: #fcd34d; }
+.dark .text-amber-800 { color: #fde68a; }
+
+.dark .text-purple-600 { color: #a855f7; }
+.dark .text-purple-700 { color: #c084fc; }
+.dark .text-purple-800 { color: #d8b4fe; }
+
+.dark .text-indigo-600 { color: #818cf8; }
+.dark .text-indigo-700 { color: #a5b4fc; }
+
+/* ─── Override background for status badges & notification boxes in dark mode ─── */
+.dark .bg-green-50 { background-color: rgba(34, 197, 94, 0.10); }
+.dark .bg-green-100 { background-color: rgba(34, 197, 94, 0.15); }
+.dark .bg-blue-50 { background-color: rgba(96, 165, 250, 0.10); }
+.dark .bg-blue-100 { background-color: rgba(96, 165, 250, 0.15); }
+.dark .bg-amber-50 { background-color: rgba(251, 191, 36, 0.10); }
+.dark .bg-amber-100 { background-color: rgba(251, 191, 36, 0.15); }
+
+/* ─── Override inline color styles in auth pages (style="color:#14532d") ─── */
+.dark [style*="color:#14532d"] { color: #22c55e !important; }
+.dark [style*="color:#64748b"] { color: #94a3b8 !important; }
+
+/* ─── Force form element backgrounds in dark mode (inputs without bg class default to white) ─── */
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+    background-color: #1e293b;
 }
 
 @layer utilities {

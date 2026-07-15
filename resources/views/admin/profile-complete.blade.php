@@ -24,18 +24,18 @@
                 <div>
                     <label for="first_name" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">First Name</label>
                     <input id="first_name" type="text" name="first_name" value="{{ old('first_name') }}" placeholder="Enter your first name" required autofocus
-                           style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           style="width:100%;padding:12px 16px;border:2px solid {{ $errors->has('first_name') ? '#dc2626' : '#e2e8f0' }};border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                           onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                           onblur="this.style.borderColor='{{ $errors->has('first_name') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
                     <x-input-error :messages="$errors->get('first_name')" style="font-size:12px;color:#dc2626;margin-top:4px;" />
                 </div>
 
                 <div>
                     <label for="last_name" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Last Name</label>
                     <input id="last_name" type="text" name="last_name" value="{{ old('last_name') }}" placeholder="Enter your last name" required
-                           style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
+                           style="width:100%;padding:12px 16px;border:2px solid {{ $errors->has('last_name') ? '#dc2626' : '#e2e8f0' }};border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
-                           onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                           onblur="this.style.borderColor='{{ $errors->has('last_name') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
                     <x-input-error :messages="$errors->get('last_name')" style="font-size:12px;color:#dc2626;margin-top:4px;" />
                 </div>
 

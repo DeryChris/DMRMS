@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cycle;
+use App\Services\Ai\AiGateway;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -99,6 +100,28 @@ class PublicController extends Controller
             'eligible' => $passed,
             'reasons'  => $reasons,
             'data'     => $validated,
+        ]);
+    }
+
+    public function chatbotMessage(Request $request, AiGateway $ai): JsonResponse
+    {
+        $validated = $request->validate([
+            'message' => 'required|string|max:2000',
+        ]);
+
+        $systemPrompt = 'You are a helpful recruitment assistant for the Ghana Armed Forces (GAF) Defence Manpower Recruitment Management System (DMRMS). '
+            . 'Answer questions about recruitment: vouchers (pricing, where to buy), application process, eligibility, documents, deadlines, and status checking. '
+            . 'Be concise and informative. If you do not know the answer, say so honestly.';
+
+        $response = $ai->chatWithMessages([
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => $validated['message']],
+        ]);
+
+        return response()->json([
+            'data' => [
+                'reply' => $response['data']['content'] ?? 'I am unable to process your request at this time.',
+            ],
         ]);
     }
 

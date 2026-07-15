@@ -48,10 +48,13 @@
             <svg class="w-6 h-6 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <div>
                 <p class="text-sm font-semibold text-green-800">All required documents uploaded</p>
-                <p class="text-xs text-green-600">You can now proceed with your application.</p>
+                <p class="text-xs text-green-600">Click the button to submit your documents for review and proceed.</p>
             </div>
         </div>
-        <a href="{{ route('applicant.application', ['step' => 5]) }}" class="px-5 py-2.5 bg-gaf-green text-white rounded-lg text-sm font-semibold hover:bg-gaf-dark-green transition shrink-0">Proceed to Application</a>
+        <form method="POST" action="{{ route('applicant.documents.finalize') }}">
+            @csrf
+            <button type="submit" class="px-5 py-2.5 bg-gaf-green text-white rounded-lg text-sm font-semibold hover:bg-gaf-dark-green transition shrink-0">Proceed to Application</button>
+        </form>
     </div>
     @endif
 
@@ -103,6 +106,25 @@
 
     <div class="mt-8" x-data="docUpload()">
         <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Upload New Document</h3>
+
+        {{-- Passport photo requirements info box --}}
+        <div x-show="isPhotograph" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="mb-5 p-4 rounded-xl border-2 border-amber-200 bg-amber-50">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div class="text-sm text-amber-800 space-y-1">
+                    <p class="font-semibold">Passport Photo Requirements</p>
+                    <ul class="list-disc list-inside space-y-0.5 text-amber-700">
+                        <li>Size must be exactly <strong>450 pixels wide × 540 pixels tall</strong></li>
+                        <li>Background must be <strong>plain white</strong> — no patterns, gradients, or shadows</li>
+                        <li>Full front view, face centered, eyes open, natural expression</li>
+                        <li>No sunglasses, hats, or headwear (except for religious reasons)</li>
+                        <li>Only <strong>JPEG or PNG</strong> files accepted</li>
+                    </ul>
+                    <p class="text-xs text-amber-600 mt-1">The system will check your photo dimensions and background before upload.</p>
+                </div>
+            </div>
+        </div>
+
         <form method="POST" action="{{ route('applicant.documents.upload') }}" enctype="multipart/form-data" class="bg-white border border-gray-200 rounded-2xl p-6">
             @csrf
             <div class="mb-4">
@@ -132,11 +154,12 @@
                 :class="{
                     'border-gaf-green bg-green-50/50': dragging,
                     'border-gray-300 bg-gray-50/50': !dragging && !hasFile,
-                    'border-green-400 bg-green-50': hasFile
+                    'border-green-400 bg-green-50': hasFile,
+                    'border-red-400 bg-red-50': (dimensionError || bgError) && hasFile
                 }"
                 class="relative border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-200 hover:border-gaf-green hover:bg-green-50/30"
             >
-                <input type="file" name="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" class="hidden" @change="handleInput">
+                <input type="file" name="file" id="fileInput" :accept="acceptAttr" class="hidden" @change="handleInput">
 
                 <template x-if="!hasFile">
                     <div>
@@ -149,7 +172,7 @@
                             <span class="text-gaf-green">Drag & Drop</span> your file here
                         </p>
                         <p class="text-sm text-gray-400 mt-1">or <span class="text-gaf-green font-medium hover:underline">browse</span> to choose a file</p>
-                        <p class="text-xs text-gray-400 mt-4">Supported: PDF, JPEG, PNG &mdash; Max 5MB</p>
+                        <p class="text-xs text-gray-400 mt-4" x-text="supportedText"></p>
                     </div>
                 </template>
 
@@ -171,6 +194,14 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
+                </template>
+
+                {{-- Client-side validation errors --}}
+                <template x-if="dimensionError">
+                    <p class="mt-2 text-xs text-red-600 text-left" x-text="dimensionError"></p>
+                </template>
+                <template x-if="bgError">
+                    <p class="mt-2 text-xs text-red-600 text-left" x-text="bgError"></p>
                 </template>
             </div>
 

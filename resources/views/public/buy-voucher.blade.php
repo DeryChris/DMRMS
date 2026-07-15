@@ -23,18 +23,13 @@
 @section('content')
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-    @if($errors->any())
-    <div class="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm mb-6">
-        @foreach($errors->all() as $e) <p>{{ $e }}</p> @endforeach
-    </div>
-    @endif
-
     <form method="POST" action="{{ route('voucher.purchase') }}" class="bg-white/90 glass-strong rounded-xl shadow-md border border-gray-200 p-8">
         @csrf
 
         {{-- Cycle Selection --}}
         <div class="mb-6" x-data="{}">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Select Recruitment Cycle</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select Recruitment Cycle <span class="text-red-500">*</span></label>
+            @error('cycle_id') <p class="text-red-500 text-xs mb-2">{{ $message }}</p> @enderror
             @if($activeCycles->isEmpty())
                 <div class="bg-gray-50 rounded-lg p-4 text-center text-gray-400 text-sm">No active recruitment cycles available for purchase.</div>
             @else
@@ -78,17 +73,23 @@
         <div class="border-t pt-6 mb-6">
             <h2 class="font-heading font-semibold text-base text-gray-800 mb-4">Your Details</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @php $f = 'purchaser_name'; @endphp
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input type="text" name="purchaser_name" value="{{ old('purchaser_name') }}" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" placeholder="John Doe">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="{{ $f }}" value="{{ old($f) }}" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" placeholder="John Doe">
+                    @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+                @php $f = 'purchaser_email'; @endphp
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                    <input type="email" name="purchaser_email" value="{{ old('purchaser_email') }}" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" placeholder="john@example.com">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email Address <span class="text-red-500">*</span></label>
+                    <input type="email" name="{{ $f }}" value="{{ old($f) }}" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" placeholder="john@example.com">
+                    @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+                @php $f = 'purchaser_phone'; @endphp
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                    <input type="tel" name="purchaser_phone" value="{{ old('purchaser_phone') }}" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" placeholder="0244000000">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number <span class="text-red-500">*</span></label>
+                    <input type="tel" name="{{ $f }}" value="{{ old($f) }}" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" placeholder="0244000000">
+                    @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
         </div>
@@ -98,18 +99,16 @@
             <h2 class="font-heading font-semibold text-base text-gray-800 mb-4">Payment Details</h2>
             <p class="text-xs text-gray-400 mb-4">Select your preferred payment method and enter the transaction reference.</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @php $f = 'payment_method'; @endphp
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                    <select name="payment_method" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method <span class="text-red-500">*</span></label>
+                    <select name="{{ $f }}" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         <option value="">— Select —</option>
                         @foreach($paymentMethods as $val => $label)
-                        <option value="{{ $val }}" {{ old('payment_method') === $val ? 'selected' : '' }}>{{ $label }}</option>
+                        <option value="{{ $val }}" {{ old($f) === $val ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Transaction Reference</label>
-                    <input type="text" name="payment_reference" value="{{ old('payment_reference') }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" placeholder="Optional reference number">
+                    @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
         </div>
@@ -120,5 +119,69 @@
 
         <p class="text-xs text-gray-400 text-center mt-3">By purchasing, you agree to the terms and conditions of the Ghana Armed Forces recruitment process.</p>
     </form>
+
+    {{-- Voucher Lookup Section --}}
+    <div class="mt-8" x-data="{ showLookup: false, showLookupModal: {{ isset($lookupResults) ? 'true' : 'false' }}, lookupEmail: '{{ old('lookup_email', '') }}' }">
+        <button @click="showLookup = !showLookup" class="w-full text-center text-sm text-gaf-green hover:text-gaf-dark-green font-semibold py-2 transition">
+            <span x-text="showLookup ? '▼ Hide' : '▶ Already purchased? Check your voucher'"></span>
+        </button>
+
+        <div x-show="showLookup" x-cloak x-transition class="mt-4 bg-gray-50 rounded-xl border border-gray-200 p-6">
+            <h3 class="font-heading font-semibold text-sm text-gray-700 mb-3">Look up your purchased voucher</h3>
+            <form method="POST" action="{{ route('voucher.lookup') }}" class="flex gap-3 flex-wrap">
+                @csrf
+                @php $f = 'lookup_email'; @endphp
+                <div class="flex-1 min-w-[200px]">
+                    <input type="email" name="{{ $f }}" x-model="lookupEmail" placeholder="Enter your email address" required class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                    @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" class="bg-gaf-green text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-gaf-dark-green transition whitespace-nowrap">Check</button>
+            </form>
+        </div>
+
+        {{-- Results Modal Overlay --}}
+        <div x-show="showLookupModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
+            <div @click.away="showLookupModal = false" class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="font-heading font-semibold text-lg text-gray-800">Your Voucher{{ isset($lookupResults) && $lookupResults->count() !== 1 ? 's' : '' }}</h3>
+                    <button @click="showLookupModal = false" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                </div>
+
+                @isset($lookupResults)
+                    @if($lookupResults->isEmpty())
+                        <div class="text-center py-8">
+                            <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <p class="text-gray-500 text-sm">No vouchers found for <strong>{{ old('lookup_email') }}</strong>.</p>
+                            <p class="text-gray-400 text-xs mt-1">Make sure you enter the email used during purchase.</p>
+                        </div>
+                    @else
+                        <div class="space-y-4">
+                            @foreach($lookupResults as $v)
+                            <div class="border border-gray-200 rounded-lg p-4 {{ $v->status === 'available' ? 'border-green-200 bg-green-50/50' : ($v->status === 'used' ? 'border-blue-200 bg-blue-50/50' : 'border-gray-200') }}">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-heading font-semibold text-sm text-gray-700">{{ $v->cycle->name ?? 'N/A' }}</span>
+                                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold
+                                        {{ $v->status === 'available' ? 'bg-green-100 text-green-700' : ($v->status === 'used' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600') }}">
+                                        {{ ucfirst($v->status) }}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                    <div><span class="text-gray-400">Serial:</span> <span class="font-mono font-semibold text-gray-700">{{ $v->serial_number }}</span></div>
+                                    <div><span class="text-gray-400">PIN:</span> <span class="font-mono font-semibold text-gray-700">{{ $v->pin_code }}</span></div>
+                                    <div><span class="text-gray-400">Purchased:</span> <span class="text-gray-600">{{ $v->purchased_at?->format('d M Y') }}</span></div>
+                                    <div><span class="text-gray-400">Expires:</span> <span class="text-gray-600">{{ $v->expires_at?->format('d M Y') }}</span></div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    @endif
+                @endisset
+
+                <div class="mt-5 text-center">
+                    <button @click="showLookupModal = false" class="text-sm text-gray-500 hover:text-gray-700 underline">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection

@@ -4,6 +4,23 @@ import Alpine from 'alpinejs';
 import Chart from 'chart.js/auto';
 import QRCode from 'qrcode';
 
+const storedTheme = localStorage.getItem('theme');
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+    document.documentElement.classList.add('dark');
+}
+
+document.addEventListener('alpine:init', () => {
+    Alpine.store('theme', {
+        dark: document.documentElement.classList.contains('dark'),
+        toggle() {
+            this.dark = !this.dark;
+            document.documentElement.classList.toggle('dark', this.dark);
+            localStorage.setItem('theme', this.dark ? 'dark' : 'light');
+        },
+    });
+});
+
 Alpine.data('flashToast', (type, msg) => ({
     show: true,
     type: type,
@@ -23,6 +40,14 @@ Alpine.data('documentViewer', (doc, admin, docs, initialIndex) => ({
     currentIndex: initialIndex,
     zoomed: false,
 
+    pdfDoc: null,
+    pdfPageNum: 1,
+    pdfPages: 0,
+    pdfScale: 1.5,
+    pdfRotation: 0,
+    pdfReady: false,
+    pdfLoading: false,
+
     get isImage() {
         return this.doc.mime_type && this.doc.mime_type.startsWith('image/');
     },
@@ -34,11 +59,18 @@ Alpine.data('documentViewer', (doc, admin, docs, initialIndex) => ({
     open() {
         this.show = true;
         document.body.style.overflow = 'hidden';
+        if (this.isPdf) {
+            this.$nextTick(() => this.loadPdf());
+        }
     },
 
     close() {
         this.show = false;
         this.zoomed = false;
+        this.pdfReady = false;
+        this.pdfDoc = null;
+        this.pdfPageNum = 1;
+        this.pdfRotation = 0;
         document.body.style.overflow = '';
     },
 
@@ -51,6 +83,13 @@ Alpine.data('documentViewer', (doc, admin, docs, initialIndex) => ({
             this.currentIndex--;
             this.doc = this.documents[this.currentIndex];
             this.zoomed = false;
+            this.pdfReady = false;
+            this.pdfDoc = null;
+            this.pdfPageNum = 1;
+            this.pdfRotation = 0;
+            if (this.isPdf) {
+                this.$nextTick(() => this.loadPdf());
+            }
         }
     },
 
@@ -59,8 +98,100 @@ Alpine.data('documentViewer', (doc, admin, docs, initialIndex) => ({
             this.currentIndex++;
             this.doc = this.documents[this.currentIndex];
             this.zoomed = false;
+            this.pdfReady = false;
+            this.pdfDoc = null;
+            this.pdfPageNum = 1;
+            this.pdfRotation = 0;
+            if (this.isPdf) {
+                this.$nextTick(() => this.loadPdf());
+            }
         }
     },
+
+    async loadPdf() {
+        if (this.pdfLoading) return;
+        this.pdfLoading = true;
+        this.pdfReady = false;
+        try {
+            if (typeof pdfjsLib === 'undefined') {
+                await this.loadPdfJsCdn();
+            }
+            const url = this.doc.view_url || this.doc.file_url || '/storage/' + this.doc.file_path;
+            const loadingTask = pdfjsLib.getDocument(url);
+            this.pdfDoc = await loadingTask.promise;
+            this.pdfPages = this.pdfDoc.numPages;
+            this.pdfPageNum = 1;
+            await this.renderPdfPage();
+            this.pdfReady = true;
+        } catch (err) {
+            console.error('PDF load error:', err);
+            this.pdfReady = true;
+        } finally {
+            this.pdfLoading = false;
+        }
+    },
+
+    loadPdfJsCdn() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs';
+            script.type = 'module';
+            script.onload = () => {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
+                resolve();
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    },
+
+    async renderPdfPage() {
+        if (!this.pdfDoc) return;
+        const page = await this.pdfDoc.getPage(this.pdfPageNum);
+        const viewport = page.getViewport({ scale: this.pdfScale, rotation: this.pdfRotation });
+        const canvas = document.getElementById('pdf-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const outputScale = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(viewport.width * outputScale);
+        canvas.height = Math.floor(viewport.height * outputScale);
+        canvas.style.width = Math.floor(viewport.width) + 'px';
+        canvas.style.height = Math.floor(viewport.height) + 'px';
+        ctx.scale(outputScale, outputScale);
+        const renderContext = { canvasContext: ctx, viewport: viewport };
+        await page.render(renderContext).promise;
+    },
+
+    async pdfPrevPage() {
+        if (this.pdfPageNum > 1) {
+            this.pdfPageNum--;
+            await this.renderPdfPage();
+        }
+    },
+
+    async pdfNextPage() {
+        if (this.pdfPageNum < this.pdfPages) {
+            this.pdfPageNum++;
+            await this.renderPdfPage();
+        }
+    },
+
+    async pdfZoomIn() {
+        this.pdfScale = Math.min(this.pdfScale + 0.25, 5);
+        await this.renderPdfPage();
+    },
+
+    async pdfZoomOut() {
+        this.pdfScale = Math.max(this.pdfScale - 0.25, 0.5);
+        await this.renderPdfPage();
+    },
+
+    async pdfRotate() {
+        this.pdfRotation = (this.pdfRotation + 90) % 360;
+        await this.renderPdfPage();
+    },
+
+    get pdfPage() { return this.pdfPageNum; },
 }));
 
 document.addEventListener('alpine:init', () => {
@@ -183,6 +314,20 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    Alpine.data('themeManager', () => ({
+        theme: localStorage.getItem('theme') || 'light',
+        init() {
+            document.documentElement.setAttribute('data-theme', this.theme);
+            this.$watch('theme', val => {
+                document.documentElement.setAttribute('data-theme', val);
+                localStorage.setItem('theme', val);
+            });
+        },
+        toggle() {
+            this.theme = this.theme === 'dark' ? 'light' : 'dark';
+        },
+    }));
+
     Alpine.data('docUpload', () => ({
         dragging: false,
         docType: '',
@@ -190,13 +335,28 @@ document.addEventListener('alpine:init', () => {
         fileSize: '',
         fileType: '',
         fileObj: null,
+        dimensionError: '',
+        bgError: '',
 
         get hasFile() {
             return this.fileObj !== null;
         },
 
+        get isPhotograph() {
+            return this.docType === 'photograph';
+        },
+
         get canSubmit() {
-            return this.docType && this.hasFile;
+            return this.docType && this.hasFile && !this.dimensionError && !this.bgError;
+        },
+
+        get acceptAttr() {
+            if (this.isPhotograph) return '.jpg,.jpeg,.png';
+            return '.pdf,.jpg,.jpeg,.png';
+        },
+
+        get supportedText() {
+            return this.isPhotograph ? 'JPEG, PNG — Max 5MB — 450×540px required' : 'PDF, JPEG, PNG — Max 5MB';
         },
 
         handleDrop(e) {
@@ -211,8 +371,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         setFile(file) {
+            this.dimensionError = '';
+            this.bgError = '';
             const maxSize = 5 * 1024 * 1024;
-            const allowed = ['.pdf', '.jpg', '.jpeg', '.png'];
+            const allowed = this.isPhotograph ? ['.jpg', '.jpeg', '.png'] : ['.pdf', '.jpg', '.jpeg', '.png'];
             const ext = '.' + file.name.split('.').pop().toLowerCase();
             if (!allowed.includes(ext)) return;
             if (file.size > maxSize) return;
@@ -225,6 +387,51 @@ document.addEventListener('alpine:init', () => {
             const dt = new DataTransfer();
             dt.items.add(file);
             document.getElementById('fileInput').files = dt.files;
+            if (this.isPhotograph && file.type.startsWith('image/')) {
+                this.validatePhoto(file);
+            }
+        },
+
+        validatePhoto(file) {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                if (img.naturalWidth !== 450 || img.naturalHeight !== 540) {
+                    this.dimensionError = `Image must be exactly 450×540 pixels (yours is ${img.naturalWidth}×${img.naturalHeight}).`;
+                    return;
+                }
+                this.checkWhiteBackground(img);
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                this.bgError = 'Could not read the image file. Try another file.';
+            };
+            img.src = url;
+        },
+
+        checkWhiteBackground(img) {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const w = img.naturalWidth, h = img.naturalHeight;
+            const points = [
+                [w * 0.1, h * 0.03], [w * 0.3, h * 0.03],
+                [w * 0.5, h * 0.03], [w * 0.7, h * 0.03],
+                [w * 0.9, h * 0.03], [w * 0.1, h * 0.08],
+                [w * 0.3, h * 0.08], [w * 0.5, h * 0.08],
+                [w * 0.7, h * 0.08], [w * 0.9, h * 0.08],
+            ];
+            const threshold = 230;
+            for (const [px, py] of points) {
+                const pixel = ctx.getImageData(Math.round(px), Math.round(py), 1, 1).data;
+                if (pixel[0] < threshold || pixel[1] < threshold || pixel[2] < threshold) {
+                    this.bgError = 'Background must be plain white. Ensure no shadows or colored backgrounds.';
+                    return;
+                }
+            }
         },
 
         clearFile() {
@@ -232,6 +439,8 @@ document.addEventListener('alpine:init', () => {
             this.fileName = '';
             this.fileSize = '';
             this.fileType = '';
+            this.dimensionError = '';
+            this.bgError = '';
             document.getElementById('fileInput').value = '';
         },
     })),
@@ -290,36 +499,88 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    Alpine.data('chatbotWidget', () => ({
+    Alpine.data('chatbotWidget', (apiUrl) => ({
         open: false,
-        messages: [{ role: 'bot', text: 'Welcome! How can I help you with your recruitment application?' }],
+        messages: [
+            { role: 'bot', text: 'Hello! Welcome to the GAF Recruitment Portal. How can I help you today?' }
+        ],
         input: '',
         loading: false,
 
-        toggle() {
-            this.open = !this.open;
+        formatText(text) {
+            let html = this.escapeHtml(text);
+            let lines = html.split('\n');
+            let result = [];
+            let inList = false;
+            let listTag = 'ul';
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                let trimmed = line.trim();
+                if (!trimmed) {
+                    if (inList) { result.push('</' + listTag + '>'); inList = false; }
+                    result.push('<br>');
+                    continue;
+                }
+                let listMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+                if (listMatch) {
+                    if (!inList) { listTag = 'ol'; inList = true; result.push('<ol>'); }
+                    result.push('<li>' + this.inlineFormat(listMatch[2]) + '</li>');
+                    continue;
+                }
+                if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+                    if (!inList) { listTag = 'ul'; inList = true; result.push('<ul>'); }
+                    result.push('<li>' + this.inlineFormat(trimmed.substring(2)) + '</li>');
+                    continue;
+                }
+                if (inList) { result.push('</' + listTag + '>'); inList = false; }
+                result.push('<p>' + this.inlineFormat(line) + '</p>');
+            }
+            if (inList) result.push('</' + listTag + '>');
+            return result.join('\n');
         },
 
-        async send() {
-            if (!this.input.trim() || this.loading) return;
-            const userMessage = this.input;
-            this.messages.push({ role: 'user', text: userMessage });
+        inlineFormat(text) {
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/`(.+?)`/g, '<code class="bg-gray-200 px-1 rounded text-xs">$1</code>')
+                .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" class="text-blue-600 underline">$1</a>');
+        },
+
+        escapeHtml(text) {
+            return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        },
+
+        scrollBottom() {
+            this.$nextTick(() => {
+                let el = this.$refs.chatbox;
+                if (el) el.scrollTop = el.scrollHeight;
+            });
+        },
+
+        send() {
+            if(!this.input.trim()) return;
+            this.messages.push({ role: 'user', text: this.input });
+            let q = this.input;
             this.input = '';
             this.loading = true;
-            try {
-                const response = await window.axios.post('/api/ai/chat', {
-                    message: userMessage,
-                    session_id: localStorage.getItem('chatSessionId'),
-                });
-                this.messages.push({ role: 'bot', text: response.data.response });
-                if (response.data.session_id) {
-                    localStorage.setItem('chatSessionId', response.data.session_id);
-                }
-            } catch (e) {
-                this.messages.push({ role: 'bot', text: 'Sorry, I am having trouble connecting. Please try again.' });
-            } finally {
-                this.loading = false;
-            }
+            this.scrollBottom();
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '' },
+                body: JSON.stringify({ message: q })
+            })
+            .then(r => r.json())
+            .then(res => {
+                let reply = res?.data?.reply ?? 'I am unable to process your request at this time.';
+                this.messages.push({ role: 'bot', text: reply });
+                this.scrollBottom();
+            })
+            .catch(() => {
+                this.messages.push({ role: 'bot', text: 'Sorry, I am unable to connect right now. Please try again later.' });
+                this.scrollBottom();
+            })
+            .finally(() => { this.loading = false; });
         },
     }));
 

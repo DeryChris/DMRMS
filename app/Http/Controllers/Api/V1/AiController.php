@@ -52,9 +52,18 @@ class AiController extends Controller
             $document->document_type
         );
 
+        $content = $result['data']['content'] ?? '{}';
+        $parsed = $this->parseJsonContent($content);
+        $verdict = $parsed['overall']['verdict'] ?? 'needs_review';
+        $confidence = $parsed['overall']['confidence'] ?? null;
+
         $document->update([
-            'verification_status' => $result['verified'] ?? false ? 'verified' : 'rejected',
-            'ai_confidence'       => $result['confidence'] ?? null,
+            'verification_status' => match ($verdict) {
+                'verified' => 'verified',
+                'rejected' => 'rejected',
+                default => 'pending',
+            },
+            'ai_confidence'       => $confidence,
             'ai_analysis'         => json_encode($result),
         ]);
 
@@ -113,14 +122,14 @@ class AiController extends Controller
             [['role' => 'user', 'content' => $validated['message']]]
         );
 
-        $response = $this->aiGateway->chat($messages);
+        $response = $this->aiGateway->chatWithMessages($messages);
 
         $this->logUsage($request, 'chatbot', $response);
 
         return response()->json([
             'data' => [
-                'reply'   => $response['content'] ?? 'I am unable to process your request at this time.',
-                'tokens'  => $response['tokens'] ?? null,
+                'reply'   => $response['data']['content'] ?? 'I am unable to process your request at this time.',
+                'tokens'  => $response['tokens_used'] ?? null,
             ],
         ]);
     }
@@ -195,14 +204,26 @@ class AiController extends Controller
         ]);
     }
 
+    private function parseJsonContent(string $text): array
+    {
+        $text = preg_replace('/```(?:json)?\s*/i', '', $text);
+        if (preg_match('/\{.*\}/s', $text, $match)) {
+            $decoded = json_decode($match[0], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+        return [];
+    }
+
     private function logUsage(Request $request, string $feature, array $result): void
     {
         AiUsage::create([
             'user_id'         => $request->user()?->id,
             'feature'         => $feature,
-            'tokens_used'     => $result['tokens'] ?? $result['tokens_used'] ?? 0,
+            'tokens_used'     => $result['tokens_used'] ?? $result['tokens'] ?? 0,
             'cost'            => $result['cost'] ?? 0,
-            'response_time_ms'=> $result['response_time_ms'] ?? null,
+            'response_time_ms'=> $result['processing_time'] ?? $result['response_time_ms'] ?? null,
             'metadata'        => json_encode($result),
         ]);
     }

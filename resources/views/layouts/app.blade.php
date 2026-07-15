@@ -12,13 +12,13 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
-<body class="font-sans antialiased text-gray-900" style="background: linear-gradient(180deg, #f8faf8 0%, #f0f7f0 50%, #f8faf8 100%);">
+<body class="font-sans antialiased text-gray-900 dark:text-slate-100" style="background: linear-gradient(180deg, #f8faf8 0%, #f0f7f0 50%, #f8faf8 100%);">
     @php
         $anyAuth = auth()->check() || auth('applicant')->check();
         $isApplicant = auth('applicant')->check();
     @endphp
     <div x-data="{ mobileMenu: false }" class="flex flex-col min-h-screen">
-        <nav class="bg-gaf-green text-white shadow-lg sticky top-0 z-40 gradient-border">
+        <nav x-data="{ navVisible: true, lastScroll: 0 }" @scroll.window="const y = window.scrollY; navVisible = y < 80 || y < lastScroll; lastScroll = y" :class="{ '-translate-y-full': !navVisible }" class="bg-gaf-green text-white shadow-lg sticky top-0 z-40 gradient-border transition-transform duration-300 md:!translate-y-0">
             <div class="flex items-center h-16 relative px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center space-x-3">
                     <img src="{{ asset('assets/images/logo/logo.png') }}" alt="GAF" style="height:40px;width:auto;">
@@ -44,11 +44,15 @@
                     <a href="{{ route('contact') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Contact</a>
                 </div>
                 <div class="flex items-center space-x-3 ml-auto">
+                    <x-theme-toggle :dark="true" />
                     @if(!$anyAuth)
                     <a href="{{ route('applicant.login') }}" class="bg-gaf-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">Login</a>
                     <a href="{{ route('applicant.register') }}" class="bg-gaf-green text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gaf-dark-green transition">Register</a>
                     <a href="{{ route('login') }}" class="bg-gaf-khaki text-gaf-green px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-500 transition">Admin</a>
                     @elseif(auth('applicant')->check())
+                    @if(!request()->routeIs('applicant.dashboard'))
+                    <a href="{{ route('applicant.dashboard') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Dashboard</a>
+                    @endif
                     <x-profile-dropdown :dark="true" />
                     <x-notification-bell :dark="true" />
                     <form method="POST" action="{{ route('applicant.logout') }}" class="inline">
@@ -87,6 +91,9 @@
                 <a href="{{ route('faq') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">FAQ</a>
                 <a href="{{ route('contact') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Contact</a>
                 @if(auth('applicant')->check())
+                @if(!request()->routeIs('applicant.dashboard'))
+                <a href="{{ route('applicant.dashboard') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Dashboard</a>
+                @endif
                 <form method="POST" action="{{ route('applicant.logout') }}">
                     @csrf
                     <button type="submit" class="block w-full text-left text-white hover:text-gaf-khaki py-1 text-sm">Sign Out</button>
@@ -109,7 +116,7 @@
             </section>
         @endif
 
-        <main class="flex-1 relative">
+        <main class="flex-1 relative pb-20 md:pb-0 dark:bg-slate-900 dark:text-slate-100">
             <div style="position:absolute;inset:0;pointer-events:none;opacity:0.025;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22 viewBox=%220 0 200 200%22%3E%3Cg fill=%22%2314532d%22 fill-opacity=%221%22%3E%3Ccircle cx=%2230%22 cy=%2230%22 r=%2220%22/%3E%3Ccircle cx=%22170%22 cy=%2240%22 r=%2225%22/%3E%3Ccircle cx=%22100%22 cy=%22170%22 r=%2230%22/%3E%3Ccircle cx=%2260%22 cy=%22140%22 r=%2215%22/%3E%3Ccircle cx=%22150%22 cy=%22130%22 r=%2218%22/%3E%3Ccircle cx=%2220%22 cy=%22100%22 r=%2222%22/%3E%3Ccircle cx=%22180%22 cy=%22160%22 r=%2212%22/%3E%3Ccircle cx=%2280%22 cy=%2280%22 r=%2210%22/%3E%3Ccircle cx=%22130%22 cy=%2220%22 r=%2214%22/%3E%3C/g%3E%3C/svg%3E');background-repeat:repeat;"></div>
             @php
                 $flashType = session('error') ? 'error' : (session('success') ? 'success' : (session('info') ? 'info' : ''));
@@ -156,7 +163,10 @@
                         <a href="#" class="hover:text-gaf-khaki transition">Terms</a>
                         <a href="#" class="hover:text-gaf-khaki transition">Disclaimer</a>
                     </div>
-                    <div class="text-xs text-gray-500">&copy; {{ date('Y') }} GAF. All rights reserved.</div>
+                    <div class="text-xs text-gray-500 text-center md:text-right">
+                        <div>&copy; {{ date('Y') }} GAF. All rights reserved.</div>
+                        <div class="mt-0.5">Built by <a href="https://github.com/DeryChris" target="_blank" rel="noopener noreferrer" class="text-gaf-khaki hover:underline font-medium">Nibenang</a></div>
+                    </div>
                 </div>
             </div>
         </footer>

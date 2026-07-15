@@ -50,31 +50,39 @@
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @php $f = 'title'; @endphp
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Title <span class="text-red-500">*</span></label>
-                    <input type="text" name="title" value="{{ old('title', $announcement?->title) }}" required maxlength="255" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="text" name="{{ $f }}" value="{{ old($f, $announcement?->title) }}" required maxlength="255" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                    @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+                @php $f = 'category'; @endphp
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Category <span class="text-red-500">*</span></label>
-                    <select name="category" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
-                        <option value="general" {{ old('category', $announcement?->category) === 'general' ? 'selected' : '' }}>General</option>
-                        <option value="requirements" {{ old('category', $announcement?->category) === 'requirements' ? 'selected' : '' }}>Requirements</option>
-                        <option value="deadlines" {{ old('category', $announcement?->category) === 'deadlines' ? 'selected' : '' }}>Deadlines</option>
-                        <option value="results" {{ old('category', $announcement?->category) === 'results' ? 'selected' : '' }}>Results</option>
-                        <option value="press" {{ old('category', $announcement?->category) === 'press' ? 'selected' : '' }}>Press Release</option>
-                        <option value="events" {{ old('category', $announcement?->category) === 'events' ? 'selected' : '' }}>Events</option>
+                    <select name="{{ $f }}" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        <option value="general" {{ old($f, $announcement?->category) === 'general' ? 'selected' : '' }}>General</option>
+                        <option value="requirements" {{ old($f, $announcement?->category) === 'requirements' ? 'selected' : '' }}>Requirements</option>
+                        <option value="deadlines" {{ old($f, $announcement?->category) === 'deadlines' ? 'selected' : '' }}>Deadlines</option>
+                        <option value="results" {{ old($f, $announcement?->category) === 'results' ? 'selected' : '' }}>Results</option>
+                        <option value="press" {{ old($f, $announcement?->category) === 'press' ? 'selected' : '' }}>Press Release</option>
+                        <option value="events" {{ old($f, $announcement?->category) === 'events' ? 'selected' : '' }}>Events</option>
                     </select>
+                    @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 
+            @php $f = 'excerpt'; @endphp
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Excerpt</label>
-                <textarea name="excerpt" rows="2" maxlength="500" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" placeholder="Brief summary shown in cards...">{{ old('excerpt', $announcement?->excerpt) }}</textarea>
+                <textarea name="{{ $f }}" rows="2" maxlength="500" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" placeholder="Brief summary shown in cards...">{{ old($f, $announcement?->excerpt) }}</textarea>
+                @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
 
+            @php $f = 'content'; @endphp
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Content <span class="text-red-500">*</span></label>
-                <textarea name="content" id="tiny-editor" rows="12" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm">{{ old('content', $announcement?->content) }}</textarea>
+                <textarea name="{{ $f }}" id="tiny-editor" rows="12" class="w-full border rounded-lg px-4 py-3 text-sm {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">{{ old($f, $announcement?->content) }}</textarea>
+                @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
         </div>
 
@@ -102,17 +110,23 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                @php $f = 'author'; @endphp
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Author</label>
-                    <input type="text" name="author" value="{{ old('author', $announcement?->author ?? auth()->user()?->name ?? auth('web')->user()?->name ?? '') }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="text" name="{{ $f }}" value="{{ old($f, $announcement?->author ?? auth()->user()?->name ?? auth('web')->user()?->name ?? '') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                    @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+                @php $f = 'tags'; @endphp
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated)</label>
-                    <input type="text" name="tags" value="{{ old('tags', $tags ?? '') }}" placeholder="e.g. recruitment, 2026, gaf" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="text" name="{{ $f }}" value="{{ old($f, $tags ?? '') }}" placeholder="e.g. recruitment, 2026, gaf" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                    @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+                @php $f = 'published_at'; @endphp
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Publish Date</label>
-                    <input type="date" name="published_at" value="{{ old('published_at', $announcement?->published_at?->format('Y-m-d')) }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="date" name="{{ $f }}" value="{{ old($f, $announcement?->published_at?->format('Y-m-d')) }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                    @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 

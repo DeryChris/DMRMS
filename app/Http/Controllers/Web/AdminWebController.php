@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateCycleRequest;
+use App\Jobs\ProcessFinalDecision;
 use App\Models\Applicant;
 use App\Models\Application;
 use App\Models\Cycle;
@@ -22,6 +23,7 @@ use App\Services\Eligibility\EligibilityService;
 use App\Services\Notification\NotificationService;
 use App\Services\Scheduling\AppointmentSchedulingService;
 use App\Services\ShortlistingService;
+use App\Services\Voucher\VoucherService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -43,17 +45,20 @@ class AdminWebController extends Controller
     protected NotificationService $notificationService;
 
     protected AppointmentSchedulingService $schedulingService;
+    protected VoucherService $voucherService;
 
     public function __construct(
         EligibilityService $eligibilityService,
         ShortlistingService $shortlistingService,
         NotificationService $notificationService,
         AppointmentSchedulingService $schedulingService,
+        VoucherService $voucherService,
     ) {
         $this->eligibilityService = $eligibilityService;
         $this->shortlistingService = $shortlistingService;
         $this->notificationService = $notificationService;
         $this->schedulingService = $schedulingService;
+        $this->voucherService = $voucherService;
     }
 
     public function dashboard(): View
@@ -80,10 +85,10 @@ class AdminWebController extends Controller
     private function fullDashboard(): View
     {
         $totalApplicants = Applicant::count();
-        $approvedCount = Application::where('status', 'selected')->count();
+        $approvedCount = Application::whereIn('status', ['selected', 'recruited'])->count();
         $pendingCount = Application::whereIn('status', ['submitted', 'documents_verified', 'eligibility_passed', 'final_decision_pending'])->count();
-        $screenedCount = Application::where('status', 'screening_completed')->count();
-        $shortlistedCount = Application::where('status', 'shortlisted')->count();
+        $screenedCount = Application::whereIn('status', ['screening_completed', 'final_decision_pending', 'selected', 'recruited', 'reserve'])->count();
+        $shortlistedCount = Application::whereIn('status', ['shortlisted', 'appointment_scheduled', 'screening_completed', 'final_decision_pending', 'selected', 'recruited', 'reserve'])->count();
         $disqualifiedCount = Application::where('status', 'disqualified')->count();
         $rejectedCount = Application::whereIn('status', ['rejected', 'eligibility_failed', 'disqualified'])->count();
         $eligibleCount = Application::where('status', 'eligibility_passed')->count();
@@ -103,8 +108,8 @@ class AdminWebController extends Controller
         $regionLabels = $regionCounts->pluck('region')->toArray();
         $regionData = $regionCounts->pluck('total')->toArray();
 
-        $maleCount = Applicant::where('gender', 'male')->count();
-        $femaleCount = Applicant::where('gender', 'female')->count();
+        $maleCount = Applicant::whereRaw('LOWER(gender) = ?', ['male'])->count();
+        $femaleCount = Applicant::whereRaw('LOWER(gender) = ?', ['female'])->count();
 
         $funnelApplied = Application::count();
         $funnelScreened = Application::where('status', 'screening_completed')->count();
@@ -192,7 +197,7 @@ class AdminWebController extends Controller
 
     public function applications(Request $request): View
     {
-        $query = Application::with('applicant', 'cycle');
+        $query = Application::with('applicant', 'cycle', 'selectedSector');
 
         if ($s = $request->get('status')) {
             $query->where('status', $s);
@@ -228,6 +233,8 @@ class AdminWebController extends Controller
             'appointment',
             'finalDecision',
             'verificationCode',
+            'selectedSector',
+            'corpSelections.corp',
         ])->findOrFail($id);
 
         $auditLogs = AuditLog::where('user_type', 'applicant')
@@ -266,6 +273,27 @@ class AdminWebController extends Controller
             ->with('success', $msg);
     }
 
+    public function recheckVoucher($id): RedirectResponse
+    {
+        $application = Application::with('applicant.voucher')->findOrFail($id);
+        $voucher = $application->applicant?->voucher;
+
+        if (!$voucher) {
+            return redirect()->route('admin.applications.detail', $id)
+                ->with('error', 'No voucher found for this applicant.');
+        }
+
+        $result = $this->voucherService->validate($voucher->serial_number, $voucher->pin_code);
+
+        if ($result['valid']) {
+            return redirect()->route('admin.applications.detail', $id)
+                ->with('success', 'Voucher is valid and available.');
+        }
+
+        return redirect()->route('admin.applications.detail', $id)
+            ->with('error', 'Voucher recheck: ' . $result['error']);
+    }
+
     public function cycles(): View
     {
         $cycles = Cycle::withCount('applications')->orderBy('start_date', 'desc')->get();
@@ -276,6 +304,7 @@ class AdminWebController extends Controller
     {
         $data = $request->validated();
         $data['requirements'] = $this->buildRequirements($request);
+        $data['scoring_weights'] = $this->buildScoringWeights($request);
         $data['created_by'] = Auth::id();
         $data['status'] = 'draft';
 
@@ -292,6 +321,7 @@ class AdminWebController extends Controller
 
         $data = $request->validated();
         $data['requirements'] = $this->buildRequirements($request);
+        $data['scoring_weights'] = $this->buildScoringWeights($request);
 
         $cycle->update($data);
 
@@ -333,6 +363,8 @@ class AdminWebController extends Controller
 
     public function shortlist(Request $request): RedirectResponse
     {
+        $this->authorize('shortlist', Application::class);
+
         $validated = $request->validate([
             'application_ids' => 'required|array',
             'application_ids.*' => 'exists:applications,id',
@@ -382,6 +414,8 @@ class AdminWebController extends Controller
 
     public function finalizeDecision(Request $request): RedirectResponse
     {
+        $this->authorize('finalize', FinalDecision::class);
+
         $validated = $request->validate([
             'application_id' => 'required|exists:applications,id',
             'decision' => 'required|in:selected,rejected,deferred,reserve',
@@ -465,6 +499,7 @@ class AdminWebController extends Controller
     public function verifyDocument(Request $request, int $id): RedirectResponse
     {
         $document = Document::with('application')->findOrFail($id);
+        $this->authorize('verify', $document);
         $application = $document->application;
 
         $validated = $request->validate([
@@ -492,18 +527,54 @@ class AdminWebController extends Controller
             ->with('success', 'Document marked as ' . $validated['status'] . '.');
     }
 
-    public function viewDocument(int $id): \Illuminate\Http\Response
+    public function verifyAllDocuments(int $id): RedirectResponse
+    {
+        $application = \App\Models\Application::findOrFail($id);
+
+        $updated = $application->documents()
+            ->whereIn('verification_status', ['pending', 'needs_review'])
+            ->update(['verification_status' => 'verified']);
+
+        $requiredDocs = ['birth_certificate', 'certificate', 'national_id', 'photograph'];
+        $verifiedDocs = $application->documents()
+            ->whereIn('document_type', $requiredDocs)
+            ->where('verification_status', 'verified')
+            ->pluck('document_type')
+            ->toArray();
+
+        $allVerified = empty(array_diff($requiredDocs, $verifiedDocs));
+
+        if ($allVerified && $application->status === 'submitted') {
+            $application->update(['status' => 'documents_verified']);
+        }
+
+        return redirect()->route('admin.applications.detail', $application->id)
+            ->with('success', "{$updated} document(s) marked as verified.");
+    }
+
+    public function bulkVerifyNeedsReview(): RedirectResponse
+    {
+        $updated = Document::where('verification_status', 'needs_review')
+            ->update(['verification_status' => 'verified']);
+
+        Log::info("Bulk verify: {$updated} needs_review documents auto-verified", [
+            'admin_id' => auth()->id(),
+        ]);
+
+        return redirect()->route('admin.applications')
+            ->with('success', "{$updated} document(s) marked as verified.");
+    }
+
+    public function streamDocument(int $id): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
         $document = Document::findOrFail($id);
         $path = Storage::disk('public')->path($document->file_path);
 
         abort_unless(file_exists($path), 404);
 
-        $content = file_get_contents($path);
-
-        return response($content, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Length' => strlen($content),
+        return response()->file($path, [
+            'Content-Type' => $document->mime_type ?? 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
             'Cache-Control' => 'public, max-age=3600',
         ]);
     }
@@ -520,6 +591,23 @@ class AdminWebController extends Controller
             'marital_status' => $request->input('requirements.marital_status', []),
             'national_id_required' => (bool) $request->input('requirements.national_id_required', true),
         ];
+    }
+
+    private function buildScoringWeights(Request $request): ?array
+    {
+        $weights = $request->input('scoring_weights');
+        if (!$weights || !is_array($weights)) {
+            return null;
+        }
+
+        $cleaned = [];
+        foreach (['medical', 'interview', 'fitness', 'eligibility'] as $key) {
+            if (isset($weights[$key]) && is_numeric($weights[$key])) {
+                $cleaned[$key] = (float) $weights[$key];
+            }
+        }
+
+        return !empty($cleaned) ? $cleaned : null;
     }
 
     public function scheduling(): View
@@ -546,14 +634,12 @@ class AdminWebController extends Controller
         $validated = $request->validate([
             'scheduled_date' => 'required|date|after_or_equal:today',
             'scheduled_time' => 'required',
-            'venue'          => 'required|string|max:200',
             'capacity'       => 'required|integer|min:1|max:500',
         ]);
 
         $slots = $this->schedulingService->createSlots(
             $validated['scheduled_date'],
             $validated['scheduled_time'],
-            $validated['venue'],
             $validated['capacity']
         );
 
@@ -561,7 +647,7 @@ class AdminWebController extends Controller
             'screening_officer',
             'slots_created',
             'Appointment Slots Created',
-            count($slots) . " appointment slots created for {$validated['scheduled_date']} at {$validated['scheduled_time']} ({$validated['venue']})."
+            count($slots) . " appointment slots created for {$validated['scheduled_date']} at {$validated['scheduled_time']}."
         );
 
         return redirect()->route('admin.scheduling')
@@ -574,7 +660,6 @@ class AdminWebController extends Controller
             'application_id' => 'required|exists:applications,id',
             'scheduled_date' => 'required|date|after_or_equal:today',
             'scheduled_time' => 'required',
-            'venue'          => 'required|string|max:200',
             'slot_number'    => 'required|integer|min:1',
         ]);
 
@@ -584,7 +669,6 @@ class AdminWebController extends Controller
             $app,
             $validated['scheduled_date'],
             $validated['scheduled_time'],
-            $validated['venue'],
             $validated['slot_number']
         );
 
@@ -858,17 +942,28 @@ class AdminWebController extends Controller
         ]);
     }
 
+    public function processDecisions(): RedirectResponse
+    {
+        try {
+            ProcessFinalDecision::dispatchSync();
+            return redirect()->route('admin.selection')->with('success', 'Final decisions processed successfully.');
+        } catch (\Exception $e) {
+            Log::error('processDecisions failed: ' . $e->getMessage());
+            return redirect()->route('admin.selection')->with('error', 'Failed to process decisions: ' . $e->getMessage());
+        }
+    }
+
     public function dashboardStats(): JsonResponse
     {
         return response()->json([
             'totalApplicants' => Applicant::count(),
-            'approvedCount' => Application::where('status', 'selected')->count(),
+            'approvedCount' => Application::whereIn('status', ['selected', 'recruited'])->count(),
             'pendingCount' => Application::whereIn('status', ['submitted', 'documents_verified', 'eligibility_passed', 'final_decision_pending'])->count(),
-            'screenedCount' => Application::where('status', 'screening_completed')->count(),
-            'shortlistedCount' => Application::where('status', 'shortlisted')->count(),
+            'screenedCount' => Application::whereIn('status', ['screening_completed', 'final_decision_pending', 'selected', 'recruited', 'reserve'])->count(),
+            'shortlistedCount' => Application::whereIn('status', ['shortlisted', 'appointment_scheduled', 'screening_completed', 'final_decision_pending', 'selected', 'recruited', 'reserve'])->count(),
             'eligibleCount' => Application::where('status', 'eligibility_passed')->count(),
             'rejectedCount' => Application::whereIn('status', ['rejected', 'eligibility_failed', 'disqualified'])->count(),
-            'successRate' => round((Application::where('status', 'selected')->count() / max(1, Application::whereIn('status', ['submitted', 'documents_verified', 'eligibility_passed', 'shortlisted', 'appointment_scheduled', 'screening_completed', 'final_decision_pending', 'selected', 'recruited', 'reserve'])->count())) * 100, 1),
+            'successRate' => round((Application::whereIn('status', ['selected', 'recruited'])->count() / max(1, Application::whereIn('status', ['submitted', 'documents_verified', 'eligibility_passed', 'shortlisted', 'appointment_scheduled', 'screening_completed', 'final_decision_pending', 'selected', 'recruited', 'reserve'])->count())) * 100, 1),
         ]);
     }
 
@@ -910,14 +1005,26 @@ class AdminWebController extends Controller
             DB::raw('COALESCE(SUM(CASE WHEN created_at >= now() - interval \'1 month\' THEN 1 ELSE 0 END), 0) as requests_month'),
         )->first();
 
+        $dbSettings = SystemSetting::getGroup('ai');
+
         $aiSettings = [
-            'ai_enabled' => env('AI_ENABLED', true),
-            'provider' => env('AI_PROVIDER', 'openai'),
-            'model' => env('AI_MODEL', 'gpt-4'),
-            'monthly_budget_cap' => env('AI_MONTHLY_BUDGET', 200),
-            'daily_budget_cap' => env('AI_DAILY_BUDGET', 10),
-            'max_requests_per_minute' => env('AI_MAX_RPM', 60),
-            'max_tokens_per_request' => env('AI_MAX_TOKENS', 4096),
+            'ai_enabled' => $dbSettings['ai_enabled'] ?? env('AI_ENABLED', true),
+            'provider' => $dbSettings['provider'] ?? env('AI_PROVIDER', 'openai'),
+            'model' => $dbSettings['model'] ?? env('AI_MODEL', 'gpt-4'),
+            'monthly_budget_cap' => $dbSettings['monthly_budget_cap'] ?? env('AI_MONTHLY_BUDGET', 200),
+            'daily_budget_cap' => $dbSettings['daily_budget_cap'] ?? env('AI_DAILY_BUDGET', 10),
+            'max_requests_per_minute' => $dbSettings['max_requests_per_minute'] ?? env('AI_MAX_RPM', 60),
+            'max_tokens_per_request' => $dbSettings['max_tokens_per_request'] ?? env('AI_MAX_TOKENS', 4096),
+            'auto_final_decision' => $dbSettings['auto_final_decision'] ?? config('recruitment.auto_final_decision', true),
+            'auto_recruit' => $dbSettings['auto_recruit'] ?? config('recruitment.auto_recruit.enabled', false),
+            'enrollment_delay_days' => $dbSettings['enrollment_delay_days'] ?? config('recruitment.auto_recruit.enrollment_delay_days', 14),
+            'default_training_battalion' => $dbSettings['default_training_battalion'] ?? config('recruitment.auto_recruit.default_training_battalion', 'GAF Training Depot'),
+            'scoring_weights_medical' => $dbSettings['scoring_weights_medical'] ?? config('recruitment.scoring_weights.medical', 0.40),
+            'scoring_weights_interview' => $dbSettings['scoring_weights_interview'] ?? config('recruitment.scoring_weights.interview', 0.30),
+            'scoring_weights_fitness' => $dbSettings['scoring_weights_fitness'] ?? config('recruitment.scoring_weights.fitness', 0.20),
+            'scoring_weights_eligibility' => $dbSettings['scoring_weights_eligibility'] ?? config('recruitment.scoring_weights.eligibility', 0.10),
+            'reserve_ratio' => $dbSettings['reserve_ratio'] ?? config('recruitment.reserve_ratio', 0.20),
+            'auto_promote_reserve' => $dbSettings['auto_promote_reserve'] ?? config('recruitment.auto_promote_reserve', false),
         ];
 
         return view('admin.ai-config', compact('aiStats', 'aiSettings'));
@@ -1132,6 +1239,16 @@ class AdminWebController extends Controller
             'daily_budget_cap' => 'numeric|min:0',
             'max_requests_per_minute' => 'integer|min:1|max:10000',
             'max_tokens_per_request' => 'integer|min:1|max:100000',
+            'auto_final_decision' => 'boolean',
+            'auto_recruit' => 'boolean',
+            'enrollment_delay_days' => 'integer|min:1|max:365',
+            'default_training_battalion' => 'string|max:100',
+            'scoring_weights_medical' => 'numeric|min:0|max:1',
+            'scoring_weights_interview' => 'numeric|min:0|max:1',
+            'scoring_weights_fitness' => 'numeric|min:0|max:1',
+            'scoring_weights_eligibility' => 'numeric|min:0|max:1',
+            'reserve_ratio' => 'numeric|min:0|max:1',
+            'auto_promote_reserve' => 'boolean',
         ]);
 
         foreach ($validated as $key => $value) {
@@ -1149,11 +1266,13 @@ class AdminWebController extends Controller
 
     public function storeUser(Request $request): RedirectResponse
     {
+        $this->authorize('create', User::class);
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:50',
             'last_name' => 'required|string|max:50',
-            'email' => 'required|email|max:100|unique:administrators,email',
-            'password' => 'required|string|min:8|max:100',
+            'email' => 'required|email|max:100|unique:administrators,email,NULL,id,deleted_at,NULL',
+            'password' => ['required', 'string', app(\App\Services\Security\PasswordPolicyService::class)->getMinLength()],
             'role' => 'required|in:super_admin,admin,recruitment_officer,screening_officer,scheduling_officer',
             'status' => 'sometimes|in:active,suspended',
         ]);
@@ -1175,12 +1294,14 @@ class AdminWebController extends Controller
 
     public function updateUser(Request $request, User $user): RedirectResponse
     {
+        $this->authorize('update', $user);
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:50',
             'last_name' => 'required|string|max:50',
-            'email' => 'required|email|max:100|unique:administrators,email,' . $user->id,
+            'email' => 'required|email|max:100|unique:administrators,email,' . $user->id . ',id,deleted_at,NULL',
             'role' => 'required|in:super_admin,admin,recruitment_officer,screening_officer,scheduling_officer',
-            'password' => 'nullable|string|min:8|max:100',
+            'password' => ['nullable', 'string', app(\App\Services\Security\PasswordPolicyService::class)->getMinLength()],
         ]);
 
         $data = [
@@ -1322,7 +1443,7 @@ class AdminWebController extends Controller
             'generatedAt' => now()->format('F j, Y'),
         ]);
 
-        $filename = 'offer-letter-' . ($application->applicant->gaf_id ?? 'applicant') . '.pdf';
+        $filename = 'offer-letter-' . ($application->gaf_id ?? 'applicant') . '.pdf';
 
         return response()->streamDownload(fn() => print($pdf->output()), $filename);
     }
@@ -1346,6 +1467,8 @@ class AdminWebController extends Controller
 
         $application = Application::with('applicant', 'finalDecision', 'screeningResult', 'appointment', 'verificationCode')
             ->findOrFail($id);
+
+        $this->authorize('sendBack', $application);
 
         $currentStatus = $application->status;
         $targetStatus = $validated['target_status'];
@@ -1466,7 +1589,7 @@ class AdminWebController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string|max:50',
             'last_name' => 'required|string|max:50',
-            'email' => 'required|email|max:100|unique:applicants,email,' . $applicant->id,
+            'email' => 'required|email|max:100|unique:applicants,email,' . $applicant->id . ',id,deleted_at,NULL',
             'contact_number' => 'nullable|string|max:20',
             'region' => 'nullable|string|max:50',
             'status' => 'required|in:active,inactive,suspended,pending',
@@ -1491,16 +1614,20 @@ class AdminWebController extends Controller
 
     public function deleteApplicant(Applicant $applicant): RedirectResponse
     {
+        $this->authorize('delete', $applicant);
+
         $name = $applicant->name;
 
         DB::transaction(function () use ($applicant) {
             $applicant->load('application.documents', 'voucher');
 
-            // Delete the voucher if the applicant used one
+            // Unlink the voucher but keep it for audit
             if ($voucher = $applicant->voucher) {
-                $voucher->delete();
+                $voucher->used_by = null;
+                $voucher->save();
             }
 
+            // Delete physical files to free storage (records stay in DB for audit)
             if ($application = $applicant->application) {
                 foreach ($application->documents as $document) {
                     if ($document->file_path && Storage::exists($document->file_path)) {
@@ -1509,11 +1636,35 @@ class AdminWebController extends Controller
                 }
             }
 
+            // Revoke Sanctum tokens
+            $applicant->tokens()->delete();
+
+            // Soft-delete the applicant
             $applicant->delete();
         });
 
         return redirect()->route('admin.applicants')
-            ->with('success', "Applicant {$name} and all associated records deleted successfully.");
+            ->with('success', "Applicant {$name} has been deactivated. Their data is retained for audit purposes and will be permanently purged after 90 days.");
+    }
+
+    public function showProfile(): View
+    {
+        $user = Auth::user();
+
+        return view('admin.profile', compact('user'));
+    }
+
+    public function updateProfile(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:50'],
+            'last_name' => ['required', 'string', 'max:50'],
+        ]);
+
+        Auth::user()->update($validated);
+
+        return redirect()->route('admin.profile')
+            ->with('success', 'Profile updated successfully.');
     }
 
     public function profileComplete(): View

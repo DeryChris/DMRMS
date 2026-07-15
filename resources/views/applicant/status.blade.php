@@ -13,7 +13,7 @@
         <x-applicant-status-timeline :currentStage="$currentStage" :stages="$stages" />
     </div>
 
-    @if($verificationCode && in_array($application->status ?? '', ['appointment_scheduled', 'screening_completed']))
+    @if($verificationCode && ($application->status ?? '') === 'appointment_scheduled')
     <div class="bg-white border border-gray-200 rounded-xl p-8 mb-6" x-data="verificationCard" data-code="{{ $verificationCode->code_value }}" data-name="{{ $applicant->first_name }} {{ $applicant->last_name }}" data-gaf="{{ $application->gaf_id }}" data-date="{{ $application->appointment?->scheduled_date?->format('F j, Y') ?? 'N/A' }}" data-time="{{ $application->appointment?->scheduled_time ?? 'N/A' }}" data-venue="{{ $application->appointment?->venue ?? 'N/A' }}">
         <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div class="flex flex-col items-center">

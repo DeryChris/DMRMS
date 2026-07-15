@@ -4,6 +4,7 @@ namespace App\Services\Scheduling;
 
 use App\Models\Application;
 use App\Models\Appointment;
+use App\Models\Barrack;
 use App\Models\VerificationCode;
 use App\Services\Notification\NotificationService;
 use App\Services\ShortlistingService;
@@ -18,17 +19,20 @@ class AppointmentSchedulingService
         protected ShortlistingService $shortlistingService,
     ) {}
 
-    public function createSlots(string $date, string $time, string $venue, int $capacity): array
+    public function createSlots(string $date, string $time, int $capacity): array
     {
         $slots = [];
 
-        DB::transaction(function () use ($date, $time, $venue, $capacity, &$slots) {
-            $applicants = Application::where('status', 'shortlisted')
+        DB::transaction(function () use ($date, $time, $capacity, &$slots) {
+            $applicants = Application::with('applicant')
+                ->where('status', 'shortlisted')
                 ->inRandomOrder()
                 ->take($capacity)
                 ->get();
 
             foreach ($applicants as $i => $app) {
+                $venue = $this->resolveVenue($app);
+
                 $appointment = Appointment::create([
                     'application_id' => $app->id,
                     'scheduled_date' => $date,
@@ -51,9 +55,11 @@ class AppointmentSchedulingService
         return $slots;
     }
 
-    public function assignSingle(Application $app, string $date, string $time, string $venue, int $slotNumber): Appointment
+    public function assignSingle(Application $app, string $date, string $time, int $slotNumber): Appointment
     {
-        $appointment = DB::transaction(function () use ($app, $date, $time, $venue, $slotNumber) {
+        $appointment = DB::transaction(function () use ($app, $date, $time, $slotNumber) {
+            $venue = $this->resolveVenue($app);
+
             $appointment = Appointment::create([
                 'application_id' => $app->id,
                 'scheduled_date' => $date,
@@ -73,6 +79,24 @@ class AppointmentSchedulingService
         });
 
         return $appointment;
+    }
+
+    private function resolveVenue(Application $app): string
+    {
+        $applicant = $app->applicant;
+
+        if ($applicant?->region) {
+            $barrack = Barrack::where('region', $applicant->region)
+                ->where('is_active', true)
+                ->inRandomOrder()
+                ->first();
+
+            if ($barrack) {
+                return $barrack->name . ($barrack->location ? ', ' . $barrack->location : '');
+            }
+        }
+
+        return 'GAF Training Camp';
     }
 
     private function createVerificationCode(Application $app): VerificationCode

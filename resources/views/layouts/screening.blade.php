@@ -12,7 +12,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
-<body class="font-sans antialiased" style="background:linear-gradient(180deg, #f0f7f0 0%, #f8faf8 50%, #f0f7f0 100%);">
+<body class="font-sans antialiased dark:bg-slate-900 dark:text-slate-100" style="background:linear-gradient(180deg, #f0f7f0 0%, #f8faf8 50%, #f0f7f0 100%);">
     <div class="min-h-screen flex flex-col">
         <nav class="bg-gaf-green text-white px-6 py-3 flex items-center justify-between shadow-md sticky top-0 z-40 gradient-border">
             <div class="flex items-center space-x-3">
@@ -20,6 +20,7 @@
                 <span class="font-heading font-semibold text-sm">Screening Officer</span>
             </div>
             <div class="flex items-center space-x-4 text-sm">
+                <x-theme-toggle :dark="true" />
                 <span class="text-gray-300">{{ date('l, F j, Y') }}</span>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

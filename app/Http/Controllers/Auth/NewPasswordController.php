@@ -34,7 +34,7 @@ class NewPasswordController extends Controller
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => app(\App\Services\Security\PasswordPolicyService::class)->getValidationRules(),
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we

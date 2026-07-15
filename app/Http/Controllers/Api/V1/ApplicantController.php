@@ -8,6 +8,7 @@ use App\Models\Application;
 use App\Models\Document;
 use App\Models\VerificationCode;
 use App\Models\Appointment;
+use App\Events\DocumentUploaded;
 use App\Services\Ai\AiGateway;
 use App\Services\Eligibility\EligibilityService;
 use Illuminate\Http\JsonResponse;
@@ -32,7 +33,7 @@ class ApplicantController extends Controller
 
         if ($request->isMethod('put')) {
             $validated = $request->validate([
-                'contact_number'      => 'sometimes|string|max:20|unique:applicants,contact_number,' . $applicant->id,
+                'contact_number'      => 'sometimes|string|max:20|unique:applicants,contact_number,' . $applicant->id . ',id,deleted_at,NULL',
                 'alternative_contact' => 'nullable|string|max:20',
                 'residential_address' => 'sometimes|string|max:500',
                 'region'              => 'sometimes|string|max:255',
@@ -130,6 +131,26 @@ class ApplicantController extends Controller
                 'description'   => 'nullable|string|max:500',
             ]);
 
+            if ($validated['document_type'] === 'photograph') {
+                $file = $request->file('file');
+                $photoPath = $file->getRealPath();
+                $imageInfo = @getimagesize($photoPath);
+                if (!$imageInfo || $imageInfo[0] !== 450 || $imageInfo[1] !== 540) {
+                    return response()->json([
+                        'message' => 'Validation failed.',
+                        'errors'  => ['file' => ['Passport photo must be exactly 450×540 pixels. Your image is ' . ($imageInfo[0] ?? 0) . '×' . ($imageInfo[1] ?? 0) . '.']],
+                    ], 422);
+                }
+                try {
+                    $this->validateWhiteBackground($photoPath, $file->getMimeType());
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'message' => 'Validation failed.',
+                        'errors'  => ['file' => [$e->getMessage()]],
+                    ], 422);
+                }
+            }
+
             $path = $request->file('file')->store("documents/{$applicant->id}", 'public');
 
             $document = Document::create([
@@ -142,6 +163,8 @@ class ApplicantController extends Controller
                 'description'    => $validated['description'] ?? null,
                 'verification_status' => 'pending',
             ]);
+
+            DocumentUploaded::dispatch($document);
 
             return response()->json([
                 'message'  => 'Document uploaded successfully.',
@@ -230,20 +253,57 @@ class ApplicantController extends Controller
         ]);
     }
 
+    private function validateWhiteBackground(string $path, string $mime): void
+    {
+        $img = match ($mime) {
+            'image/jpeg' => @imagecreatefromjpeg($path),
+            'image/png'  => @imagecreatefrompng($path),
+            default      => false,
+        };
+
+        if (!$img) {
+            throw new \RuntimeException('Could not read image for background validation.');
+        }
+
+        $w = imagesx($img);
+        $h = imagesy($img);
+        $threshold = 230;
+        $points = [
+            [(int)($w * 0.1), (int)($h * 0.03)], [(int)($w * 0.3), (int)($h * 0.03)],
+            [(int)($w * 0.5), (int)($h * 0.03)], [(int)($w * 0.7), (int)($h * 0.03)],
+            [(int)($w * 0.9), (int)($h * 0.03)], [(int)($w * 0.1), (int)($h * 0.08)],
+            [(int)($w * 0.3), (int)($h * 0.08)], [(int)($w * 0.5), (int)($h * 0.08)],
+            [(int)($w * 0.7), (int)($h * 0.08)], [(int)($w * 0.9), (int)($h * 0.08)],
+        ];
+
+        foreach ($points as [$px, $py]) {
+            $rgb = imagecolorat($img, $px, $py);
+            $r = ($rgb >> 16) & 0xFF;
+            $g = ($rgb >> 8) & 0xFF;
+            $b = $rgb & 0xFF;
+            if ($r < $threshold || $g < $threshold || $b < $threshold) {
+                imagedestroy($img);
+                throw new \RuntimeException('Passport photo background must be plain white. The uploaded image has non-white areas on the edges.');
+            }
+        }
+
+        imagedestroy($img);
+    }
+
     public function chatbot(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'message' => 'required|string|max:2000',
         ]);
 
-        $response = $this->aiGateway->chat([
+        $response = $this->aiGateway->chatWithMessages([
             ['role' => 'system', 'content' => 'You are a recruitment assistant for DMRMS.'],
             ['role' => 'user', 'content' => $validated['message']],
         ]);
 
         return response()->json([
             'data' => [
-                'reply' => $response['content'] ?? 'I am unable to process your request at this time.',
+                'reply' => $response['data']['content'] ?? 'I am unable to process your request at this time.',
             ],
         ]);
     }

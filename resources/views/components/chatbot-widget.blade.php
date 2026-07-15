@@ -1,34 +1,9 @@
 @php
     $activeCycle = \App\Models\Cycle::where('status', 'active')->orderBy('start_date', 'desc')->first();
     $deadlineDate = $activeCycle?->application_deadline?->format('F j, Y') ?? 'TBD';
+    $apiUrl = '/api/v1/chatbot/message';
 @endphp
-<div x-data="{
-    open: false,
-    messages: [
-        { role: 'bot', text: 'Hello! Welcome to the GAF Recruitment Portal. How can I help you today?' }
-    ],
-    input: '',
-    send() {
-        if(!this.input.trim()) return;
-        this.messages.push({ role: 'user', text: this.input });
-        let q = this.input;
-        this.input = '';
-        setTimeout(() => {
-            let responses = {
-                'eligibility': 'To check eligibility, visit the eligibility Checker page or ensure you are a Ghanaian citizen aged 18-35 with at least SSCE/WASSCE.',
-                'apply': 'To apply, create an account, complete the 4-step application form, upload documents, and submit before the deadline.',
-                'deadline': 'The current application deadline is {{ $deadlineDate }}.',
-                'documents': 'Required documents: Birth Certificate, National ID, WASSCE/SSCE Certificate, Passport Photo, Medical Report, and Police Clearance.',
-                'status': 'You can track your application status from your applicant dashboard after logging in.',
-            };
-            let answer = 'I am an AI assistant. For specific questions, please contact GAF recruitment office or check the FAQ page.';
-            for(let [key, val] of Object.entries(responses)) {
-                if(q.toLowerCase().includes(key)) { answer = val; break; }
-            }
-            this.messages.push({ role: 'bot', text: answer });
-        }, 800);
-    }
-}" class="fixed bottom-6 right-6 z-50">
+<div x-data="chatbotWidget('{{ $apiUrl }}')" class="fixed bottom-6 right-6 z-50">
     <div x-show="open" x-cloak x-transition class="mb-4 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
         <div class="bg-gaf-green text-white px-4 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-2">
@@ -43,7 +18,23 @@
             <template x-for="(msg, i) in messages" :key="i">
                 <div class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
                     <div class="max-w-[80%] px-4 py-2 rounded-lg text-sm" :class="msg.role === 'user' ? 'bg-gaf-green text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'">
-                        <p x-text="msg.text"></p>
+                        <template x-if="msg.role === 'user'">
+                            <p x-text="msg.text"></p>
+                        </template>
+                        <template x-if="msg.role === 'bot'">
+                            <div x-html="formatText(msg.text)" class="text-sm [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_strong]:font-semibold [&_em]:italic [&_code]:text-xs [&_code]:bg-gray-200 [&_code]:px-1 [&_code]:rounded"></div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            <template x-if="loading">
+                <div class="flex justify-start">
+                    <div class="bg-gray-100 text-gray-800 rounded-lg rounded-bl-none px-4 py-3 text-sm">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0ms"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:150ms"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:300ms"></div>
+                        </div>
                     </div>
                 </div>
             </template>

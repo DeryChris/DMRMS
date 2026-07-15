@@ -6,7 +6,7 @@ interface AiProviderInterface
 {
     public function chat(array $messages, array $options = []): array;
 
-    public function analyzeDocument(string $filePath, string $documentType): array;
+    public function analyzeDocument(string $filePath, string $documentType, array $context = []): array;
 
     public function getEmbeddings(string $text): array;
 

@@ -26,6 +26,7 @@
             </div>
             <div class="hidden md:flex items-center justify-center absolute left-1/2 -translate-x-1/2 space-x-6">
                 <a href="{{ route('landing') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Home</a>
+                <a href="{{ route('voucher.buy') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Buy Voucher</a>
                 <a href="{{ route('eligibility.checker') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Eligibility Checker</a>
                 <a href="{{ route('announcements') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Announcements</a>
                 <a href="{{ route('guide') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Guide</a>
@@ -36,6 +37,7 @@
                 <a href="{{ route('applicant.login') }}" class="bg-gaf-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">Login</a>
                 <a href="{{ route('applicant.register') }}" class="bg-gaf-green text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gaf-dark-green transition">Register</a>
                 <a href="{{ route('login') }}" class="bg-gaf-khaki text-gaf-green px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-500 transition">Admin</a>
+                <x-theme-toggle :dark="true" />
                 <button @click="mobileMenu = !mobileMenu" class="md:hidden text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -45,6 +47,7 @@
         </div>
         <div x-show="mobileMenu" x-cloak class="md:hidden bg-gaf-green border-t border-gaf-dark-green px-4 py-3 space-y-2">
             <a href="{{ route('landing') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Home</a>
+            <a href="{{ route('voucher.buy') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Buy Voucher</a>
             <a href="{{ route('eligibility.checker') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Eligibility Checker</a>
             <a href="{{ route('announcements') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Announcements</a>
             <a href="{{ route('guide') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Guide</a>
@@ -90,13 +93,13 @@
             </div>
             @endif
         </div>
-        <div class="auth-split-right" style="background:linear-gradient(180deg, #ffffff 0%, #f8faf8 100%);position:relative;">
+        <div class="auth-split-right dark:bg-slate-800" style="background:linear-gradient(180deg, #ffffff 0%, #f8faf8 100%);position:relative;">
             <div style="position:absolute;inset:0;pointer-events:none;opacity:0.03;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22 viewBox=%220 0 200 200%22%3E%3Cg fill=%22%2314532d%22 fill-opacity=%221%22%3E%3Ccircle cx=%2230%22 cy=%2230%22 r=%2220%22/%3E%3Ccircle cx=%22170%22 cy=%2240%22 r=%2225%22/%3E%3Ccircle cx=%22100%22 cy=%22170%22 r=%2230%22/%3E%3Ccircle cx=%2260%22 cy=%22140%22 r=%2215%22/%3E%3Ccircle cx=%22150%22 cy=%22130%22 r=%2218%22/%3E%3Ccircle cx=%2220%22 cy=%22100%22 r=%2222%22/%3E%3Ccircle cx=%22180%22 cy=%22160%22 r=%2212%22/%3E%3Ccircle cx=%2280%22 cy=%2280%22 r=%2210%22/%3E%3Ccircle cx=%22130%22 cy=%2220%22 r=%2214%22/%3E%3C/g%3E%3C/svg%3E');background-repeat:repeat;"></div>
             <div class="auth-form-container" style="text-align:center;">
                 <div class="auth-form-header">
                     <img src="{{ asset('assets/images/logo/logo.png') }}" alt="GAF" style="height:56px;width:auto;margin-bottom:8px;">
-                    <h2 style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:18px;color:#1a202c;margin:0 0 2px;letter-spacing:0.3px;">{{ $title }}</h2>
-                    <p style="font-size:12px;color:#64748b;margin:0;">{{ $subtitle }}</p>
+                    <h2 style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:18px;color:#1a202c;margin:0 0 2px;letter-spacing:0.3px;" class="dark:text-slate-100">{{ $title }}</h2>
+                    <p style="font-size:12px;color:#64748b;margin:0;" class="dark:text-slate-400">{{ $subtitle }}</p>
                 </div>
                 <x-auth-session-status class="mb-4" :status="session('status')" />
                 {{ $slot }}

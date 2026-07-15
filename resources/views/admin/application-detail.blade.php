@@ -18,7 +18,7 @@
         <div class="lg:col-span-2 space-y-6">
             <div class="glass-strong rounded-xl shadow-sm p-6">
                 <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Personal Information</h3>
-                <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div><span class="text-gray-500">Name:</span> <span class="font-medium">{{ $application->applicant->name }}</span></div>
                     <div><span class="text-gray-500">DOB:</span> <span class="font-medium">{{ $application->applicant->date_of_birth?->format('Y-m-d') }}</span></div>
                     <div><span class="text-gray-500">Gender:</span> <span class="font-medium">{{ ucfirst($application->applicant->gender) }}</span></div>
@@ -32,16 +32,46 @@
 
             <div class="glass-strong rounded-xl shadow-sm p-6">
                 <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Education</h3>
-                <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div><span class="text-gray-500">Institution:</span> <span class="font-medium">{{ $application->institution_name ?? 'N/A' }}</span></div>
-                    <div><span class="text-gray-500">Qualification:</span> <span class="font-medium">{{ $application->qualification ?? 'N/A' }}</span></div>
+                    <div><span class="text-gray-500">Qualification Field:</span> <span class="font-medium">{{ $application->degree_field ?? 'N/A' }}</span></div>
                     <div><span class="text-gray-500">Year:</span> <span class="font-medium">{{ $application->year_obtained ?? 'N/A' }}</span></div>
                     <div><span class="text-gray-500">Level:</span> <span class="font-medium">{{ $application->education_level ?? 'N/A' }}</span></div>
                 </div>
             </div>
 
             <div class="glass-strong rounded-xl shadow-sm p-6">
-                <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Documents</h3>
+                <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Sector & Corps Preferences</h3>
+                @if($application->selectedSector || $application->corpSelections->count())
+                <div class="text-sm space-y-2">
+                    <div><span class="text-gray-500">Sector:</span> <span class="font-medium">{{ $application->selectedSector?->name ?? 'N/A' }}</span></div>
+                    <div><span class="text-gray-500">Service:</span> <span class="font-medium">{{ $application->selectedSector?->service ?? 'N/A' }}</span></div>
+                    <div class="pt-2 border-t border-gray-100">
+                        <p class="text-xs text-gray-400 font-medium mb-1">Corps Selections (by priority)</p>
+                        @foreach($application->corpSelections()->with('corp')->orderBy('priority')->get() as $sel)
+                        <div class="flex items-center gap-2 py-1">
+                            <span class="text-xs font-bold px-1.5 py-0.5 rounded {{ $sel->priority === 1 ? 'bg-gaf-green text-white' : ($sel->priority === 2 ? 'bg-blue-600 text-white' : 'bg-amber-600 text-white') }}">{{ $sel->priority }}</span>
+                            <span class="font-medium">{{ $sel->corp?->name ?? 'Unknown' }} <span class="text-gray-400 text-xs">({{ $sel->corp?->service ?? '' }})</span></span>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @else
+                <p class="text-sm text-gray-500">Not yet selected</p>
+                @endif
+            </div>
+
+            <div class="glass-strong rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-heading font-semibold text-lg text-gray-800">Documents</h3>
+                    <form action="{{ route('admin.applications.verify-all-documents', $application->id) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 transition-colors" title="Verify all pending/needs_review documents">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Verify All Pending
+                        </button>
+                    </form>
+                </div>
                 <div class="space-y-3">
                     @forelse($application->documents as $doc)
                     <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0 gradient-border-left pl-3">
@@ -97,6 +127,36 @@
             </div>
 
             <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-heading font-semibold text-lg text-gray-800">Voucher Info</h3>
+                    <form action="{{ route('admin.applications.recheck-voucher', $application->id) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors" title="Re-validate voucher">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Recheck
+                        </button>
+                    </form>
+                </div>
+                @if($application->applicant->voucher)
+                @php $v = $application->applicant->voucher; @endphp
+                <div class="text-sm space-y-1">
+                    <p><span class="text-gray-500">Serial:</span> <span class="font-medium font-mono">{{ $v->serial_number }}</span></p>
+                    <p><span class="text-gray-500">Status:</span> {!! status_badge($v->status) !!}</p>
+                    <p><span class="text-gray-500">Cycle:</span> <span class="font-medium">{{ $v->cycle?->name ?? 'N/A' }}</span></p>
+                    <p><span class="text-gray-500">Purchased:</span> <span class="font-medium">{{ $v->purchased_at?->format('Y-m-d') ?? 'N/A' }}</span></p>
+                    @if($v->expires_at)
+                    <p><span class="text-gray-500">Expires:</span> <span class="font-medium {{ now()->gt($v->expires_at) ? 'text-red-600' : '' }}">{{ $v->expires_at->format('Y-m-d') }}</span></p>
+                    @endif
+                    @if($v->used_by)
+                    <p><span class="text-gray-500">Used by:</span> <span class="font-medium">{{ $v->applicant?->name ?? 'N/A' }} ({{ $v->used_at?->format('Y-m-d') ?? 'N/A' }})</span></p>
+                    @endif
+                </div>
+                @else
+                <p class="text-sm text-gray-500">No voucher linked to this applicant.</p>
+                @endif
+            </div>
+
+            <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
                 <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Screening Results</h3>
                 @if($application->screeningResult)
                 <div class="space-y-2 text-sm">
@@ -137,7 +197,7 @@
                     @if($application->finalDecision->evaluation)
                     <div class="mt-2 pt-2 border-t border-gray-100">
                         <p class="text-gray-500 text-xs font-medium mb-1">Evaluation Scores</p>
-                        <div class="grid grid-cols-5 gap-2 text-xs">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-xs">
                             @foreach($application->finalDecision->evaluation as $key => $val)
                             <div><span class="text-gray-400">{{ ucfirst($key) }}:</span> <span class="font-semibold">{{ $val }}</span></div>
                             @endforeach

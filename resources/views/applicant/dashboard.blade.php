@@ -67,6 +67,12 @@
                         </li>
                     </ul>
                 </div>
+                <div class="flex justify-center">
+                    <a href="{{ route('applicant.offer-letter') }}" class="inline-flex items-center space-x-2 bg-gaf-khaki text-white px-8 py-3 rounded-lg text-sm font-semibold hover:bg-yellow-600 transition shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>Download Offer Letter</span>
+                    </a>
+                </div>
                 <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
                     <p class="font-medium">Important Notice</p>
                     <p class="text-xs mt-1">Failure to report on the assigned date may result in forfeiture of your selection. Contact the recruitment board immediately if you have any conflicts.</p>
@@ -116,9 +122,8 @@
     <div class="flex flex-wrap items-center justify-center gap-3">
         @if(!$application || in_array($application->status, ['draft', 'registered']))
         <a href="{{ route('applicant.application') }}" class="bg-gaf-red text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-red-700 transition">{{ $application ? 'Continue' : 'Start' }} Application</a>
-        <a href="{{ route('applicant.documents') }}" class="bg-gaf-green text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-gaf-dark-green transition">Documents</a>
         @endif
-        @if($application && in_array($application->status, ['appointment_scheduled', 'screening_completed']))
+        @if($application && $application->status === 'appointment_scheduled')
         <a href="{{ route('applicant.appointment') }}" class="bg-gaf-khaki text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-yellow-600 transition">Appointment</a>
         @endif
     </div>

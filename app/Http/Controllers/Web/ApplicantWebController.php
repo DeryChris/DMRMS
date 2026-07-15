@@ -6,13 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Document;
 use App\Models\Cycle;
+use App\Events\ApplicationSubmitted;
+use App\Events\DocumentUploaded;
 use App\Services\Ai\AiGateway;
+use App\Services\Application\CorpMatchingService;
 use App\Services\Eligibility\EligibilityService;
 use App\Services\Notification\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\View\View;
 
 class ApplicantWebController extends Controller
@@ -20,12 +25,14 @@ class ApplicantWebController extends Controller
     protected AiGateway $aiGateway;
     protected EligibilityService $eligibilityService;
     protected NotificationService $notificationService;
+    protected CorpMatchingService $corpMatchingService;
 
-    public function __construct(AiGateway $aiGateway, EligibilityService $eligibilityService, NotificationService $notificationService)
+    public function __construct(AiGateway $aiGateway, EligibilityService $eligibilityService, NotificationService $notificationService, CorpMatchingService $corpMatchingService)
     {
         $this->aiGateway = $aiGateway;
         $this->eligibilityService = $eligibilityService;
         $this->notificationService = $notificationService;
+        $this->corpMatchingService = $corpMatchingService;
     }
 
     public function dashboard(): View
@@ -72,6 +79,27 @@ class ApplicantWebController extends Controller
         return view('applicant.dashboard', compact('applicant', 'application', 'notifications', 'currentStage', 'stages', 'statusText', 'finalDecision'));
     }
 
+    public function offerLetter()
+    {
+        $applicant = Auth::guard('applicant')->user();
+        $application = $applicant->application()->with('cycle', 'finalDecision')->first();
+
+        if (!$application || !in_array($application->status, ['selected', 'recruited'])) {
+            abort(404, 'Offer letter not available.');
+        }
+
+        $pdf = Pdf::loadView('admin.offer-letter-pdf', [
+            'applicant' => $applicant,
+            'application' => $application,
+            'cycle' => $application->cycle,
+            'generatedAt' => now()->format('F j, Y'),
+        ]);
+
+        $filename = 'offer-letter-' . ($application->gaf_id ?? 'applicant') . '.pdf';
+
+        return response()->streamDownload(fn() => print($pdf->output()), $filename);
+    }
+
     public function applicationForm(Request $request): View
     {
         $applicant = Auth::guard('applicant')->user();
@@ -85,7 +113,47 @@ class ApplicantWebController extends Controller
         $queryStep = (int) $request->query('step', 0);
         $currentStep = $queryStep > $savedStep ? $queryStep : $savedStep;
 
-        return view('applicant.application-form', compact('applicant', 'application', 'cycles', 'existing', 'defaultCycle', 'currentStep'));
+        $eligibleSectors = $application
+            ? $this->corpMatchingService->getEligibleSectors($application)
+            : collect();
+
+        $sectors = \App\Models\Sector::where('is_active', true)->orderBy('sort_order')->get();
+
+        $existingSelections = $application
+            ? $application->corpSelections()->with('corp.sector')->orderBy('priority')->get()
+            : collect();
+
+        $allCorps = \App\Models\Corp::where('is_active', true)->with('sector')->orderBy('name')->get();
+
+        $serviceLabel = fn($v) => match (strtolower($v ?? '')) {
+            'army' => 'Army',
+            'navy' => 'Navy',
+            'air_force' => 'Air Force',
+            default => $v ?? '',
+        };
+
+        $allCorpsArray = $allCorps->map(fn($c) => [
+            'id' => $c->id,
+            'name' => $c->name,
+            'service' => $serviceLabel($c->service),
+            'description' => $c->description ?? '',
+            'sector_id' => $c->sector_id,
+            'sector_name' => $c->sector?->name ?? '',
+        ])->values()->toArray();
+
+        $sectorsArray = $sectors->map(fn($s) => [
+            'id' => $s->id,
+            'name' => $s->name,
+            'service' => $s->service,
+        ])->values()->toArray();
+
+        $degreeFields = CorpMatchingService::getAllDegreeFields();
+
+        return view('applicant.application-form', compact(
+            'applicant', 'application', 'cycles', 'existing', 'defaultCycle',
+            'currentStep', 'eligibleSectors', 'sectors', 'existingSelections',
+            'allCorps', 'allCorpsArray', 'sectorsArray', 'degreeFields'
+        ));
     }
 
     public function saveApplication(Request $request): RedirectResponse
@@ -93,6 +161,37 @@ class ApplicantWebController extends Controller
         $applicant = Auth::guard('applicant')->user();
 
         $isDraft = $request->input('action', 'save') === 'save';
+        $action = $request->input('action', 'save');
+
+        if ($action === 'submit') {
+            $validator = Validator::make($request->all(), [
+                'cycle_id' => 'required|exists:cycles,id',
+                'education_level' => 'required|string|max:255',
+                'institution_name' => 'required|string|max:255',
+                'degree_field' => 'required|string|max:255',
+                'year_obtained' => 'required|integer|min:1950|max:' . date('Y'),
+                'height' => 'required|numeric|min:0.5|max:2.5',
+                'criminal_record' => 'required|string|in:yes,no',
+                'marital_status' => 'required|string|in:Single,Married,Divorced,Widowed',
+                'nationality' => 'required|string|max:50',
+                'national_id' => 'required|string|max:20',
+                'residential_address' => 'required|string',
+                'region' => 'required|string|max:50',
+                'district' => 'required|string|max:50',
+                'selected_sector_id' => 'required|exists:sectors,id',
+                'corp_1' => 'required|exists:corps,id',
+            ]);
+
+            if ($validator->fails()) {
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Please fill all required fields before submitting.'], 422);
+                }
+                return redirect()->back()
+                    ->with('error', 'Please fill all required fields before submitting.')
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+        }
 
         $required = $isDraft ? 'nullable' : 'required';
 
@@ -100,7 +199,7 @@ class ApplicantWebController extends Controller
             'cycle_id' => 'required|exists:cycles,id',
             'education_level' => "{$required}|string|max:255",
             'institution_name' => 'nullable|string|max:255',
-            'qualification' => 'nullable|string|max:255',
+            'degree_field' => 'nullable|string|max:255',
             'year_obtained' => 'nullable|integer|min:1950|max:' . date('Y'),
             'certificate_number' => 'nullable|string|max:255',
             'height' => 'nullable|numeric|min:0.5|max:2.5',
@@ -108,6 +207,10 @@ class ApplicantWebController extends Controller
             'health_conditions' => 'nullable|array',
             'criminal_record' => 'nullable|string|in:yes,no',
             'fitness_status' => 'nullable|string|max:255',
+            'selected_sector_id' => "{$required}|exists:sectors,id",
+            'corp_1' => "{$required}|exists:corps,id",
+            'corp_2' => 'nullable|exists:corps,id',
+            'corp_3' => 'nullable|exists:corps,id',
         ]);
 
         $personalValidated = $request->validate([
@@ -125,7 +228,6 @@ class ApplicantWebController extends Controller
 
         $applicant->update($personalValidated);
 
-        $action = $request->input('action', 'save');
         $application = $applicant->application;
 
         $appValidated['current_step'] = $request->input('current_step', 1);
@@ -137,12 +239,29 @@ class ApplicantWebController extends Controller
             $application->update($appValidated);
             $message = 'Application updated successfully.';
         } else {
-            Application::create(array_merge($appValidated, [
+            $application = Application::create(array_merge($appValidated, [
                 'applicant_id' => $applicant->id,
                 'application_date' => now(),
                 'status' => 'draft',
             ]));
             $message = 'Application created successfully.';
+        }
+
+        // Save sector selection
+        if ($request->has('selected_sector_id')) {
+            $application->update(['selected_sector_id' => $request->input('selected_sector_id')]);
+        }
+
+        // Save corps selections (priorities 1-3)
+        $application->corpSelections()->delete();
+        for ($i = 1; $i <= 3; $i++) {
+            $corpId = $request->input("corp_{$i}");
+            if ($corpId) {
+                $application->corpSelections()->create([
+                    'corp_id' => $corpId,
+                    'priority' => $i,
+                ]);
+            }
         }
 
         if ($action === 'submit') {
@@ -162,6 +281,8 @@ class ApplicantWebController extends Controller
                 }
 
                 $app->update(['status' => 'submitted', 'submitted_at' => now()]);
+
+                $this->notificationService->applicationSubmitted($app);
 
                 $this->eligibilityService->evaluate($app);
 
@@ -201,6 +322,10 @@ class ApplicantWebController extends Controller
         }
 
         $application->update(['status' => 'submitted', 'submitted_at' => now()]);
+
+        $this->notificationService->applicationSubmitted($application);
+
+        ApplicationSubmitted::dispatch($application);
 
         $this->notificationService->notifyAdminsByRole(
             'recruitment_officer',
@@ -242,6 +367,43 @@ class ApplicantWebController extends Controller
         return view('applicant.documents', compact('applicant', 'documents', 'uploadedDocTypes', 'requiredDocTypes'));
     }
 
+    private function validateWhiteBackground(string $path, string $mime): void
+    {
+        $img = match ($mime) {
+            'image/jpeg' => @imagecreatefromjpeg($path),
+            'image/png'  => @imagecreatefrompng($path),
+            default      => false,
+        };
+
+        if (!$img) {
+            abort(422, 'Could not read image for background validation.');
+        }
+
+        $w = imagesx($img);
+        $h = imagesy($img);
+        $threshold = 230;
+        $points = [
+            [(int)($w * 0.1), (int)($h * 0.03)], [(int)($w * 0.3), (int)($h * 0.03)],
+            [(int)($w * 0.5), (int)($h * 0.03)], [(int)($w * 0.7), (int)($h * 0.03)],
+            [(int)($w * 0.9), (int)($h * 0.03)], [(int)($w * 0.1), (int)($h * 0.08)],
+            [(int)($w * 0.3), (int)($h * 0.08)], [(int)($w * 0.5), (int)($h * 0.08)],
+            [(int)($w * 0.7), (int)($h * 0.08)], [(int)($w * 0.9), (int)($h * 0.08)],
+        ];
+
+        foreach ($points as [$px, $py]) {
+            $rgb = imagecolorat($img, $px, $py);
+            $r = ($rgb >> 16) & 0xFF;
+            $g = ($rgb >> 8) & 0xFF;
+            $b = $rgb & 0xFF;
+            if ($r < $threshold || $g < $threshold || $b < $threshold) {
+                imagedestroy($img);
+                abort(422, 'Passport photo background must be plain white. The uploaded image has non-white areas on the edges.');
+            }
+        }
+
+        imagedestroy($img);
+    }
+
     public function uploadDocument(Request $request): RedirectResponse
     {
         $applicant = Auth::guard('applicant')->user();
@@ -255,6 +417,25 @@ class ApplicantWebController extends Controller
             'document_type' => 'required|string|in:birth_certificate,national_id,certificate,photograph,medical_report,police_clearance,other',
             'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
+
+        if ($validated['document_type'] === 'photograph') {
+            $file = $request->file('file');
+            $photoPath = $file->getRealPath();
+            $imageInfo = @getimagesize($photoPath);
+            if (!$imageInfo || $imageInfo[0] !== 450 || $imageInfo[1] !== 540) {
+                return redirect()->back()->withErrors(['file' => 'Passport photo must be exactly 450×540 pixels. Your image is ' . ($imageInfo[0] ?? 0) . '×' . ($imageInfo[1] ?? 0) . '.'])->withInput();
+            }
+            $this->validateWhiteBackground($photoPath, $file->getMimeType());
+        }
+
+        $existing = Document::where('application_id', $application->id)
+            ->where('document_type', $validated['document_type'])
+            ->first();
+
+        if ($existing) {
+            Storage::disk('public')->delete($existing->file_path);
+            $existing->delete();
+        }
 
         $file = $request->file('file');
         $path = $file->store("documents/{$applicant->id}", 'public');
@@ -270,14 +451,32 @@ class ApplicantWebController extends Controller
             'verification_status' => 'pending',
         ]);
 
+        return redirect()->route('applicant.documents')->with('success', 'Document uploaded successfully.');
+    }
+
+    public function finalizeDocuments(): RedirectResponse
+    {
+        $applicant = Auth::guard('applicant')->user();
+        $application = $applicant->application;
+
+        if (!$application) {
+            return redirect()->route('applicant.application')->with('error', 'Please create an application first.');
+        }
+
+        $documents = $application->documents()->where('verification_status', 'pending')->get();
+
+        foreach ($documents as $document) {
+            DocumentUploaded::dispatch($document);
+        }
+
         $this->notificationService->notifyAdminsByRole(
             'recruitment_officer',
             'document_uploaded',
-            'New Document Uploaded',
-            "{$applicant->name} uploaded a new document ({$validated['document_type']}) for review."
+            'Documents Finalized',
+            "{$applicant->name} has finalized their document uploads for review."
         );
 
-        return redirect()->route('applicant.documents')->with('success', 'Document uploaded successfully.');
+        return redirect()->route('applicant.application', ['step' => 6])->with('success', 'Documents submitted for review.');
     }
 
     public function deleteDocument(int $id): RedirectResponse

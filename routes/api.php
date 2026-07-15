@@ -83,7 +83,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     });
 
     // Screening endpoints
-    Route::middleware('auth:sanctum')->prefix('screening')->name('screening.')->group(function () {
+    Route::middleware(['auth:sanctum', 'role:admin,super_admin,screening_officer'])->prefix('screening')->name('screening.')->group(function () {
         Route::post('verify-entry', [ScreeningController::class, 'verifyEntry'])->name('verify-entry');
         Route::post('medical', [ScreeningController::class, 'recordMedical'])->name('medical');
         Route::post('fitness', [ScreeningController::class, 'recordFitness'])->name('fitness');

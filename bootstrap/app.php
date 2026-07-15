@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription' => \App\Http\Middleware\SubscriptionMiddleware::class,
             'ai.rate.limit' => \App\Http\Middleware\AiRateLimitMiddleware::class,
             'applicant.access' => \App\Http\Middleware\CheckApplicantAccess::class,
+            'password.expiry' => \App\Http\Middleware\CheckPasswordExpiry::class,
         ]);
 
         RedirectIfAuthenticated::redirectUsing(function (Request $request) {
@@ -33,4 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    ->withProviders([
+        \App\Providers\EventServiceProvider::class,
+    ])->create();

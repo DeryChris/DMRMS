@@ -5,13 +5,14 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles, SoftDeletes;
 
     protected $table = 'administrators';
 
@@ -23,12 +24,13 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'role',
-        'permissions',
+        'legacy_permissions',
         'subscription_tier',
         'subscription_expires_at',
         'ai_usage_limit',
         'status',
         'last_login',
+        'password_changed_at',
     ];
 
     protected $hidden = [
@@ -39,11 +41,22 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'permissions' => 'array',
+            'legacy_permissions' => 'array',
             'subscription_expires_at' => 'datetime',
             'last_login' => 'datetime',
             'password' => 'hashed',
+            'password_changed_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
+    }
+
+    public function setPasswordAttribute($value)
+    {
+        if (!str_starts_with($value, '$2y$') && !str_starts_with($value, '$2a$') && !str_starts_with($value, '$2b$')) {
+            $value = bcrypt($value);
+        }
+        $this->attributes['password'] = $value;
+        $this->attributes['password_changed_at'] = now();
     }
 
     public function notifications(): HasMany

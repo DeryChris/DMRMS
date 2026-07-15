@@ -53,12 +53,67 @@ class OpenAiProvider implements AiProviderInterface
         }
     }
 
-    public function analyzeDocument(string $filePath, string $documentType): array
+    public function analyzeDocument(string $filePath, string $documentType, array $context = []): array
     {
         $start = microtime(true);
 
         try {
             $imageContent = base64_encode(file_get_contents($filePath));
+
+            $referenceData = $context['reference_data'] ?? [];
+            $documentTemplate = $context['document_template'] ?? '';
+            $analysisPrompt = $context['analysis_prompt'] ?? '';
+
+            $referenceSection = '';
+            if (!empty($referenceData)) {
+                $referenceSection = "\n\nReference data from application form:\n" . json_encode($referenceData, JSON_PRETTY_PRINT);
+            }
+
+            $templateSection = '';
+            if (!empty($documentTemplate)) {
+                $templateSection = "\n\nExpected {$documentType} format:\n{$documentTemplate}";
+            }
+
+            $promptBody = $analysisPrompt ?: <<<PROMPT
+You are a Ghana Armed Forces document verification officer. Analyze the provided {$documentType} document image and return STRICT JSON only (no markdown, no explanation).
+
+{
+  "overall": {
+    "verdict": "verified" or "rejected",
+    "confidence": 0.0 to 1.0,
+    "reasons": ["reason1", "reason2"]
+  },
+  "extracted_fields": {
+    "full_name": "value or null",
+    "date_of_birth": "value or null",
+    "id_number": "value or null",
+    "issuing_authority": "value or null",
+    "date_issued": "value or null",
+    "expiry_date": "value or null"
+  },
+  "cross_reference": {
+    "name_match": true or false,
+    "dob_match": true or false,
+    "nationality_match": true or false
+  },
+  "template_validation": {
+    "has_required_fields": true or false,
+    "has_official_stamps": true or false,
+    "has_valid_format": true or false
+  },
+  "fraud_indicators": ["list of suspected issues or empty array"]
+}
+
+Rules:
+- Be decisive and err on the side of verification.
+- Set confidence >= 0.5 if the document appears valid.
+- If it looks authentic and matches reference data, mark verified.
+- If clearly forged or doesn't match at all (confidence >= 0.7), mark rejected.
+- When in doubt, lean toward "verified" at lower confidence.
+- Extract any visible text fields from the document.
+PROMPT;
+
+            $systemPrompt = $promptBody . $referenceSection . $templateSection;
 
             $messages = [
                 [
@@ -66,7 +121,7 @@ class OpenAiProvider implements AiProviderInterface
                     'content' => [
                         [
                             'type' => 'text',
-                            'text' => "Analyze this {$documentType} document. Extract all visible text and identify key fields (name, date, ID numbers, etc.). Return as structured JSON.",
+                            'text' => $systemPrompt,
                         ],
                         [
                             'type'     => 'image_url',

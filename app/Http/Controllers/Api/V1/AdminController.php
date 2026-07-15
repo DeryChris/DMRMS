@@ -7,15 +7,18 @@ use App\Models\Administrator;
 use App\Models\Applicant;
 use App\Models\Application;
 use App\Models\Appointment;
+use App\Models\Barrack;
 use App\Models\Cycle;
 use App\Models\Document;
 use App\Models\FinalDecision;
 use App\Models\ReserveList;
 use App\Models\ScreeningResult;
 use App\Models\AiUsage;
+use App\Models\User;
 use App\Services\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -109,6 +112,8 @@ class AdminController extends Controller
 
     public function updateApplicationStatus(Request $request, $id): JsonResponse
     {
+        $this->authorize('update', Application::class);
+
         $validated = $request->validate([
             'status' => 'required|string|in:draft,submitted,documents_verified,eligibility_passed,eligibility_failed,shortlisted,appointment_scheduled,screening_completed,final_decision_pending,selected,rejected',
             'remarks' => 'nullable|string|max:500',
@@ -128,6 +133,8 @@ class AdminController extends Controller
 
     public function shortlist(Request $request): JsonResponse
     {
+        $this->authorize('shortlist', Application::class);
+
         $validated = $request->validate([
             'applicant_ids' => 'required|array',
             'applicant_ids.*' => 'exists:applicants,id',
@@ -164,6 +171,7 @@ class AdminController extends Controller
         ]);
 
         $document = Document::findOrFail($id);
+        $this->authorize('verify', $document);
         $document->update([
             'verification_status' => $validated['verification_status'],
             'verified_by'         => $request->user()->id,
@@ -296,16 +304,30 @@ class AdminController extends Controller
 
         $mapped = $statusMapping[$validated['status']];
 
+        $decisionData = [
+            'decision'         => $mapped['decision'],
+            'decision_reason'  => $validated['remarks'] ?? null,
+            'committee_members' => [$request->user()->id],
+            'committee_approved_at' => now(),
+            'committee_approved_by' => $request->user()->id,
+            'decision_date'    => now(),
+        ];
+
+        if ($validated['status'] === 'selected') {
+            $decisionData['reporting_code'] = 'GAF-' . strtoupper(substr(uniqid(), -8));
+
+            $applicant = $application->applicant;
+            if ($applicant?->region) {
+                $barrack = Barrack::where('region', $applicant->region)->where('is_active', true)->first();
+                if ($barrack) {
+                    $decisionData['barrack_id'] = $barrack->id;
+                }
+            }
+        }
+
         $decision = FinalDecision::updateOrCreate(
             ['application_id' => $application->id],
-            [
-                'decision'         => $mapped['decision'],
-                'decision_reason'  => $validated['remarks'] ?? null,
-                'committee_members' => [$request->user()->id],
-                'committee_approved_at' => now(),
-                'committee_approved_by' => $request->user()->id,
-                'decision_date'    => now(),
-            ]
+            $decisionData
         );
 
         Application::where('applicant_id', $validated['applicant_id'])
@@ -320,6 +342,8 @@ class AdminController extends Controller
                 'notes' => $validated['remarks'] ?? null,
             ]);
         }
+
+        $this->notificationService->finalDecision($application->fresh());
 
         return response()->json([
             'success' => true,
@@ -417,8 +441,8 @@ class AdminController extends Controller
             $validated = $request->validate([
                 'first_name' => 'required|string|max:255',
                 'last_name'  => 'nullable|string|max:255',
-                'email'      => 'required|email|max:255|unique:administrators,email',
-                'password'   => 'required|string|min:8|confirmed',
+                'email'      => 'required|email|max:255|unique:administrators,email,NULL,id,deleted_at,NULL',
+                'password'   => app(\App\Services\Security\PasswordPolicyService::class)->getValidationRules(),
                 'role'       => 'required|in:admin,screener,super_admin',
             ]);
 
@@ -435,12 +459,13 @@ class AdminController extends Controller
         }
 
         if ($request->isMethod('put') && $id) {
+            $this->authorize('update', User::class);
             $user = Administrator::findOrFail($id);
             $validated = $request->validate([
                 'first_name' => 'sometimes|string|max:255',
                 'last_name'  => 'sometimes|string|max:255',
-                'email'      => 'sometimes|email|max:255|unique:administrators,email,' . $id,
-                'password'   => 'sometimes|string|min:8|confirmed',
+                'email'      => 'sometimes|email|max:255|unique:administrators,email,' . $id . ',id,deleted_at,NULL',
+                'password'   => ['sometimes', 'string', 'confirmed', app(\App\Services\Security\PasswordPolicyService::class)->getMinLength()],
                 'role'       => 'sometimes|in:admin,screener,super_admin',
             ]);
 
@@ -453,9 +478,21 @@ class AdminController extends Controller
         }
 
         if ($request->isMethod('delete') && $id) {
-            Administrator::findOrFail($id)->delete();
+            $this->authorize('delete', User::class);
+            DB::transaction(function () use ($id) {
+                $admin = Administrator::findOrFail($id);
 
-            return response()->json(['success' => true, 'message' => 'User deleted.']);
+                // Remove Spatie role assignments via the User model (has HasRoles)
+                $user = User::find($id);
+                if ($user) {
+                    $user->syncRoles([]);
+                }
+
+                // Soft-delete the admin
+                $admin->delete();
+            });
+
+            return response()->json(['success' => true, 'message' => 'User deactivated. Data retained for audit.']);
         }
 
         return response()->json([
@@ -467,7 +504,7 @@ class AdminController extends Controller
     public function aiConfig(Request $request): JsonResponse
     {
         $admin = $request->user();
-        if ($admin->role !== 'super_admin') {
+        if (!$admin->hasRole('super_admin')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized. Only super admin can update AI configuration.'], 403);
         }
 

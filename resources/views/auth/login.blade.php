@@ -4,7 +4,7 @@
 
         <div>
             <label for="email" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
-            <input id="email" type="email" name="email" :value="old('email')" placeholder="your@email.com" required autofocus autocomplete="username"
+            <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="your@email.com" required autofocus autocomplete="username"
                    style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:border-color 0.2s,box-shadow 0.2s;box-sizing:border-box;"
                    onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
                    onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">

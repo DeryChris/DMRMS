@@ -30,7 +30,7 @@ class FallbackProvider implements AiProviderInterface
         ];
     }
 
-    public function analyzeDocument(string $filePath, string $documentType): array
+    public function analyzeDocument(string $filePath, string $documentType, array $context = []): array
     {
         $start = microtime(true);
 

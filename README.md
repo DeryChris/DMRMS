@@ -135,16 +135,18 @@ cp .env.example .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Start All Services (3 Terminals)
+### Start All Services
 
 ```bash
-# Terminal 1 — Laravel
-php artisan serve --port=8000
+# Terminal 1 — Start XAMPP (Apache & PostgreSQL via Control Panel)
 
-# Terminal 2 — Queue Worker
-php artisan queue:work --tries=3
+# Terminal 2 — Laravel All-in-One (Queue + Scheduler + Vite + Built-in Server)
+composer run dev
+# Starts: php artisan serve, queue:work (--tries=3), schedule:work, npm run dev
+# Access at http://localhost:8000
+# One Ctrl+C kills all processes
 
-# Terminal 3 — AI Service
+# Terminal 3 — Python AI Service (only if AI_PROVIDER=api)
 cd ai_service && venv\Scripts\activate && uvicorn app.main:app --reload --port 8000
 ```
 
@@ -236,11 +238,11 @@ Swagger UI: `http://localhost:8000/docs`
 
 | Member | Area |
 |--------|------|
-| **Seidu** | AI Service, OpenAI, AI Gateway |
-| **Ackon** | Laravel Backend, Services, Queues |
-| **Chrispen** | Database, Config, Secrets, Routes |
-| **Agartha** | Blade Templates, Tailwind, UI |
-| **Johnson** | Alpine.js, Chart.js, Frontend |
+| **Kweku Afredu** | AI Service, OpenAI, AI Gateway |
+| **Eugene Amoah** | Laravel Backend, Services, Queues |
+| **Prosper Effah** | Database, Config, Secrets, Routes |
+| **Stephen Ansah** | Blade Templates, Tailwind, UI |
+| **Shafatu Saddick** | Alpine.js, Chart.js, Frontend |
 
 ---
 

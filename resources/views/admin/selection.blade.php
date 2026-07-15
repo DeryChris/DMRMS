@@ -168,6 +168,13 @@
                 Final Decisions
                 <span class="text-sm font-normal text-gray-500" x-text="'(' + screenedCount + ' awaiting decision)'"></span>
             </h3>
+            <form method="POST" action="{{ route('admin.selection.process-decisions') }}">
+                @csrf
+                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-gaf-green text-white rounded-lg text-sm font-medium hover:bg-gaf-dark-green transition" onclick="return confirm('Process decisions for all screened applicants? This will score and assign selected/reserve/rejected statuses automatically.')">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Process Decisions Now
+                </button>
+            </form>
         </div>
         <table class="w-full text-sm">
             <thead>

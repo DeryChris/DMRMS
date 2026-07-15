@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Events\ScreeningCompleted;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Application;
@@ -47,6 +48,8 @@ class ScreeningWebController extends Controller
 
     public function verifyEntry(Request $request): JsonResponse
     {
+        $this->authorize('verifyEntry', ScreeningResult::class);
+
         $request->validate(['code' => 'required|string']);
 
         $code = VerificationCode::with('application.applicant')
@@ -121,6 +124,8 @@ class ScreeningWebController extends Controller
 
     public function recordMedical(Request $request): RedirectResponse
     {
+        $this->authorize('recordMedical', ScreeningResult::class);
+
         $validated = $request->validate([
             'application_id' => 'required|exists:applications,id',
             'medical_status' => 'required|in:fit,unfit,pending',
@@ -162,6 +167,8 @@ class ScreeningWebController extends Controller
 
     public function recordFitness(Request $request): RedirectResponse
     {
+        $this->authorize('recordFitness', ScreeningResult::class);
+
         $validated = $request->validate([
             'application_id'  => 'required|exists:applications,id',
             'fitness_score'   => 'required|numeric|min:0|max:100',
@@ -199,6 +206,8 @@ class ScreeningWebController extends Controller
 
     public function recordInterview(Request $request): RedirectResponse
     {
+        $this->authorize('recordInterview', ScreeningResult::class);
+
         $validated = $request->validate([
             'application_id'     => 'required|exists:applications,id',
             'interview_score'    => 'required|numeric|min:0|max:100',
@@ -248,6 +257,7 @@ class ScreeningWebController extends Controller
             }
 
             if ($newStatus === 'screening_completed') {
+                ScreeningCompleted::dispatch($application->fresh());
                 $this->notificationService->notifyAdminsByRole(
                     ['admin', 'super_admin'],
                     'screening_completed',

@@ -36,15 +36,15 @@ class AuthController extends Controller
             'date_of_birth' => 'required|date',
             'gender'        => 'required|in:male,female',
             'marital_status'=> 'nullable|in:single,married,divorced,widowed',
-            'contact_number'=> 'required|string|max:20|unique:applicants,contact_number',
+            'contact_number'=> 'required|string|max:20|unique:applicants,contact_number,NULL,id,deleted_at,NULL',
             'alternative_contact' => 'nullable|string|max:20',
-            'email'         => 'required|email|max:255|unique:applicants,email',
+            'email'         => 'required|email|max:255|unique:applicants,email,NULL,id,deleted_at,NULL',
             'residential_address' => 'required|string|max:500',
             'region'        => 'required|string|max:255',
             'district'      => 'required|string|max:255',
             'nationality'   => 'required|string|max:255',
-            'national_id'   => 'required|string|max:50|unique:applicants,national_id',
-            'password'      => 'required|string|min:8|confirmed',
+            'national_id'   => 'required|string|max:50|unique:applicants,national_id,NULL,id,deleted_at,NULL',
+            'password'      => app(\App\Services\Security\PasswordPolicyService::class)->getValidationRules(),
         ]);
 
         $voucherValidation = $this->voucherService->validate($validated['serial_number'], $validated['pin_code']);
@@ -200,7 +200,7 @@ class AuthController extends Controller
         $request->validate([
             'token'    => 'required',
             'email'    => 'required|email',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => app(\App\Services\Security\PasswordPolicyService::class)->getValidationRules(),
         ]);
 
         $status = Password::broker('applicants')->reset(

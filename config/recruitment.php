@@ -53,6 +53,7 @@ return [
         'pending' => ['label' => 'Pending', 'color' => 'bg-yellow-100 text-yellow-700'],
         'verified' => ['label' => 'Verified', 'color' => 'bg-green-100 text-green-700'],
         'rejected' => ['label' => 'Rejected', 'color' => 'bg-red-100 text-red-700'],
+        'needs_review' => ['label' => 'Needs Review', 'color' => 'bg-orange-100 text-orange-700'],
     ],
     'cycle_statuses' => [
         'draft' => ['label' => 'Draft', 'color' => 'bg-gray-100 text-gray-600'],
@@ -79,4 +80,29 @@ return [
         'pending' => ['label' => 'Pending', 'color' => 'bg-yellow-100 text-yellow-700'],
         'in_progress' => ['label' => 'In Progress', 'color' => 'bg-yellow-100 text-yellow-700'],
     ],
+
+    'scheduling' => [
+        'default_date' => env('SCHEDULE_DEFAULT_DATE', 'next_weekday'),
+        'default_time' => env('SCHEDULE_DEFAULT_TIME', '08:00'),
+        'daily_capacity' => (int) env('SCHEDULE_DAILY_CAPACITY', 50),
+    ],
+
+    'scoring_weights' => [
+        'medical' => 0.40,
+        'interview' => 0.30,
+        'fitness' => 0.20,
+        'eligibility' => 0.10,
+    ],
+
+    'auto_recruit' => [
+        'enabled' => env('AUTO_RECRUIT_ENABLED', false),
+        'enrollment_delay_days' => (int) env('AUTO_RECRUIT_DELAY_DAYS', 14),
+        'default_training_battalion' => env('DEFAULT_TRAINING_BATTALION', 'GAF Training Depot'),
+    ],
+
+    'reserve_ratio' => 0.20,
+
+    'auto_promote_reserve' => env('AUTO_PROMOTE_RESERVE', false),
+
+    'auto_final_decision' => env('AUTO_FINAL_DECISION', true),
 ];

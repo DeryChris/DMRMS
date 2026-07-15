@@ -5,13 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class Applicant extends Authenticatable
 {
-    use HasApiTokens, Notifiable;
+    use HasApiTokens, Notifiable, SoftDeletes;
 
     protected $table = 'applicants';
 
@@ -39,6 +40,7 @@ class Applicant extends Authenticatable
         'phone_verified',
         'status',
         'last_login',
+        'password_changed_at',
     ];
 
     protected $hidden = [
@@ -55,7 +57,23 @@ class Applicant extends Authenticatable
             'phone_verified' => 'boolean',
             'last_login' => 'datetime',
             'password' => 'hashed',
+            'password_changed_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
+    }
+
+    public function setGenderAttribute($value)
+    {
+        $this->attributes['gender'] = strtolower($value);
+    }
+
+    public function setPasswordAttribute($value)
+    {
+        if (!str_starts_with($value, '$2y$') && !str_starts_with($value, '$2a$') && !str_starts_with($value, '$2b$')) {
+            $value = bcrypt($value);
+        }
+        $this->attributes['password'] = $value;
+        $this->attributes['password_changed_at'] = now();
     }
 
     public function getNameAttribute(): string

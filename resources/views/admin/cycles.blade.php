@@ -41,7 +41,7 @@
                     <td class="px-6 py-4 text-right">
                         <div class="flex items-center justify-end space-x-1">
                             @if($c->status !== 'archived')
-                                <button @click="openEdit({{ $c->id }}, '{{ $c->name }}', '{{ $c->cycle_code }}', '{{ $c->start_date?->format('Y-m-d') }}', '{{ $c->end_date?->format('Y-m-d') }}', '{{ $c->application_deadline?->format('Y-m-d\TH:i') }}', '{{ $c->total_vacancies }}', '{{ $c->voucher_price }}', {{ $c->ai_enabled ? 'true' : 'false' }}, {{ json_encode($c->requirements) }})" class="relative group p-1.5 rounded-lg hover:bg-gaf-khaki/10 text-gaf-khaki transition-colors" title="Edit">
+                                <button @click="openEdit({{ $c->id }}, '{{ $c->name }}', '{{ $c->cycle_code }}', '{{ $c->start_date?->format('Y-m-d') }}', '{{ $c->end_date?->format('Y-m-d') }}', '{{ $c->application_deadline?->format('Y-m-d\TH:i') }}', '{{ $c->total_vacancies }}', '{{ $c->voucher_price }}', {{ $c->ai_enabled ? 'true' : 'false' }}, {{ json_encode($c->requirements) }}, {{ json_encode($c->scoring_weights) }})" class="relative group p-1.5 rounded-lg hover:bg-gaf-khaki/10 text-gaf-khaki transition-colors" title="Edit">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Edit</span>
                                 </button>
@@ -96,48 +96,55 @@
                 @csrf
                 <input type="hidden" name="_method" :value="editingId ? 'PUT' : 'POST'">
 
-                <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    @php $f = 'name'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Cycle Name</label>
-                        <input type="text" name="name" x-model="form.name" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" required>
-                        @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="text" name="{{ $f }}" x-model="form.name" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" required>
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @php $f = 'cycle_code'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Cycle Code</label>
-                        <input type="text" name="cycle_code" x-model="form.cycle_code" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" :readonly="editingId" required>
-                        @error('cycle_code') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="text" name="{{ $f }}" x-model="form.cycle_code" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" :readonly="editingId" required>
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @php $f = 'start_date'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                        <input type="date" name="start_date" x-model="form.start_date" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" required>
-                        @error('start_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="date" name="{{ $f }}" x-model="form.start_date" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" required>
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @php $f = 'end_date'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                        <input type="date" name="end_date" x-model="form.end_date" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" required>
-                        @error('end_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="date" name="{{ $f }}" x-model="form.end_date" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" required>
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @php $f = 'application_deadline'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Application Deadline</label>
-                        <input type="datetime-local" name="application_deadline" x-model="form.deadline" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" required>
-                        @error('application_deadline') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="datetime-local" name="{{ $f }}" x-model="form.deadline" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" required>
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @php $f = 'total_vacancies'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Total Vacancies</label>
-                        <input type="number" name="total_vacancies" x-model="form.vacancies" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" required>
-                        @error('total_vacancies') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="number" name="{{ $f }}" x-model="form.vacancies" min="1" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" required>
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @php $f = 'voucher_price'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Voucher Price (GHS)</label>
-                        <input type="number" name="voucher_price" x-model="form.voucher_price" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki" placeholder="Leave blank to use default">
-                        @error('voucher_price') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="number" name="{{ $f }}" x-model="form.voucher_price" step="0.01" min="0" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" placeholder="Leave blank to use default">
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
                 {{-- Eligibility Criteria --}}
                 <div class="border-t pt-4 mb-4">
                     <h3 class="font-heading font-bold text-base text-gray-800 mb-3">Eligibility Criteria</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Min Age</label>
                             <input type="number" name="requirements[min_age]" x-model="form.req.min_age" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
@@ -183,6 +190,30 @@
                     </div>
                 </div>
 
+                {{-- Scoring Weights --}}
+                <div class="border-t pt-4 mb-4">
+                    <h3 class="font-heading font-bold text-base text-gray-800 mb-3">Scoring Weights (overrides global defaults)</h3>
+                    <p class="text-xs text-gray-500 mb-3">Composite score = medical×weight + interview×weight + fitness×weight + eligibility×weight. Leave blank to use global defaults.</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Medical</label>
+                            <input type="number" name="scoring_weights[medical]" x-model="form.scoring.medical" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Interview</label>
+                            <input type="number" name="scoring_weights[interview]" x-model="form.scoring.interview" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fitness</label>
+                            <input type="number" name="scoring_weights[fitness]" x-model="form.scoring.fitness" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Eligibility</label>
+                            <input type="number" name="scoring_weights[eligibility]" x-model="form.scoring.eligibility" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
+                        </div>
+                    </div>
+                </div>
+
                 {{-- AI Toggle --}}
                 <div class="border-t pt-4 mb-4">
                     <label class="flex items-center space-x-2 text-sm">
@@ -205,29 +236,7 @@ function cycleManager() {
     return {
         showModal: false,
         editingId: null,
-        form: {
-            name: '',
-            cycle_code: '',
-            start_date: '',
-            end_date: '',
-            deadline: '',
-            vacancies: '',
-            voucher_price: '',
-            ai_enabled: false,
-            req: {
-                min_age: {{ config('recruitment.age_min') }},
-                max_age: {{ config('recruitment.age_max_regular') }},
-                min_height_male: {{ config('recruitment.height_min_male') }},
-                min_height_female: {{ config('recruitment.height_min_female') }},
-                nationality: '{{ config('recruitment.nationality') }}',
-                marital_status: '',
-                education_levels: [],
-                national_id_required: true,
-            }
-        },
-        openCreate() {
-            this.editingId = null;
-            this.form = {
+            form: {
                 name: '',
                 cycle_code: '',
                 start_date: '',
@@ -236,6 +245,12 @@ function cycleManager() {
                 vacancies: '',
                 voucher_price: '',
                 ai_enabled: false,
+                scoring: {
+                    medical: {{ config('recruitment.scoring_weights.medical') }},
+                    interview: {{ config('recruitment.scoring_weights.interview') }},
+                    fitness: {{ config('recruitment.scoring_weights.fitness') }},
+                    eligibility: {{ config('recruitment.scoring_weights.eligibility') }},
+                },
                 req: {
                     min_age: {{ config('recruitment.age_min') }},
                     max_age: {{ config('recruitment.age_max_regular') }},
@@ -246,34 +261,69 @@ function cycleManager() {
                     education_levels: [],
                     national_id_required: true,
                 }
-            };
-            this.showModal = true;
-        },
-        openEdit(id, name, code, start, end, deadline, vacancies, voucherPrice, aiEnabled, req) {
-            this.editingId = id;
-            let r = req || {};
-            this.form = {
-                name: name,
-                cycle_code: code,
-                start_date: start,
-                end_date: end,
-                deadline: deadline,
-                vacancies: vacancies,
-                voucher_price: voucherPrice,
-                ai_enabled: aiEnabled,
-                req: {
-                    min_age: r.min_age || 18,
-                    max_age: r.max_age || 26,
-                    min_height_male: r.min_height_male || 1.68,
-                    min_height_female: r.min_height_female || 1.60,
-                    nationality: r.nationality || 'Ghanaian',
-                    marital_status: Array.isArray(r.marital_status) ? r.marital_status.join(', ') : (r.marital_status || ''),
-                    education_levels: Array.isArray(r.education_levels) ? r.education_levels : [],
-                    national_id_required: r.national_id_required !== false,
-                }
-            };
-            this.showModal = true;
-        }
+            },
+            openCreate() {
+                this.editingId = null;
+                this.form = {
+                    name: '',
+                    cycle_code: '',
+                    start_date: '',
+                    end_date: '',
+                    deadline: '',
+                    vacancies: '',
+                    voucher_price: '',
+                    ai_enabled: false,
+                    scoring: {
+                        medical: {{ config('recruitment.scoring_weights.medical') }},
+                        interview: {{ config('recruitment.scoring_weights.interview') }},
+                        fitness: {{ config('recruitment.scoring_weights.fitness') }},
+                        eligibility: {{ config('recruitment.scoring_weights.eligibility') }},
+                    },
+                    req: {
+                        min_age: {{ config('recruitment.age_min') }},
+                        max_age: {{ config('recruitment.age_max_regular') }},
+                        min_height_male: {{ config('recruitment.height_min_male') }},
+                        min_height_female: {{ config('recruitment.height_min_female') }},
+                        nationality: '{{ config('recruitment.nationality') }}',
+                        marital_status: '',
+                        education_levels: [],
+                        national_id_required: true,
+                    }
+                };
+                this.showModal = true;
+            },
+            openEdit(id, name, code, start, end, deadline, vacancies, voucherPrice, aiEnabled, req, scoring) {
+                this.editingId = id;
+                let r = req || {};
+                let s = scoring || {};
+                this.form = {
+                    name: name,
+                    cycle_code: code,
+                    start_date: start,
+                    end_date: end,
+                    deadline: deadline,
+                    vacancies: vacancies,
+                    voucher_price: voucherPrice,
+                    ai_enabled: aiEnabled,
+                    scoring: {
+                        medical: s.medical !== undefined ? s.medical : {{ config('recruitment.scoring_weights.medical') }},
+                        interview: s.interview !== undefined ? s.interview : {{ config('recruitment.scoring_weights.interview') }},
+                        fitness: s.fitness !== undefined ? s.fitness : {{ config('recruitment.scoring_weights.fitness') }},
+                        eligibility: s.eligibility !== undefined ? s.eligibility : {{ config('recruitment.scoring_weights.eligibility') }},
+                    },
+                    req: {
+                        min_age: r.min_age || 18,
+                        max_age: r.max_age || 26,
+                        min_height_male: r.min_height_male || 1.68,
+                        min_height_female: r.min_height_female || 1.60,
+                        nationality: r.nationality || 'Ghanaian',
+                        marital_status: Array.isArray(r.marital_status) ? r.marital_status.join(', ') : (r.marital_status || ''),
+                        education_levels: Array.isArray(r.education_levels) ? r.education_levels : [],
+                        national_id_required: r.national_id_required !== false,
+                    }
+                };
+                this.showModal = true;
+            }
     }
 }
 </script>

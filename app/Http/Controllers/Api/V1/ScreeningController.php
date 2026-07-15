@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\ScreeningCompleted;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\VerificationCode;
@@ -21,6 +22,8 @@ class ScreeningController extends Controller
 
     public function verifyEntry(Request $request): JsonResponse
     {
+        $this->authorize('verifyEntry', ScreeningResult::class);
+
         $validated = $request->validate([
             'verification_code' => 'required|string',
         ]);
@@ -54,6 +57,8 @@ class ScreeningController extends Controller
 
     public function recordMedical(Request $request): JsonResponse
     {
+        $this->authorize('recordMedical', ScreeningResult::class);
+
         $validated = $request->validate([
             'application_id' => 'required|exists:applications,id',
             'blood_pressure' => 'nullable|string|max:50',
@@ -100,6 +105,8 @@ class ScreeningController extends Controller
 
     public function recordFitness(Request $request): JsonResponse
     {
+        $this->authorize('recordFitness', ScreeningResult::class);
+
         $validated = $request->validate([
             'application_id'    => 'required|exists:applications,id',
             'run_time_seconds'=> 'nullable|integer|min:0',
@@ -143,6 +150,8 @@ class ScreeningController extends Controller
 
     public function recordInterview(Request $request): JsonResponse
     {
+        $this->authorize('recordInterview', ScreeningResult::class);
+
         $validated = $request->validate([
             'application_id'    => 'required|exists:applications,id',
             'interview_score'   => 'required|numeric|min:0|max:100',
@@ -195,6 +204,7 @@ class ScreeningController extends Controller
             }
 
             if ($newStatus === 'screening_completed') {
+                ScreeningCompleted::dispatch($application->fresh());
                 $this->notificationService->finalDecisionPending($application->fresh());
             }
         }

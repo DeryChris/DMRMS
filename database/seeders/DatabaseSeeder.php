@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             AnnouncementSeeder::class,
             FaqSeeder::class,
             BarrackSeeder::class,
+            GafStructureSeeder::class,
         ]);
     }
 }

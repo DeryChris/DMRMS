@@ -50,7 +50,6 @@ class VoucherPurchaseController extends Controller
             'purchaser_email' => ['required', 'email', 'max:100'],
             'purchaser_phone' => ['required', 'string', 'max:20'],
             'payment_method' => ['required', 'string', 'in:mobile_money,bank_transfer,card,bank_deposit'],
-            'payment_reference' => ['nullable', 'string', 'max:100'],
         ]);
 
         $cycle = Cycle::findOrFail($validated['cycle_id']);
@@ -72,7 +71,6 @@ class VoucherPurchaseController extends Controller
             'purchaser_email' => $validated['purchaser_email'],
             'purchaser_phone' => $validated['purchaser_phone'],
             'payment_method' => $validated['payment_method'],
-            'payment_reference' => $validated['payment_reference'],
             'payment_status' => 'completed',
             'cost' => $cycle->voucher_price ?? Config::get('recruitment.voucher_costs.regular', 0),
         ]);
@@ -92,6 +90,34 @@ class VoucherPurchaseController extends Controller
 
         return redirect()->route('voucher.confirmation', $voucher)
             ->with('success', 'Voucher purchased successfully!');
+    }
+
+    public function lookupVoucher(Request $request): View
+    {
+        $validated = $request->validate([
+            'lookup_email' => 'required|email',
+        ]);
+
+        $lookupResults = Voucher::where('purchaser_email', $validated['lookup_email'])
+            ->with('cycle')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $activeCycles = Cycle::where('status', 'active')
+            ->where('application_deadline', '>', now())
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        $paymentMethods = [
+            'mobile_money' => 'Mobile Money',
+            'bank_transfer' => 'Bank Transfer',
+            'card' => 'Debit/Credit Card',
+            'bank_deposit' => 'Bank Deposit',
+        ];
+
+        $unsplashPhoto = unsplash_hero();
+
+        return view('public.buy-voucher', compact('activeCycles', 'paymentMethods', 'unsplashPhoto', 'lookupResults'));
     }
 
     public function confirmation(Voucher $voucher): View

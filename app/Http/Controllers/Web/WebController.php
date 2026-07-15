@@ -48,9 +48,9 @@ class WebController extends Controller
         $activeCycle = Cycle::where('status', 'active')->orderBy('start_date', 'desc')->first();
 
         $totalApplicants = Applicant::count();
-        $shortlistedCount = Application::whereIn('status', ['shortlisted', 'appointment_scheduled', 'screening_completed'])->count();
-        $screeningCount = Application::where('status', 'screening_completed')->count();
-        $selectedCount = Application::where('status', 'selected')->count();
+        $shortlistedCount = Application::whereIn('status', ['shortlisted', 'appointment_scheduled', 'screening_completed', 'final_decision_pending', 'selected', 'recruited', 'reserve'])->count();
+        $screeningCount = Application::whereIn('status', ['screening_completed', 'final_decision_pending', 'selected', 'recruited', 'reserve'])->count();
+        $selectedCount = Application::whereIn('status', ['selected', 'recruited'])->count();
 
         $recentNews = Announcement::published()
             ->orderBy('published_at', 'desc')

@@ -14,20 +14,23 @@
             <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
                 <h2 class="font-heading font-bold text-lg text-gray-800 mb-4">General Settings</h2>
                 <div class="space-y-4">
+                    @php $f = 'system_name'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">System Name</label>
-                        <input type="text" name="system_name" value="{{ $settings['system_name'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki">
-                        @error('system_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="text" name="{{ $f }}" value="{{ old($f, $settings['system_name']) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @php $f = 'support_email'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Support Email</label>
-                        <input type="email" name="support_email" value="{{ $settings['support_email'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki">
-                        @error('support_email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="email" name="{{ $f }}" value="{{ old($f, $settings['support_email']) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @php $f = 'max_applications'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Max Applications Per Cycle</label>
-                        <input type="number" name="max_applications" value="{{ $settings['max_applications'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki">
-                        @error('max_applications') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="number" name="{{ $f }}" value="{{ old($f, $settings['max_applications']) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
             </div>
@@ -35,28 +38,32 @@
             <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
                 <h2 class="font-heading font-bold text-lg text-gray-800 mb-4">Recruitment Configuration</h2>
                 <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        @php $f = 'min_age'; @endphp
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Min Age</label>
-                            <input type="number" name="min_age" value="{{ $settings['min_age'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki">
-                            @error('min_age') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            <input type="number" name="{{ $f }}" value="{{ old($f, $settings['min_age']) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                            @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
+                        @php $f = 'max_age'; @endphp
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Max Age</label>
-                            <input type="number" name="max_age" value="{{ $settings['max_age'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki">
-                            @error('max_age') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            <input type="number" name="{{ $f }}" value="{{ old($f, $settings['max_age']) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                            @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        @php $f = 'min_height_male'; @endphp
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Min Height (Male) (m)</label>
-                            <input type="number" step="0.01" name="min_height_male" value="{{ $settings['min_height_male'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki">
-                            @error('min_height_male') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            <input type="number" step="0.01" name="{{ $f }}" value="{{ old($f, $settings['min_height_male']) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                            @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
+                        @php $f = 'min_height_female'; @endphp
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Min Height (Female) (m)</label>
-                            <input type="number" step="0.01" name="min_height_female" value="{{ $settings['min_height_female'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki">
-                            @error('min_height_female') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            <input type="number" step="0.01" name="{{ $f }}" value="{{ old($f, $settings['min_height_female']) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                            @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
                 </div>
@@ -64,18 +71,24 @@
 
             <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
                 <h2 class="font-heading font-bold text-lg text-gray-800 mb-4">Security Settings</h2>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    @php $f = 'session_lifetime'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Session Lifetime (minutes)</label>
-                        <input type="number" name="session_lifetime" value="{{ $settings['session_lifetime'] ?? 120 }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki">
+                        <input type="number" name="{{ $f }}" value="{{ old($f, $settings['session_lifetime'] ?? 120) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @php $f = 'password_min_length'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Password Min Length</label>
-                        <input type="number" name="password_min_length" value="{{ $settings['password_min_length'] ?? 8 }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki">
+                        <input type="number" name="{{ $f }}" value="{{ old($f, $settings['password_min_length'] ?? 8) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @php $f = 'max_login_attempts'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Max Login Attempts</label>
-                        <input type="number" name="max_login_attempts" value="{{ $settings['max_login_attempts'] ?? 5 }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki">
+                        <input type="number" name="{{ $f }}" value="{{ old($f, $settings['max_login_attempts'] ?? 5) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
                 <div class="mt-4 space-y-3">

@@ -7,13 +7,13 @@ Dear **{{ $applicant->first_name }} {{ $applicant->last_name }}**,
 
 Regarding your application (GAF ID: **{{ $application->gaf_id }}**) for **{{ $application->cycle->name }}**:
 
-@if ($decision->decision === 'admitted' || $decision->decision === 'approved')
+@if (in_array($decision->decision, ['admitted', 'approved', 'selected']))
 <x-mail::panel>
 ### Decision: ADMITTED ✅
 
 **Welcome to the Ghana Armed Forces!**
 
-We are pleased to inform you that your application has been successful. You have been admitted into the Ghana Armed Forces.
+We are pleased to inform you that your application has been successful. You have been selected for recruitment into the Ghana Armed Forces.
 </x-mail::panel>
 
 **Next Steps:**
@@ -28,7 +28,22 @@ Download Admission Letter
 
 Further details regarding training commencement will be communicated in due course.
 
-@elseif ($decision->decision === 'deferred' || $decision->decision === 'pending')
+@elseif ($decision->decision === 'recruited')
+<x-mail::panel>
+### Decision: RECRUITED ✅
+
+**You are now officially recruited into the Ghana Armed Forces!**
+
+Your enrollment has been processed. Report to your assigned training battalion for training.
+</x-mail::panel>
+
+**Next Steps:**
+1. Proceed to your assigned training battalion
+2. Present your enrollment documents
+3. Begin basic military training
+4. Follow all instructions from your training officers
+
+@elseif (in_array($decision->decision, ['deferred', 'pending']))
 <x-mail::panel>
 ### Decision: DEFERRED ⏳
 
@@ -39,6 +54,16 @@ Your application has been deferred for further consideration.
 {{ $decision->decision_reason ?? 'Additional review is required for your application.' }}
 
 Your application will be reconsidered in the next evaluation phase. You may be contacted for additional information or assessments.
+
+@elseif ($decision->decision === 'reserve')
+<x-mail::panel>
+### Decision: RESERVE LIST 📋
+
+Your application has been placed on the reserve list.
+</x-mail::panel>
+
+**What This Means:**
+You have been placed on the reserve list for this recruitment cycle. If vacancies become available, you may be promoted. We will notify you of any changes to your status.
 
 @else
 <x-mail::panel>
@@ -53,7 +78,7 @@ We regret to inform you that your application has not been successful in this re
 We appreciate your interest in serving the nation. You are encouraged to apply again in future recruitment cycles.
 @endif
 
-@if ($decision->decision !== 'admitted' && $decision->decision !== 'approved')
+@if (!in_array($decision->decision, ['admitted', 'approved', 'selected', 'recruited']))
 **Appeal Process:**
 If you believe there has been an error or have additional information to support your application, you may submit an appeal within **14 days** of this notification. Please log in to your portal and navigate to the Appeals section.
 

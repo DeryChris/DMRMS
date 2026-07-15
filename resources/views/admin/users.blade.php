@@ -63,14 +63,14 @@
 
             <form x-show="!editing && !editId" method="POST" action="{{ route('admin.users.store') }}" class="space-y-4">
                 @csrf
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1">First Name</label><input type="text" name="first_name" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" required></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label><input type="text" name="last_name" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" required></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">First Name</label><input type="text" name="first_name" value="{{ old('first_name') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('first_name') ? 'border-red-500' : 'border-gray-300' }}" required>@error('first_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror</div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label><input type="text" name="last_name" value="{{ old('last_name') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('last_name') ? 'border-red-500' : 'border-gray-300' }}" required>@error('last_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror</div>
                 </div>
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" name="email" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" required></div>
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="password" name="password" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" required></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" name="email" value="{{ old('email') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('email') ? 'border-red-500' : 'border-gray-300' }}" required>@error('email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror</div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="password" name="password" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('password') ? 'border-red-500' : 'border-gray-300' }}" required>@error('password') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror</div>
                 <div><label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                    <select name="role" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm">
+                    <select name="role" class="w-full border rounded-lg px-4 py-3 text-sm {{ $errors->has('role') ? 'border-red-500' : 'border-gray-300' }}">@error('role') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         <option value="admin">Admin</option>
                         <option value="super_admin">Super Admin</option>
                         <option value="recruitment_officer">Recruitment Officer</option>
@@ -87,14 +87,14 @@
             <template x-if="editId">
                 <form method="POST" :action="`{{ url('admin/users') }}/${editId}`" class="space-y-4">
                     @csrf @method('PUT')
-                    <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">First Name</label><input type="text" :id="`edit-first_name-${editId}`" name="first_name" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" required></div>
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label><input type="text" :id="`edit-last_name-${editId}`" name="last_name" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" required></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">First Name</label><input type="text" :id="`edit-first_name-${editId}`" name="first_name" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('first_name') ? 'border-red-500' : 'border-gray-300' }}" required>@error('first_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror</div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label><input type="text" :id="`edit-last_name-${editId}`" name="last_name" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('last_name') ? 'border-red-500' : 'border-gray-300' }}" required>@error('last_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror</div>
                     </div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" :id="`edit-email-${editId}`" name="email" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" required></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Password (leave blank to keep current)</label><input type="password" name="password" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" :id="`edit-email-${editId}`" name="email" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('email') ? 'border-red-500' : 'border-gray-300' }}" required>@error('email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror</div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Password (leave blank to keep current)</label><input type="password" name="password" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('password') ? 'border-red-500' : 'border-gray-300' }}">@error('password') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror</div>
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                        <select :id="`edit-role-${editId}`" name="role" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm">
+                        <select :id="`edit-role-${editId}`" name="role" class="w-full border rounded-lg px-4 py-3 text-sm {{ $errors->has('role') ? 'border-red-500' : 'border-gray-300' }}">@error('role') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             <option value="admin">Admin</option>
                             <option value="super_admin">Super Admin</option>
                             <option value="recruitment_officer">Recruitment Officer</option>

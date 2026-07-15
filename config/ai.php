@@ -11,6 +11,38 @@ return [
         'temperature' => (float) env('OPENAI_TEMPERATURE', 0.7),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+        'embedding_model' => env('GEMINI_EMBEDDING_MODEL', 'embedding-001'),
+        'max_tokens' => (int) env('GEMINI_MAX_TOKENS', 8192),
+        'temperature' => (float) env('GEMINI_TEMPERATURE', 0.7),
+    ],
+
+    'api_service' => [
+        'url' => env('AI_SERVICE_URL', 'http://localhost:8000/api/v1'),
+        'api_key' => env('AI_SERVICE_TOKEN', 'dmrms-internal-key-2026'),
+        'timeout' => (int) env('AI_SERVICE_TIMEOUT', 120),
+    ],
+
+    'providers' => [
+        'openai' => [
+            'class' => \App\Services\Ai\Providers\OpenAiProvider::class,
+        ],
+        'api' => [
+            'class' => \App\Services\Ai\Providers\ApiAiProvider::class,
+        ],
+        'gemini' => [
+            'class' => \App\Services\Ai\Providers\GeminiProvider::class,
+        ],
+        'google' => [
+            'class' => \App\Services\Ai\Providers\GeminiProvider::class,
+        ],
+        'fallback' => [
+            'class' => \App\Services\Ai\Providers\FallbackProvider::class,
+        ],
+    ],
+
     'fallback_enabled' => env('AI_FALLBACK_ENABLED', true),
 
     'rate_limit' => [

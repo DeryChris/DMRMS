@@ -55,7 +55,7 @@
         <h3 style="font-size: 12px; color: #2D6A4F; margin-bottom: 8px;">Candidate Details</h3>
         <table>
             <tr><td>Full Name</td><td>{{ $applicant->name }}</td></tr>
-            <tr><td>GAF ID</td><td>{{ $applicant->gaf_id ?? 'N/A' }}</td></tr>
+            <tr><td>GAF ID</td><td>{{ $application->gaf_id ?? 'N/A' }}</td></tr>
             <tr><td>Date of Birth</td><td>{{ $applicant->date_of_birth?->format('F j, Y') ?? 'N/A' }}</td></tr>
             <tr><td>Gender</td><td>{{ ucfirst($applicant->gender ?? 'N/A') }}</td></tr>
             <tr><td>Region</td><td>{{ $applicant->region ?? 'N/A' }}</td></tr>

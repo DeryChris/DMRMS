@@ -2,6 +2,7 @@
 
 namespace App\Services\Eligibility;
 
+use App\Events\EligibilityPassed;
 use App\Models\Application;
 use App\Models\AuditLog;
 use App\Models\EligibilityResult;
@@ -48,6 +49,7 @@ class EligibilityService
         $this->notificationService->eligibilityResult($app);
 
         if ($newStatus === 'eligibility_passed') {
+            EligibilityPassed::dispatch($app);
             $this->notificationService->notifyAdminsByRole(
                 ['admin', 'super_admin'],
                 'eligibility_passed',

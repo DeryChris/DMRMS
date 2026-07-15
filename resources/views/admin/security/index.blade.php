@@ -22,11 +22,13 @@
             @csrf
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Length</label>
-                <input type="number" name="min_length" value="{{ $passwordPolicy['min_length'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                <input type="number" name="min_length" value="{{ old('min_length', $passwordPolicy['min_length']) }}" class="w-full px-4 py-2 border rounded-lg text-sm {{ $errors->has('min_length') ? 'border-red-500' : 'border-gray-300' }}">
+                @error('min_length') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Password Expiry (days, 0 = never)</label>
-                <input type="number" name="expiry_days" value="{{ $passwordPolicy['expiry_days'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                <input type="number" name="expiry_days" value="{{ old('expiry_days', $passwordPolicy['expiry_days']) }}" class="w-full px-4 py-2 border rounded-lg text-sm {{ $errors->has('expiry_days') ? 'border-red-500' : 'border-gray-300' }}">
+                @error('expiry_days') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
             <div class="space-y-2">
                 <label class="flex items-center space-x-3">

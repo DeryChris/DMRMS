@@ -18,6 +18,7 @@ class Cycle extends Model
         'total_vacancies',
         'voucher_price',
         'requirements',
+        'scoring_weights',
         'ai_enabled',
         'status',
         'created_by',
@@ -27,6 +28,7 @@ class Cycle extends Model
     {
         return [
             'requirements' => 'array',
+            'scoring_weights' => 'array',
             'ai_enabled' => 'boolean',
             'voucher_price' => 'decimal:2',
             'start_date' => 'date',
