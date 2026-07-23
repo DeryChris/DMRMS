@@ -16,7 +16,7 @@ class VoucherService
 
         $vouchers = [];
         $now = Carbon::now();
-        $expiresAt = $cycle->application_deadline ?? $now->addMonths(3);
+        $expiresAt = $cycle->application_deadline ?? $now->copy()->addMonths(3);
 
         DB::transaction(function () use ($cycleId, $count, $now, $expiresAt, &$vouchers) {
             for ($i = 0; $i < $count; $i++) {

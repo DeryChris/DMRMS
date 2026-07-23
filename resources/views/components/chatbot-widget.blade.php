@@ -3,6 +3,9 @@
     $deadlineDate = $activeCycle?->application_deadline?->format('F j, Y') ?? 'TBD';
     $apiUrl = '/api/v1/chatbot/message';
 @endphp
+<style>
+.scroll-hide::-webkit-scrollbar { display: none; }
+</style>
 <div x-data="chatbotWidget('{{ $apiUrl }}')" class="fixed bottom-6 right-6 z-50">
     <div x-show="open" x-cloak x-transition class="mb-4 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
         <div class="bg-gaf-green text-white px-4 py-3 flex items-center justify-between">
@@ -14,7 +17,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
-        <div class="h-80 overflow-y-auto p-4 space-y-3" x-ref="chatbox">
+        <div class="h-80 overflow-y-auto p-4 space-y-3 scroll-hide" x-ref="chatbox" style="scrollbar-width: none; -ms-overflow-style: none;">
             <template x-for="(msg, i) in messages" :key="i">
                 <div class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
                     <div class="max-w-[80%] px-4 py-2 rounded-lg text-sm" :class="msg.role === 'user' ? 'bg-gaf-green text-white rounded-br-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'">

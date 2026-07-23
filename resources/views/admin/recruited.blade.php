@@ -11,7 +11,7 @@
         this.sendBackTarget = ''; this.sendBackReason = ''; this.sendBackStatuses = targets;
         this.sendBackModal = true;
     }
-}" class="space-y-6">
+}" x-init="{{ $errors->any() && old('target_status') ? '$nextTick(() => { sendBackModal = true; sendBackTarget = \''.old('target_status', '').'\'; sendBackReason = \''.str_replace("'", "\\'", old('reason', '')).'\'; })' : '' }}" class="space-y-6">
     <div class="flex items-center justify-between gradient-border pb-4">
         <h1 class="font-heading font-bold text-2xl text-gray-800">Recruited Applicants</h1>
         <form method="GET" action="{{ route('admin.recruited') }}" class="flex items-center space-x-2">
@@ -101,6 +101,8 @@
         <p class="text-sm text-gray-500">Showing {{ $applications->firstItem() ?? 0 }} to {{ $applications->lastItem() ?? 0 }} of {{ $applications->total() }} entries</p>
         {{ $applications->links() }}
     </div>
+
+    <div id="recruited-old-data" data-old="{{ json_encode(old()) }}" class="hidden"></div>
 
     {{-- Send Back Modal --}}
     <div x-show="sendBackModal" x-cloak x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

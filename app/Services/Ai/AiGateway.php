@@ -9,6 +9,7 @@ use App\Services\Ai\Providers\GeminiProvider;
 use App\Services\Ai\Providers\OpenAiProvider;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AiGateway
 {
@@ -33,7 +34,15 @@ class AiGateway
             $documentType = pathinfo($imagePath, PATHINFO_EXTENSION);
         }
 
-        return $this->getProvider()->analyzeDocument($imagePath, $documentType, $context);
+        $converted = $this->convertToImage($imagePath);
+
+        try {
+            return $this->getProvider()->analyzeDocument($converted, $documentType, $context);
+        } finally {
+            if ($converted !== $imagePath) {
+                @unlink($converted);
+            }
+        }
     }
 
     public function getEmbeddings(string $text): array
@@ -91,6 +100,64 @@ class AiGateway
         return $this->chat($prompt, ['type' => 'report_generation', 'format' => $params['format'] ?? 'paragraph']);
     }
 
+    protected function convertToImage(string $path): string
+    {
+        $mime = @mime_content_type($path);
+
+        if (in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp'], true)) {
+            return $path;
+        }
+
+        if ($mime !== 'application/pdf') {
+            Log::warning("AiGateway: unsupported MIME type {$mime} for {$path} — sending as-is");
+            return $path;
+        }
+
+        if (class_exists(\Imagick::class, false)) {
+            try {
+                $tmpPath = sys_get_temp_dir() . '/dmrms_conv_' . Str::random(16) . '.jpg';
+                $img = new \Imagick();
+                $img->setResolution(150, 150);
+                $img->readImage($path);
+                $img->setIteratorIndex(0);
+                $img->setImageFormat('jpg');
+                $img->setImageCompressionQuality(85);
+                $img->writeImage($tmpPath);
+                $img->clear();
+                Log::info('AiGateway: PDF converted to image via Imagick', ['source' => $path]);
+                return $tmpPath;
+            } catch (\Exception $e) {
+                Log::warning('AiGateway: Imagick PDF conversion failed', ['error' => $e->getMessage()]);
+            }
+        }
+
+        $pdftoppm = shell_exec('where pdftoppm 2>NUL') ?: shell_exec('which pdftoppm 2>/dev/null');
+        if ($pdftoppm) {
+            try {
+                $tmpBase = sys_get_temp_dir() . '/dmrms_conv_' . Str::random(16);
+                $cmd = sprintf(
+                    '"%s" -jpeg -r 150 -f 1 -l 1 "%s" "%s" 2>&1',
+                    trim($pdftoppm),
+                    $path,
+                    $tmpBase
+                );
+                exec($cmd, $output, $exitCode);
+                $outFile = $tmpBase . '-1.jpg';
+                if ($exitCode === 0 && file_exists($outFile)) {
+                    Log::info('AiGateway: PDF converted to image via pdftoppm', ['source' => $path]);
+                    return $outFile;
+                }
+                Log::warning('AiGateway: pdftoppm conversion failed', ['exit' => $exitCode]);
+            } catch (\Exception $e) {
+                Log::warning('AiGateway: pdftoppm exception', ['error' => $e->getMessage()]);
+            }
+        }
+
+        Log::warning('AiGateway: PDF conversion unavailable — install imagick+ghostscript or poppler-utils. Sending PDF as-is (will fall to needs_review).');
+
+        return $path;
+    }
+
     protected function getProvider(): AiProviderInterface
     {
         if ($this->provider !== null) {
@@ -106,18 +173,20 @@ class AiGateway
             default   => $this->resolveCustomProvider($defaultProvider),
         };
 
-        if (!$this->provider || !config('ai.fallback_enabled', true)) {
-            return $this->provider ?? app(FallbackProvider::class);
+        if (!$this->provider) {
+            return app(FallbackProvider::class);
         }
 
-        try {
-            $testResult = $this->provider->chat([['role' => 'user', 'content' => 'ping']]);
-            if (!($testResult['success'] ?? false)) {
-                throw new \RuntimeException('Provider health check failed');
+        if (config('ai.fallback_enabled', true)) {
+            try {
+                $testResult = $this->provider->chat([['role' => 'user', 'content' => 'ping']]);
+                if (!($testResult['success'] ?? false)) {
+                    Log::warning("Primary AI provider health check returned failure, falling back");
+                    $this->provider = app(FallbackProvider::class);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Primary AI provider health check failed ({$e->getMessage()}), continuing with primary provider");
             }
-        } catch (\Exception $e) {
-            Log::warning("Primary AI provider failed, falling back: {$e->getMessage()}");
-            $this->provider = app(FallbackProvider::class);
         }
 
         return $this->provider;

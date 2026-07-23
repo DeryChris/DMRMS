@@ -39,6 +39,9 @@ class ScreeningResult extends Model
             'fitness_details' => 'array',
             'interview_data' => 'array',
             'is_stale' => 'boolean',
+            'is_medically_fit' => 'boolean',
+            'is_physically_fit' => 'boolean',
+            'interview_passed' => 'boolean',
         ];
     }
 

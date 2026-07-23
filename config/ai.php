@@ -5,6 +5,7 @@ return [
 
     'openai' => [
         'api_key' => env('OPENAI_API_KEY'),
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
         'model' => env('OPENAI_MODEL', 'gpt-4-turbo'),
         'embedding_model' => env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
         'max_tokens' => (int) env('OPENAI_MAX_TOKENS', 4096),
@@ -21,7 +22,7 @@ return [
 
     'api_service' => [
         'url' => env('AI_SERVICE_URL', 'http://localhost:8000/api/v1'),
-        'api_key' => env('AI_SERVICE_TOKEN', 'dmrms-internal-key-2026'),
+        'api_key' => env('AI_SERVICE_TOKEN'),
         'timeout' => (int) env('AI_SERVICE_TIMEOUT', 120),
     ],
 

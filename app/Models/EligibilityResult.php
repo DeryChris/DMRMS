@@ -28,6 +28,13 @@ class EligibilityResult extends Model
     protected function casts(): array
     {
         return [
+            'age_check' => 'boolean',
+            'nationality_check' => 'boolean',
+            'education_check' => 'boolean',
+            'height_check' => 'boolean',
+            'criminal_check' => 'boolean',
+            'document_check' => 'boolean',
+            'marital_check' => 'boolean',
             'rejection_reasons' => 'array',
             'evaluation_date' => 'datetime',
         ];

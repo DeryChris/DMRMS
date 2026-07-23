@@ -80,10 +80,12 @@ class ApplicantAuthController extends Controller
             'pin_code'      => 'required|string',
             'first_name'    => ['required', 'string', 'max:50'],
             'last_name'     => ['required', 'string', 'max:50'],
-            'contact_number' => ['required', 'string', 'max:15'],
+            'other_names'   => ['nullable', 'string', 'max:50'],
+            'contact_number' => ['required', 'string', 'regex:/^[0-9]{10}$/'],
+            'alternative_contact' => ['nullable', 'string', 'regex:/^[0-9]{10}$/'],
             'date_of_birth' => ['required', 'date', 'before:18 years ago'],
             'gender'        => ['required', 'in:Male,Female'],
-            'email'         => 'required|email|max:255|unique:applicants,email,NULL,id,deleted_at,NULL',
+            'email'         => 'required|email|max:255',
             'password'      => app(\App\Services\Security\PasswordPolicyService::class)->getValidationRules(),
         ]);
 
@@ -95,15 +97,52 @@ class ApplicantAuthController extends Controller
         $voucher = $voucherValidation['voucher'];
         $cycle = $voucher->cycle;
 
+        if (strcasecmp($validated['email'], $voucher->purchaser_email) !== 0) {
+            return back()->withErrors(['email' => 'The email must match the one used to purchase the voucher.'])->withInput();
+        }
+
+        $existing = Applicant::where('email', $validated['email'])->whereIn('status', ['pending_verification', 'registered'])->first();
+
         $verificationCode = (string) random_int(100000, 999999);
+
+        if ($existing) {
+            $existing->update([
+                'first_name'              => $validated['first_name'],
+                'last_name'               => $validated['last_name'],
+                'other_names'             => $validated['other_names'] ?? null,
+                'contact_number'          => $validated['contact_number'],
+                'alternative_contact'     => $validated['alternative_contact'] ?? null,
+                'password'                => Hash::make($validated['password']),
+                'voucher_id'              => $voucher->id,
+                'email_verification_code' => $verificationCode,
+                'email_verification_sent_at' => Carbon::now(),
+                'status'                  => 'pending_verification',
+            ]);
+            $applicant = $existing;
+
+            $this->voucherService->markAsUsed($voucher->id, $applicant->id);
+
+            try {
+                Mail::to($applicant->email)->send(new EmailVerificationMail($applicant, $verificationCode));
+            } catch (\Throwable $e) {
+                Log::warning('Failed to send verification email: ' . $e->getMessage());
+            }
+
+            session(['applicant_verification_id' => $applicant->id, 'applicant_verification_email' => $applicant->email]);
+
+            return redirect()->route('applicant.verify.form')
+                ->with('success', 'Verification code resent to your email.');
+        }
 
         $applicant = Applicant::create([
             'voucher_id'              => $voucher->id,
             'first_name'              => $validated['first_name'],
             'last_name'               => $validated['last_name'],
+            'other_names'             => $validated['other_names'] ?? null,
             'date_of_birth'           => $validated['date_of_birth'],
             'gender'                  => $validated['gender'],
             'contact_number'          => $validated['contact_number'],
+            'alternative_contact'     => $validated['alternative_contact'] ?? null,
             'email'                   => $validated['email'],
             'residential_address'     => '',
             'region'                  => '',
@@ -172,7 +211,13 @@ class ApplicantAuthController extends Controller
             return redirect()->route('applicant.dashboard');
         }
 
+        if ($applicant->email_verification_code !== $request->code) {
+            return back()->withErrors(['code' => 'Invalid verification code.'])->withInput();
+        }
 
+        if ($applicant->email_verification_sent_at && $applicant->email_verification_sent_at->addMinutes(30)->isPast()) {
+            return back()->withErrors(['code' => 'Code has expired. Request a new one.'])->withInput();
+        }
 
         $applicant->update([
             'email_verified_at' => Carbon::now(),

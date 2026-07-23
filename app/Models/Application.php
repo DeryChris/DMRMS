@@ -32,6 +32,8 @@ class Application extends Model
         'status',
         'current_step',
         'submitted_at',
+        'documents_finalized',
+        'documents_finalized_at',
         'ai_eligibility_score',
         'ai_ranking_score',
         'ai_verified_at',
@@ -40,6 +42,8 @@ class Application extends Model
         'last_returned_to',
         'last_return_reason',
         'last_returned_at',
+        'allocated_corp_id',
+        'allocation_status',
     ];
 
     protected function casts(): array
@@ -49,6 +53,8 @@ class Application extends Model
             'criminal_record' => 'boolean',
             'application_date' => 'datetime',
             'submitted_at' => 'datetime',
+            'documents_finalized' => 'boolean',
+            'documents_finalized_at' => 'datetime',
             'ai_verified_at' => 'datetime',
             'last_returned_at' => 'datetime',
         ];

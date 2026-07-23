@@ -18,10 +18,7 @@ class FallbackProvider implements AiProviderInterface
         return [
             'success'         => true,
             'data'            => [
-                'message' => [
-                    'role'    => 'assistant',
-                    'content' => $response,
-                ],
+                'content' => $response,
             ],
             'model'           => 'fallback-rule-based',
             'tokens_used'     => 0,
@@ -34,20 +31,36 @@ class FallbackProvider implements AiProviderInterface
     {
         $start = microtime(true);
 
-        $fileName = basename($filePath);
+        $reasons = ['Fallback mode — no AI provider available. Manual review required.'];
+        $referenceData = $context['reference_data'] ?? [];
 
         return [
             'success'         => true,
             'data'            => [
-                'document_type'  => $documentType,
-                'file_name'      => $fileName,
-                'extracted_text' => "[Fallback OCR] Simulated text extraction for {$fileName}. Document type: {$documentType}.",
-                'fields'         => [
-                    'name'             => 'Extracted Name Placeholder',
-                    'date_of_birth'    => '1900-01-01',
-                    'document_number'  => 'FALLBACK-' . strtoupper(substr(md5($filePath), 0, 8)),
-                    'nationality'      => 'Ghanaian',
+                'overall' => [
+                    'verdict'    => 'needs_review',
+                    'confidence' => 0.0,
+                    'reasons'    => $reasons,
                 ],
+                'extracted_fields' => [
+                    'full_name'         => $referenceData['first_name'] . ' ' . ($referenceData['last_name'] ?? ''),
+                    'date_of_birth'     => $referenceData['date_of_birth'] ?? null,
+                    'document_number'   => 'FALLBACK-' . strtoupper(substr(md5($filePath), 0, 8)),
+                    'nationality'       => $referenceData['nationality'] ?? 'Ghanaian',
+                    'gender'            => $referenceData['gender'] ?? null,
+                ],
+                'cross_reference' => [
+                    'name_match'       => null,
+                    'dob_match'        => null,
+                    'nationality_match' => null,
+                    'gender_match'     => null,
+                ],
+                'template_validation' => [
+                    'has_required_fields'  => false,
+                    'has_official_stamps'  => false,
+                    'has_valid_format'     => false,
+                ],
+                'fraud_indicators' => [],
             ],
             'model'           => 'fallback-ocr',
             'tokens_used'     => 0,

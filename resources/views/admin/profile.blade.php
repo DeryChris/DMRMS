@@ -60,13 +60,13 @@
                 @php $f = 'first_name'; @endphp
                 <div>
                     <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                    <input type="text" id="{{ $f }}" name="{{ $f }}" value="{{ old($f, $user->first_name) }}" required class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                    <input type="text" id="{{ $f }}" name="{{ $f }}" value="{{ old($f, $user->first_name) }}" oninput="this.value = this.value.replace(/[0-9]/g, '')" required class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 @php $f = 'last_name'; @endphp
                 <div>
                     <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                    <input type="text" id="{{ $f }}" name="{{ $f }}" value="{{ old($f, $user->last_name) }}" required class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                    <input type="text" id="{{ $f }}" name="{{ $f }}" value="{{ old($f, $user->last_name) }}" oninput="this.value = this.value.replace(/[0-9]/g, '')" required class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>

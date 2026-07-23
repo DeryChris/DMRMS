@@ -3,8 +3,10 @@
 @section('title', 'Interview - Ghana Armed Forces')
 
 @section('content')
+<div id="screening-old-data" data-application-id="{{ old('application_id') }}" data-search="{{ old('q', session('last_search_q', '')) }}" class="hidden"></div>
+
 <div x-data="{
-    q: '',
+    q: '{{ old('q', session('last_search_q', '')) }}',
     applicant: null,
     error: '',
     loading: false,
@@ -26,7 +28,7 @@
         })
         .catch(() => { this.loading = false; this.error = 'Server error.'; });
     }
-}" class="max-w-3xl mx-auto">
+}" x-init="{{ old('application_id') ? '$nextTick(search)' : '' }}" class="max-w-3xl mx-auto">
     <h1 class="font-heading font-bold text-2xl text-gray-800 mb-6 gradient-border pb-4">Interview Assessment</h1>
 
     <div class="glass-strong rounded-xl shadow-sm p-6 mb-6 gradient-border-left">
@@ -53,42 +55,42 @@
 
                 <form method="POST" action="{{ route('screening.interview.store') }}" class="space-y-4">
                     @csrf
-                    <input type="hidden" name="application_id" x-model="applicant.application_id">
+                    <input type="hidden" name="application_id" value="{{ old('application_id') }}" x-model="applicant?.application_id ?? ''">
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Communication (1-10)</label>
                             <select name="communication" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
-                                @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+                                @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}" {{ old('communication') == $i ? 'selected' : '' }}>{{ $i }}</option>@endfor
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Confidence (1-10)</label>
                             <select name="confidence" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
-                                @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+                                @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}" {{ old('confidence') == $i ? 'selected' : '' }}>{{ $i }}</option>@endfor
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Appearance (1-10)</label>
                             <select name="appearance" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
-                                @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+                                @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}" {{ old('appearance') == $i ? 'selected' : '' }}>{{ $i }}</option>@endfor
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Knowledge (1-10)</label>
                             <select name="knowledge" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
-                                @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+                                @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}" {{ old('knowledge') == $i ? 'selected' : '' }}>{{ $i }}</option>@endfor
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Attitude (1-10)</label>
                             <select name="attitude" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
-                                @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}">{{ $i }}</option>@endfor
+                                @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}" {{ old('attitude') == $i ? 'selected' : '' }}>{{ $i }}</option>@endfor
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Overall Score (0-100)</label>
-                            <input type="number" name="interview_score" required min="0" max="100" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                            <input type="number" name="interview_score" value="{{ old('interview_score') }}" required min="0" max="100" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                     </div>
 
@@ -96,14 +98,14 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Decision</label>
                         <select name="interview_decision" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                             <option value="">Select decision...</option>
-                            <option value="pass">PASS - Recommended</option>
-                            <option value="fail">FAIL - Not Recommended</option>
+                            <option value="pass" {{ old('interview_decision') === 'pass' ? 'selected' : '' }}>PASS - Recommended</option>
+                            <option value="fail" {{ old('interview_decision') === 'fail' ? 'selected' : '' }}>FAIL - Not Recommended</option>
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Notes / Observations</label>
-                        <textarea name="notes" rows="4" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" placeholder="Enter interview notes..."></textarea>
+                        <textarea name="notes" rows="4" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" placeholder="Enter interview notes...">{{ old('notes') }}</textarea>
                     </div>
 
                     <button type="submit" class="px-8 py-3 text-white rounded-lg font-semibold transition" style="background:linear-gradient(135deg,#22c55e,#16a34a);">Submit Interview Results</button>

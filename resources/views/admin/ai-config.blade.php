@@ -29,8 +29,6 @@
             </label>
         </div>
     </div>
-
-    <form method="POST" action="{{ route('admin.ai-config.save') }}" class="space-y-6">
         @csrf
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -90,6 +88,11 @@
                     <div><p class="text-sm font-medium text-gray-800">Auto Final Decision</p><p class="text-xs text-gray-500">Run scoring and assignment immediately after screening</p></div>
                     <input type="hidden" name="auto_final_decision" value="0">
                     <input type="checkbox" name="auto_final_decision" value="1" {{ ($aiSettings['auto_final_decision'] ?? true) ? 'checked' : '' }} class="w-5 h-5 text-gaf-green border-gray-300 rounded focus:ring-gaf-khaki">
+                </label>
+                <label class="flex items-center justify-between">
+                    <div><p class="text-sm font-medium text-gray-800">AI Candidate Matching</p><p class="text-xs text-gray-500">Match applicants to best-fit roles</p></div>
+                    <input type="hidden" name="candidate_matching" value="0">
+                    <input type="checkbox" name="candidate_matching" value="1" {{ ($aiSettings['candidate_matching'] ?? false) ? 'checked' : '' }} class="w-5 h-5 text-gaf-green border-gray-300 rounded focus:ring-gaf-khaki">
                 </label>
             </div>
         </div>

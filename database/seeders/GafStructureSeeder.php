@@ -20,10 +20,12 @@ class GafStructureSeeder extends Seeder
         DB::table('corps')->truncate();
         DB::table('education_levels')->truncate();
         DB::table('sectors')->truncate();
-        DB::statement('ALTER SEQUENCE sectors_id_seq RESTART WITH 1');
-        DB::statement('ALTER SEQUENCE education_levels_id_seq RESTART WITH 1');
-        DB::statement('ALTER SEQUENCE corps_id_seq RESTART WITH 1');
-        DB::statement('ALTER SEQUENCE corp_education_requirements_id_seq RESTART WITH 1');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER SEQUENCE sectors_id_seq RESTART WITH 1');
+            DB::statement('ALTER SEQUENCE education_levels_id_seq RESTART WITH 1');
+            DB::statement('ALTER SEQUENCE corps_id_seq RESTART WITH 1');
+            DB::statement('ALTER SEQUENCE corp_education_requirements_id_seq RESTART WITH 1');
+        }
         Schema::enableForeignKeyConstraints();
 
         // ─── Education Levels ───
@@ -173,6 +175,7 @@ class GafStructureSeeder extends Seeder
         $req($agri, $wasce, 'any');
         $req($agri, $diploma, 'stem');
         $req($agri, $degree, 'specific', ['Agriculture', 'Agricultural Engineering', 'Crop Science', 'Animal Science', 'Agribusiness', 'Forestry', 'Food Science']);
+        $req($agri, $degree, 'agriculture');
 
         // 16. Band
         $band = Corp::create(['name' => 'Army Band', 'slug' => 'army-band', 'sector_id' => $musicBand->id, 'service' => 'army', 'description' => 'Military music, ceremonial performances and musical instruction.']);
@@ -187,12 +190,14 @@ class GafStructureSeeder extends Seeder
         $req($navyExec, $wasce, 'any');
         $req($navyExec, $diploma, 'stem');
         $req($navyExec, $degree, 'specific', ['Marine and Nautical Science', 'Navigation', 'Meteorology', 'Physics', 'Mathematics', 'Geography', 'Oceanography', 'Marine Engineering', 'Mechanical Engineering', 'Electrical Engineering']);
+        $req($navyExec, $degree, 'nautical');
 
         // 18. Navy Engineering
         $navyEng = Corp::create(['name' => 'Navy Engineering Branch', 'slug' => 'navy-engineering', 'sector_id' => $maritime->id, 'service' => 'navy', 'description' => 'Marine engineering, ship maintenance, propulsion systems and electrical systems.']);
         $req($navyEng, $wasce, 'any');
         $req($navyEng, $diploma, 'engineering');
         $req($navyEng, $degree, 'specific', ['Marine Engineering', 'Mechanical Engineering', 'Electrical Engineering', 'Electronic Engineering', 'Naval Architecture', 'Aeronautical Engineering']);
+        $req($navyEng, $degree, 'nautical');
 
         // 19. Navy Supply & Secretarial
         $navySupply = Corp::create(['name' => 'Navy Supply & Secretarial', 'slug' => 'navy-supply-secretarial', 'sector_id' => $adminFinance->id, 'service' => 'navy', 'description' => 'Supply chain, accounting, secretarial duties and personnel administration.']);
@@ -205,6 +210,7 @@ class GafStructureSeeder extends Seeder
         $req($navyTech, $wasce, 'any');
         $req($navyTech, $diploma, 'engineering');
         $req($navyTech, $degree, 'specific', ['Electrical Engineering', 'Electronic Engineering', 'Mechanical Engineering', 'Telecom Engineering', 'Computer Engineering', 'Computer Science']);
+        $req($navyTech, $degree, 'nautical');
 
         // ─── AIR FORCE CORPS ───
 
@@ -321,5 +327,45 @@ class GafStructureSeeder extends Seeder
         $req($navyAccount, $wasce, 'any');
         $req($navyAccount, $diploma, 'business');
         $req($navyAccount, $degree, 'business', null, null, 'second_class_lower');
+
+        // ─── LEGAL OFFICER CORPS ───
+        $legalOfficer = Corp::create(['name' => 'Legal Officer Corps', 'slug' => 'legal-officer', 'sector_id' => $legal->id, 'service' => 'army', 'description' => 'Legal advisory, prosecution, and judicial services for the Ghana Armed Forces.']);
+        $req($legalOfficer, $degree, 'specific', ['Law', 'LLB', 'Bachelor of Laws'], null, 'second_class_lower');
+        $req($legalOfficer, $masters, 'legal');
+
+        // ─── NAVY & AIR FORCE RELIGIOUS AFFAIRS ───
+        $navyChaplain = Corp::create(['name' => 'Navy Chaplain (Christian)', 'slug' => 'navy-chaplain', 'sector_id' => $religious->id, 'service' => 'navy', 'description' => 'Christian pastoral care and spiritual leadership for naval personnel.']);
+        $req($navyChaplain, $degree, 'specific', ['Theology', 'Divinity', 'Religious Studies', 'Ministry', 'Pastoral Counselling'], null, 'second_class_lower');
+
+        $afChaplain = Corp::create(['name' => 'Air Force Chaplain (Christian)', 'slug' => 'af-chaplain', 'sector_id' => $religious->id, 'service' => 'air_force', 'description' => 'Christian pastoral care and spiritual leadership for air force personnel.']);
+        $req($afChaplain, $degree, 'specific', ['Theology', 'Divinity', 'Religious Studies', 'Ministry', 'Pastoral Counselling'], null, 'second_class_lower');
+
+        $navyImam = Corp::create(['name' => 'Navy Imam (Islamic Affairs)', 'slug' => 'navy-imam', 'sector_id' => $religious->id, 'service' => 'navy', 'description' => 'Islamic pastoral care and spiritual leadership for naval personnel.']);
+        $req($navyImam, $degree, 'specific', ['Islamic Studies', 'Arabic', 'Sharia Law', 'Theology'], null, 'second_class_lower');
+
+        $afImam = Corp::create(['name' => 'Air Force Imam (Islamic Affairs)', 'slug' => 'af-imam', 'sector_id' => $religious->id, 'service' => 'air_force', 'description' => 'Islamic pastoral care and spiritual leadership for air force personnel.']);
+        $req($afImam, $degree, 'specific', ['Islamic Studies', 'Arabic', 'Sharia Law', 'Theology'], null, 'second_class_lower');
+
+        // ─── ADDITIONAL SSC CORPS ───
+        $sscMedical = Corp::create(['name' => 'SSC Medical Corps', 'slug' => 'ssc-medical', 'sector_id' => $medical->id, 'service' => 'army', 'description' => 'Short Service Commission for medical specialists with postgraduate qualifications.']);
+        $req($sscMedical, $masters, 'specific', ['Medicine', 'Surgery', 'Public Health', 'Epidemiology', 'Internal Medicine']);
+
+        $sscLegal = Corp::create(['name' => 'SSC Legal Officer', 'slug' => 'ssc-legal', 'sector_id' => $legal->id, 'service' => 'army', 'description' => 'Short Service Commission for legal professionals with advanced law degrees.']);
+        $req($sscLegal, $masters, 'specific', ['Law', 'LLM', 'Master of Laws', 'International Law', 'Corporate Law']);
+
+        $sscSupply = Corp::create(['name' => 'SSC Supply & Transport', 'slug' => 'ssc-supply-transport', 'sector_id' => $logistics->id, 'service' => 'army', 'description' => 'Short Service Commission for logistics and supply chain professionals.']);
+        $req($sscSupply, $masters, 'specific', ['Logistics', 'Supply Chain Management', 'Procurement', 'Transport Management', 'Business Administration']);
+
+        $sscEducation = Corp::create(['name' => 'SSC Education Corps', 'slug' => 'ssc-education', 'sector_id' => $educationSector->id, 'service' => 'army', 'description' => 'Short Service Commission for education specialists with postgraduate teaching qualifications.']);
+        $req($sscEducation, $masters, 'specific', ['Education', 'Arts Education', 'Science Education', 'Mathematics Education', 'Educational Administration', 'Curriculum Studies']);
+
+        $sscPay = Corp::create(['name' => 'SSC Pay Corps', 'slug' => 'ssc-pay', 'sector_id' => $adminFinance->id, 'service' => 'army', 'description' => 'Short Service Commission for finance and accounting professionals.']);
+        $req($sscPay, $masters, 'specific', ['Accounting', 'Finance', 'Banking', 'Economics', 'Actuarial Science']);
+
+        $sscPR = Corp::create(['name' => 'SSC Public Relations', 'slug' => 'ssc-public-relations', 'sector_id' => $mediaPR->id, 'service' => 'army', 'description' => 'Short Service Commission for communications and media professionals.']);
+        $req($sscPR, $masters, 'specific', ['Journalism', 'Communication Studies', 'Media Studies', 'Public Relations', 'Marketing']);
+
+        $sscCatering = Corp::create(['name' => 'SSC Catering Corps', 'slug' => 'ssc-catering', 'sector_id' => $logistics->id, 'service' => 'army', 'description' => 'Short Service Commission for hospitality and catering management professionals.']);
+        $req($sscCatering, $masters, 'specific', ['Food Science and Technology', 'Food Science and Nutrition', 'Hospitality Management', 'Catering']);
     }
 }

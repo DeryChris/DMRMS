@@ -134,8 +134,56 @@ PROMPT;
                         ],
                     ],
                     'generationConfig' => [
-                        'maxOutputTokens' => 8192,
-                        'temperature' => 0.2,
+                        'maxOutputTokens'  => 8192,
+                        'temperature'      => 0.2,
+                        'response_mime_type' => 'application/json',
+                        'response_schema'  => [
+                            'type' => 'OBJECT',
+                            'properties' => [
+                                'overall' => [
+                                    'type' => 'OBJECT',
+                                    'properties' => [
+                                        'verdict'    => ['type' => 'STRING'],
+                                        'confidence' => ['type' => 'NUMBER'],
+                                        'reasons'    => ['type' => 'ARRAY', 'items' => ['type' => 'STRING']],
+                                    ],
+                                    'required' => ['verdict', 'confidence', 'reasons'],
+                                ],
+                                'extracted_fields' => [
+                                    'type' => 'OBJECT',
+                                    'properties' => [
+                                        'document_number' => ['type' => 'STRING'],
+                                        'full_name'       => ['type' => 'STRING'],
+                                        'date_of_birth'   => ['type' => 'STRING'],
+                                        'gender'          => ['type' => 'STRING'],
+                                        'issue_date'      => ['type' => 'STRING'],
+                                        'expiry_date'     => ['type' => 'STRING'],
+                                    ],
+                                ],
+                                'cross_reference' => [
+                                    'type' => 'OBJECT',
+                                    'properties' => [
+                                        'name_match'       => ['type' => 'BOOLEAN'],
+                                        'dob_match'        => ['type' => 'BOOLEAN'],
+                                        'nationality_match' => ['type' => 'BOOLEAN'],
+                                        'gender_match'     => ['type' => 'BOOLEAN'],
+                                    ],
+                                ],
+                                'template_validation' => [
+                                    'type' => 'OBJECT',
+                                    'properties' => [
+                                        'has_required_fields' => ['type' => 'BOOLEAN'],
+                                        'has_official_stamps' => ['type' => 'BOOLEAN'],
+                                        'has_valid_format'    => ['type' => 'BOOLEAN'],
+                                    ],
+                                ],
+                                'fraud_indicators' => [
+                                    'type' => 'ARRAY',
+                                    'items' => ['type' => 'STRING'],
+                                ],
+                            ],
+                            'required' => ['overall', 'extracted_fields', 'cross_reference', 'template_validation', 'fraud_indicators'],
+                        ],
                     ],
                 ]);
 

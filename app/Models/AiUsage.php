@@ -11,10 +11,15 @@ class AiUsage extends Model
 
     protected $fillable = [
         'admin_id',
+        'feature',
         'date',
         'total_tokens',
+        'tokens_used',
         'total_cost',
+        'cost',
         'requests_count',
+        'response_time_ms',
+        'metadata',
     ];
 
     protected function casts(): array
@@ -22,6 +27,8 @@ class AiUsage extends Model
         return [
             'date' => 'date',
             'total_cost' => 'decimal:4',
+            'cost' => 'decimal:6',
+            'metadata' => 'array',
         ];
     }
 

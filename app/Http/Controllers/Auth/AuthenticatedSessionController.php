@@ -28,13 +28,17 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Clear any stale intended URL (e.g. from a dead bookmark or external link)
+        // so the user always lands on their proper dashboard after login.
+        $request->session()->forget('url.intended');
+
         $user = Auth::user();
 
         if ($user->isAdmin()) {
-            return redirect()->intended(route('admin.dashboard', absolute: false));
+            return redirect()->route('admin.dashboard');
         }
 
-        return redirect()->intended(route('applicant.dashboard', absolute: false));
+        return redirect()->route('applicant.dashboard');
     }
 
     /**

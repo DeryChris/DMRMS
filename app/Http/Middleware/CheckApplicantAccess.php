@@ -15,6 +15,8 @@ class CheckApplicantAccess
         'applicant.documents'          => ['registered', 'draft', 'submitted'],
         'applicant.documents.upload'   => ['registered', 'draft', 'submitted'],
         'applicant.documents.delete'   => ['registered', 'draft', 'submitted'],
+        'applicant.documents.finalize' => ['registered', 'draft', 'submitted'],
+        'applicant.documents.discard-all' => ['registered', 'draft', 'submitted'],
         'applicant.status'             => [
             'submitted', 'documents_verified', 'eligibility_passed', 'eligibility_failed',
             'shortlisted', 'appointment_scheduled', 'screening_completed',
@@ -22,6 +24,15 @@ class CheckApplicantAccess
             'rejected', 'disqualified',
         ],
         'applicant.appointment'        => ['appointment_scheduled', 'screening_completed'],
+    ];
+
+    /** Routes that are document-related — get an exception when docs are rejected */
+    protected array $documentRoutes = [
+        'applicant.documents',
+        'applicant.documents.upload',
+        'applicant.documents.delete',
+        'applicant.documents.finalize',
+        'applicant.documents.discard-all',
     ];
 
     public function handle(Request $request, Closure $next): Response
@@ -40,6 +51,17 @@ class CheckApplicantAccess
 
         $application = $applicant->application()->first();
         $appStatus = $application?->status ?? 'registered';
+
+        // Allow document routes if the applicant has rejected documents that need re-upload
+        if (in_array($routeName, $this->documentRoutes, true)) {
+            $hasRejectedDocs = $application && $application->documents()
+                ->where('verification_status', 'rejected')
+                ->exists();
+
+            if ($hasRejectedDocs) {
+                return $next($request);
+            }
+        }
 
         if (!in_array($appStatus, $this->accessMap[$routeName])) {
             return redirect()->route('applicant.dashboard')

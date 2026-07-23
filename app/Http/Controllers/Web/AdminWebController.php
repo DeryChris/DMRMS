@@ -350,6 +350,17 @@ class AdminWebController extends Controller
         return redirect()->route('admin.cycles')->with('success', 'Cycle closed successfully.');
     }
 
+    public function cycleActivate(Cycle $cycle): RedirectResponse
+    {
+        if (!in_array($cycle->status, ['draft', 'closed'])) {
+            return back()->with('error', 'Only draft or closed cycles can be activated.');
+        }
+
+        $cycle->update(['status' => 'active']);
+
+        return redirect()->route('admin.cycles')->with('success', 'Cycle activated successfully.');
+    }
+
     public function cycleArchive(Cycle $cycle): RedirectResponse
     {
         if ($cycle->status !== 'closed') {
@@ -410,6 +421,68 @@ class AdminWebController extends Controller
 
         return redirect()->route('admin.selection')
             ->with('success', 'Applicant sent back to document verification stage.');
+    }
+
+    public function allocateCorps(Request $request): RedirectResponse
+    {
+        $this->authorize('shortlist', Application::class);
+
+        $cycleId = $request->input('cycle_id');
+        if (!$cycleId) {
+            $cycle = Cycle::where('status', 'active')->first();
+            $cycleId = $cycle?->id;
+        }
+
+        if (!$cycleId) {
+            return redirect()->route('admin.selection')
+                ->with('error', 'No cycle specified and no active cycle found.');
+        }
+
+        $allocationService = app(\App\Services\Application\CorpAllocationService::class);
+        $result = $allocationService->allocate($cycleId);
+
+        return redirect()->route('admin.selection')
+            ->with('success', "Corps allocation complete: {$result['allocated']} allocated, {$result['unallocated']} unallocated.");
+    }
+
+    public function allocationStats(Request $request): JsonResponse
+    {
+        $cycleId = $request->input('cycle_id');
+        if (!$cycleId) {
+            $cycle = Cycle::where('status', 'active')->first();
+            $cycleId = $cycle?->id;
+        }
+
+        if (!$cycleId) {
+            return response()->json(['error' => 'No cycle found'], 404);
+        }
+
+        $allocationService = app(\App\Services\Application\CorpAllocationService::class);
+        $stats = $allocationService->getAllocationStats($cycleId);
+
+        return response()->json($stats);
+    }
+
+    public function resetAllocations(Request $request): RedirectResponse
+    {
+        $this->authorize('shortlist', Application::class);
+
+        $cycleId = $request->input('cycle_id');
+        if (!$cycleId) {
+            $cycle = Cycle::where('status', 'active')->first();
+            $cycleId = $cycle?->id;
+        }
+
+        if (!$cycleId) {
+            return redirect()->route('admin.selection')
+                ->with('error', 'No cycle specified and no active cycle found.');
+        }
+
+        $allocationService = app(\App\Services\Application\CorpAllocationService::class);
+        $allocationService->resetCycleAllocations($cycleId);
+
+        return redirect()->route('admin.selection')
+            ->with('success', 'All corps allocations reset for the cycle.');
     }
 
     public function finalizeDecision(Request $request): RedirectResponse
@@ -498,7 +571,7 @@ class AdminWebController extends Controller
 
     public function verifyDocument(Request $request, int $id): RedirectResponse
     {
-        $document = Document::with('application')->findOrFail($id);
+        $document = Document::with('application.applicant')->findOrFail($id);
         $this->authorize('verify', $document);
         $application = $document->application;
 
@@ -520,6 +593,37 @@ class AdminWebController extends Controller
 
             if ($allVerified && $application->status === 'submitted') {
                 $application->update(['status' => 'documents_verified']);
+
+                // All required docs verified — now apply stored eligibility result
+                $this->eligibilityService->evaluateAfterDocVerification($application);
+            }
+        } elseif ($validated['status'] === 'rejected') {
+            // Notify the applicant about the rejection
+            $applicant = $application->applicant;
+            if ($applicant) {
+                $docType = str_replace('_', ' ', ucfirst($document->document_type));
+                $this->notificationService->sendDashboard(
+                    $applicant->id,
+                    'document_rejected',
+                    'Document Rejected - Action Required',
+                    "Your {$docType} document has been rejected. Please log in and re-upload a valid copy to continue your application."
+                );
+            }
+
+            // Roll back application status so the applicant can re-upload
+            // Handle ALL statuses that could be past 'submitted'
+            $rollbackStatuses = [
+                'documents_verified', 'eligibility_passed', 'eligibility_failed',
+                'shortlisted', 'appointment_scheduled', 'screening_completed',
+            ];
+
+            if (in_array($application->status, $rollbackStatuses, true)) {
+                $application->update([
+                    'status' => 'submitted',
+                    'documents_finalized' => false,
+                ]);
+            } elseif ($application->status === 'submitted') {
+                $application->update(['documents_finalized' => false]);
             }
         }
 
@@ -546,6 +650,9 @@ class AdminWebController extends Controller
 
         if ($allVerified && $application->status === 'submitted') {
             $application->update(['status' => 'documents_verified']);
+
+            // All required docs verified — now apply stored eligibility result
+            $this->eligibilityService->evaluateAfterDocVerification($application);
         }
 
         return redirect()->route('admin.applications.detail', $application->id)
@@ -576,6 +683,31 @@ class AdminWebController extends Controller
             'Content-Type' => $document->mime_type ?? 'application/pdf',
             'Content-Disposition' => 'inline; filename="' . $document->file_name . '"',
             'Cache-Control' => 'public, max-age=3600',
+        ]);
+    }
+
+    public function previewDocument(int $id, int $page = 1): \Illuminate\Http\Response
+    {
+        $document = Document::findOrFail($id);
+        $path = Storage::disk('public')->path($document->file_path);
+
+        abort_unless(file_exists($path), 404);
+
+        $imagick = new \Imagick();
+        $imagick->setResolution(150, 150);
+        $imagick->readImage($path);
+        $totalPages = max($imagick->getNumberImages(), 1);
+        $page = max(1, min($page, $totalPages));
+        $imagick->setIteratorIndex($page - 1);
+        $imagick->setImageFormat('jpeg');
+        $imagick->setImageCompressionQuality(80);
+        $blob = $imagick->getImageBlob();
+        $imagick->clear();
+
+        return response($blob, 200, [
+            'Content-Type' => 'image/jpeg',
+            'X-Total-Pages' => $totalPages,
+            'Cache-Control' => 'public, max-age=86400',
         ]);
     }
 
@@ -1070,6 +1202,9 @@ class AdminWebController extends Controller
             'session_lifetime' => SystemSetting::getValue('session_lifetime', 120),
             'password_min_length' => SystemSetting::getValue('password_min_length', 8),
             'max_login_attempts' => SystemSetting::getValue('max_login_attempts', 5),
+            'contact_address' => SystemSetting::getValue('contact_address', 'Ghana Armed Forces Headquarters, Burma Camp, Accra'),
+            'contact_phone' => SystemSetting::getValue('contact_phone', '+233 (0) 302 123 456'),
+            'contact_email' => SystemSetting::getValue('contact_email', 'recruitment@gaf.mil.gh'),
             'registration_enabled' => SystemSetting::getValue('registration_enabled', true, 'boolean'),
             'mfa_required' => SystemSetting::getValue('mfa_required', false, 'boolean'),
             'maintenance_mode' => SystemSetting::getValue('maintenance_mode', false, 'boolean'),
@@ -1094,6 +1229,9 @@ class AdminWebController extends Controller
             'session_lifetime' => 'integer|min:5|max:1440',
             'password_min_length' => 'integer|min:4|max:100',
             'max_login_attempts' => 'integer|min:1|max:100',
+            'contact_address' => 'string|max:255',
+            'contact_phone' => 'string|max:50',
+            'contact_email' => 'email|max:100',
             'registration_enabled' => 'boolean',
             'mfa_required' => 'boolean',
             'maintenance_mode' => 'boolean',
@@ -1240,6 +1378,7 @@ class AdminWebController extends Controller
             'max_requests_per_minute' => 'integer|min:1|max:10000',
             'max_tokens_per_request' => 'integer|min:1|max:100000',
             'auto_final_decision' => 'boolean',
+            'candidate_matching' => 'boolean',
             'auto_recruit' => 'boolean',
             'enrollment_delay_days' => 'integer|min:1|max:365',
             'default_training_battalion' => 'string|max:100',
@@ -1277,17 +1416,29 @@ class AdminWebController extends Controller
             'status' => 'sometimes|in:active,suspended',
         ]);
 
-        $user = User::create([
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'email' => $validated['email'],
-            'password' => bcrypt($validated['password']),
-            'role' => $validated['role'],
-            'status' => $validated['status'] ?? 'active',
-            'username' => strtolower($validated['first_name'] . '.' . $validated['last_name']),
-        ]);
+        try {
+            $user = User::create([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'email' => $validated['email'],
+                'password' => bcrypt($validated['password']),
+                'role' => $validated['role'],
+                'status' => $validated['status'] ?? 'active',
+                'username' => strtolower($validated['first_name'] . '.' . $validated['last_name']),
+            ]);
 
-        $user->assignRole($validated['role']);
+            if (!class_exists(\Spatie\Permission\Models\Role::class) || !\Spatie\Permission\Models\Role::where('name', $validated['role'])->exists()) {
+                \Spatie\Permission\Models\Role::create(['name' => $validated['role'], 'guard_name' => 'web']);
+            }
+
+            $user->assignRole($validated['role']);
+        } catch (\Exception $e) {
+            Log::error('User creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withInput()->with('error', 'Failed to create user: ' . $e->getMessage());
+        }
 
         return redirect()->route('admin.users')->with('success', 'User created successfully.');
     }
@@ -1560,8 +1711,8 @@ class AdminWebController extends Controller
                 $q->where('first_name', 'ilike', "%{$search}%")
                   ->orWhere('last_name', 'ilike', "%{$search}%")
                   ->orWhere('email', 'ilike', "%{$search}%")
-                  ->orWhere('gaf_id', 'ilike', "%{$search}%")
-                  ->orWhere('contact_number', 'ilike', "%{$search}%");
+                  ->orWhere('contact_number', 'ilike', "%{$search}%")
+                  ->orWhereHas('application', fn($aq) => $aq->where('gaf_id', 'ilike', "%{$search}%"));
             });
         }
 
@@ -1590,7 +1741,7 @@ class AdminWebController extends Controller
             'first_name' => 'required|string|max:50',
             'last_name' => 'required|string|max:50',
             'email' => 'required|email|max:100|unique:applicants,email,' . $applicant->id . ',id,deleted_at,NULL',
-            'contact_number' => 'nullable|string|max:20',
+            'contact_number' => 'nullable|string|regex:/^[0-9]{10}$/',
             'region' => 'nullable|string|max:50',
             'status' => 'required|in:active,inactive,suspended,pending',
         ]);

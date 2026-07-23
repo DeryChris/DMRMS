@@ -3,8 +3,10 @@
 @section('title', 'Medical Screening - Ghana Armed Forces')
 
 @section('content')
+<div id="screening-old-data" data-application-id="{{ old('application_id') }}" data-search="{{ old('q', session('last_search_q', '')) }}" class="hidden"></div>
+
 <div x-data="{
-    q: '',
+    q: '{{ old('q', session('last_search_q', '')) }}',
     applicant: null,
     error: '',
     loading: false,
@@ -26,7 +28,7 @@
         })
         .catch(() => { this.loading = false; this.error = 'Server error.'; });
     }
-}" class="max-w-3xl mx-auto">
+}" x-init="{{ old('application_id') ? '$nextTick(search)' : '' }}" class="max-w-3xl mx-auto">
     <h1 class="font-heading font-bold text-2xl text-gray-800 mb-6 gradient-border pb-4">Medical Screening</h1>
 
     <div class="glass-strong rounded-xl shadow-sm p-6 mb-6 gradient-border-left">
@@ -56,44 +58,44 @@
 
                 <form method="POST" action="{{ route('screening.medical.store') }}" class="space-y-4">
                     @csrf
-                    <input type="hidden" name="application_id" x-model="applicant.application_id">
+                    <input type="hidden" name="application_id" value="{{ old('application_id') }}" x-model="applicant?.application_id ?? ''">
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Blood Pressure</label>
-                            <input type="text" name="blood_pressure" placeholder="e.g. 120/80" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                            <input type="text" name="blood_pressure" value="{{ old('blood_pressure') }}" placeholder="e.g. 120/80" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Heart Rate (bpm)</label>
-                            <input type="number" name="heart_rate" min="30" max="250" placeholder="e.g. 72" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                            <input type="number" name="heart_rate" value="{{ old('heart_rate') }}" min="30" max="250" placeholder="e.g. 72" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Vision (Left)</label>
-                            <input type="text" name="vision_left" placeholder="e.g. 6/6" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                            <input type="text" name="vision_left" value="{{ old('vision_left') }}" placeholder="e.g. 6/6" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Vision (Right)</label>
-                            <input type="text" name="vision_right" placeholder="e.g. 6/6" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                            <input type="text" name="vision_right" value="{{ old('vision_right') }}" placeholder="e.g. 6/6" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Hearing Test</label>
                             <select name="hearing_test" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                                 <option value="">Select...</option>
-                                <option value="pass">Pass</option>
-                                <option value="fail">Fail</option>
+                                <option value="pass" {{ old('hearing_test') === 'pass' ? 'selected' : '' }}>Pass</option>
+                                <option value="fail" {{ old('hearing_test') === 'fail' ? 'selected' : '' }}>Fail</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
-                            <input type="number" name="height_cm" step="0.1" min="100" max="250" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                            <input type="number" name="height_cm" value="{{ old('height_cm') }}" step="0.1" min="100" max="250" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
-                            <input type="number" name="weight_kg" step="0.1" min="30" max="200" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                            <input type="number" name="weight_kg" value="{{ old('weight_kg') }}" step="0.1" min="30" max="200" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">BMI</label>
-                            <input type="number" name="bmi" step="0.1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                            <input type="number" name="bmi" value="{{ old('bmi') }}" step="0.1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                     </div>
 
@@ -101,15 +103,15 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Medical Status</label>
                         <select name="medical_status" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                             <option value="">Select result...</option>
-                            <option value="fit">Fit</option>
-                            <option value="unfit">Unfit</option>
-                            <option value="pending">Pending Further Review</option>
+                            <option value="fit" {{ old('medical_status') === 'fit' ? 'selected' : '' }}>Fit</option>
+                            <option value="unfit" {{ old('medical_status') === 'unfit' ? 'selected' : '' }}>Unfit</option>
+                            <option value="pending" {{ old('medical_status') === 'pending' ? 'selected' : '' }}>Pending Further Review</option>
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                        <textarea name="notes" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" placeholder="Enter medical observations..."></textarea>
+                        <textarea name="notes" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" placeholder="Enter medical observations...">{{ old('notes') }}</textarea>
                     </div>
 
                     <button type="submit" class="px-8 py-3 text-white rounded-lg font-semibold transition" style="background:linear-gradient(135deg,#22c55e,#16a34a);">Submit Medical Results</button>

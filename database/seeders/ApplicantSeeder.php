@@ -101,7 +101,7 @@ class ApplicantSeeder extends Seeder
             'district' => fake()->randomElement(self::$districts),
             'nationality' => 'Ghanaian',
             'national_id' => 'GHA-' . fake()->unique()->numerify('##########'),
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('change-me-applicant-2026'),
             'email_verified_at' => now(),
             'status' => 'active',
         ]);

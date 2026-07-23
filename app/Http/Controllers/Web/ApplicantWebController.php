@@ -42,6 +42,32 @@ class ApplicantWebController extends Controller
         $notifications = $applicant->notifications()->orderBy('sent_at', 'desc')->take(3)->get();
         $finalDecision = $application?->finalDecision;
 
+        // Check for rejected documents
+        $hasRejectedDocs = false;
+        $rejectedDocTypes = [];
+        $allDocsVerified = false;
+        if ($application) {
+            $requiredDocs = ['birth_certificate', 'certificate', 'national_id', 'photograph'];
+            $rejected = $application->documents()
+                ->where('verification_status', 'rejected')
+                ->pluck('document_type')
+                ->toArray();
+            $hasRejectedDocs = !empty($rejected);
+            $rejectedDocTypes = array_map(fn($t) => str_replace('_', ' ', ucfirst($t)), $rejected);
+
+            $verified = $application->documents()
+                ->whereIn('document_type', $requiredDocs)
+                ->where('verification_status', 'verified')
+                ->pluck('document_type')
+                ->toArray();
+            $allDocsVerified = empty(array_diff($requiredDocs, $verified));
+        }
+
+        // Can the applicant go back to edit application/documents?
+        $lockedStatuses = ['screening_completed', 'final_decision_pending', 'selected', 'rejected', 'disqualified', 'reserve', 'recruited'];
+        $isLocked = $application && in_array($application->status, $lockedStatuses);
+        $canGoBack = !$isLocked && ($hasRejectedDocs || !$allDocsVerified);
+
         $stageMap = [
             'registered' => 1,
             'draft' => 2,
@@ -76,7 +102,11 @@ class ApplicantWebController extends Controller
             ['title' => 'Final Decision', 'key' => 'decision', 'status' => $currentStage >= 10 ? 'completed' : 'pending'],
         ];
 
-        return view('applicant.dashboard', compact('applicant', 'application', 'notifications', 'currentStage', 'stages', 'statusText', 'finalDecision'));
+        return view('applicant.dashboard', compact(
+            'applicant', 'application', 'notifications', 'currentStage', 'stages',
+            'statusText', 'finalDecision', 'hasRejectedDocs', 'rejectedDocTypes',
+            'allDocsVerified', 'canGoBack', 'isLocked'
+        ));
     }
 
     public function offerLetter()
@@ -147,12 +177,28 @@ class ApplicantWebController extends Controller
             'service' => $s->service,
         ])->values()->toArray();
 
+        $eligibleCorpIds = $application
+            ? $this->corpMatchingService->getEligibleCorpIds($application)
+            : [];
+
+        $eligibleCorpIdsJson = json_encode($eligibleCorpIds);
+
+        $sectorEligibility = $sectors->mapWithKeys(fn($s) => [
+            $s->id => [
+                'total' => $allCorps->where('sector_id', $s->id)->count(),
+                'eligible' => $allCorps->where('sector_id', $s->id)
+                    ->filter(fn($c) => in_array($c->id, $eligibleCorpIds))
+                    ->count(),
+            ],
+        ]);
+
         $degreeFields = CorpMatchingService::getAllDegreeFields();
 
         return view('applicant.application-form', compact(
             'applicant', 'application', 'cycles', 'existing', 'defaultCycle',
             'currentStep', 'eligibleSectors', 'sectors', 'existingSelections',
-            'allCorps', 'allCorpsArray', 'sectorsArray', 'degreeFields'
+            'allCorps', 'allCorpsArray', 'sectorsArray', 'degreeFields',
+            'eligibleCorpIdsJson', 'sectorEligibility'
         ));
     }
 
@@ -221,7 +267,7 @@ class ApplicantWebController extends Controller
             'residential_address' => "{$required}|string",
             'region' => "{$required}|string|max:50",
             'district' => "{$required}|string|max:50",
-            'alternative_contact' => 'nullable|string|max:15',
+            'alternative_contact' => 'nullable|string|regex:/^[0-9]{10}$/',
         ]);
 
         $appValidated['criminal_record'] = !empty($appValidated['criminal_record']) && $appValidated['criminal_record'] === 'yes';
@@ -284,20 +330,16 @@ class ApplicantWebController extends Controller
 
                 $this->notificationService->applicationSubmitted($app);
 
+                // Evaluate eligibility and store result (does NOT advance status — docs must be verified first)
                 $this->eligibilityService->evaluate($app);
 
                 $result = $app->fresh('eligibilityResult');
-                if ($result->overall_status === 'eligible') {
-                    if ($request->ajax() || $request->wantsJson()) {
-                        return response()->json(['success' => true, 'message' => 'Application submitted and eligibility check passed!']);
-                    }
-                    return redirect()->route('applicant.status')->with('success', 'Application submitted and eligibility check passed! You have been advanced to the shortlisting pool.');
-                }
-
                 if ($request->ajax() || $request->wantsJson()) {
-                    return response()->json(['success' => true, 'message' => 'Application submitted.']);
+                    $msg = 'Application submitted successfully. Your documents are pending verification by the recruitment board.';
+                    return response()->json(['success' => true, 'message' => $msg]);
                 }
-                return redirect()->route('applicant.status')->with('success', 'Application submitted.');
+                return redirect()->route('applicant.status')
+                    ->with('success', 'Application submitted successfully. Your documents are being reviewed. You will be notified once they are verified.');
             }
         }
 
@@ -334,14 +376,11 @@ class ApplicantWebController extends Controller
             "{$application->applicant->name} ({$application->gaf_id}) has submitted an application and requires document review."
         );
 
+        // Evaluate eligibility and store result (does NOT advance status — docs must be verified first)
         $this->eligibilityService->evaluate($application);
 
-        $result = $application->fresh('eligibilityResult');
-        if ($result && $result->overall_status === 'eligible') {
-            return redirect()->route('applicant.status')->with('success', 'Application submitted and eligibility check passed! You have been advanced to the shortlisting pool.');
-        }
-
-        return redirect()->route('applicant.status')->with('success', 'Application submitted.');
+        return redirect()->route('applicant.status')
+            ->with('success', 'Application submitted successfully. Your documents are being reviewed. You will be notified once they are verified.');
     }
 
     public function documents(): View
@@ -364,7 +403,25 @@ class ApplicantWebController extends Controller
             'photograph' => 'Passport Photograph',
         ];
 
-        return view('applicant.documents', compact('applicant', 'documents', 'uploadedDocTypes', 'requiredDocTypes'));
+        // Check for rejected documents
+        $rejectedDocTypes = [];
+        $verificationStatuses = [];
+        if ($application) {
+            $rejected = $application->documents()
+                ->where('verification_status', 'rejected')
+                ->pluck('document_type')
+                ->toArray();
+            $rejectedDocTypes = array_map(fn($t) => str_replace('_', ' ', ucfirst($t)), $rejected);
+
+            $verificationStatuses = $application->documents()
+                ->pluck('verification_status', 'document_type')
+                ->toArray();
+        }
+
+        return view('applicant.documents', compact(
+            'applicant', 'documents', 'uploadedDocTypes', 'requiredDocTypes',
+            'rejectedDocTypes', 'verificationStatuses'
+        ));
     }
 
     private function validateWhiteBackground(string $path, string $mime): void
@@ -413,9 +470,10 @@ class ApplicantWebController extends Controller
             return redirect()->route('applicant.application')->with('error', 'Please create an application first.');
         }
 
+        $allowedMimes = $request->input('document_type') === 'photograph' ? 'jpg,jpeg,png' : 'pdf,jpg,jpeg,png';
         $validated = $request->validate([
             'document_type' => 'required|string|in:birth_certificate,national_id,certificate,photograph,medical_report,police_clearance,other',
-            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'file' => "required|file|mimes:{$allowedMimes}|max:5120",
         ]);
 
         if ($validated['document_type'] === 'photograph') {
@@ -449,6 +507,7 @@ class ApplicantWebController extends Controller
             'mime_type' => $file->getMimeType(),
             'upload_date' => now(),
             'verification_status' => 'pending',
+            'is_draft' => true,
         ]);
 
         return redirect()->route('applicant.documents')->with('success', 'Document uploaded successfully.');
@@ -463,9 +522,28 @@ class ApplicantWebController extends Controller
             return redirect()->route('applicant.application')->with('error', 'Please create an application first.');
         }
 
-        $documents = $application->documents()->where('verification_status', 'pending')->get();
+        $requiredDocTypes = [
+            'birth_certificate' => 'Birth Certificate',
+            'certificate' => 'Educational Certificate',
+            'national_id' => 'National ID (Ghana Card)',
+            'photograph' => 'Passport Photograph',
+        ];
+
+        $uploadedDocTypes = $application->documents()->pluck('document_type')->toArray();
+        $missingDocs = array_diff(array_keys($requiredDocTypes), $uploadedDocTypes);
+
+        if (!empty($missingDocs)) {
+            $missingLabels = array_map(fn($type) => $requiredDocTypes[$type] ?? $type, $missingDocs);
+            return redirect()->route('applicant.documents')
+                ->with('error', 'Cannot submit: missing required documents: ' . implode(', ', $missingLabels) . '. Please upload them first.');
+        }
+
+        $application->update(['documents_finalized' => true, 'documents_finalized_at' => now()]);
+
+        $documents = $application->documents->where('is_draft', true);
 
         foreach ($documents as $document) {
+            $document->update(['is_draft' => false, 'finalized_at' => now()]);
             DocumentUploaded::dispatch($document);
         }
 
@@ -490,6 +568,30 @@ class ApplicantWebController extends Controller
         $document->delete();
 
         return redirect()->route('applicant.documents')->with('success', 'Document deleted successfully.');
+    }
+
+    public function discardAllDocuments(): RedirectResponse
+    {
+        $applicant = Auth::guard('applicant')->user();
+        $application = $applicant->application;
+
+        if (!$application) {
+            return redirect()->route('applicant.application')->with('error', 'Please create an application first.');
+        }
+
+        $drafts = $application->documents()->where('is_draft', true)->get();
+
+        foreach ($drafts as $doc) {
+            Storage::disk('public')->delete($doc->file_path);
+            $doc->delete();
+        }
+
+        Log::info('All draft documents discarded', [
+            'applicant_id' => $applicant->id,
+            'count' => $drafts->count(),
+        ]);
+
+        return redirect()->route('applicant.documents')->with('success', 'All draft documents discarded successfully.');
     }
 
     public function status(): View

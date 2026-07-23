@@ -6,11 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\Applicant;
 use App\Models\Application;
+use App\Mail\ContactNotificationMail;
+use App\Models\ContactMessage;
 use App\Models\Cycle;
 use App\Models\Faq;
+use App\Models\SystemSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class WebController extends Controller
@@ -33,16 +37,36 @@ class WebController extends Controller
                     'src' => asset('assets/images/hero/' . $file->getFilename()),
                     'cls' => $animations[$i % count($animations)],
                     'alt' => '',
+                    'attribution' => null,
                 ];
             }
         }
 
-        if ($unsplashPhoto && ($unsplashUrl = $unsplashPhoto['regular_url'] ?? null)) {
+        $heroUnsplash = unsplash_photos(5, 'ghana armed forces,african military,west africa army', 'landscape');
+        foreach ($heroUnsplash as $up) {
             array_unshift($images, [
-                'src' => $unsplashUrl,
+                'src' => $up['regular_url'] ?? '',
                 'cls' => 'anim-fade',
-                'alt' => $unsplashPhoto['alt'] ?? 'Ghana Armed Forces recruitment',
+                'alt' => $up['alt'] ?? 'Ghana Armed Forces recruitment',
+                'attribution' => $up['attribution'] ?? null,
             ]);
+        }
+
+        $portraitImages = [
+            [
+                'src' => asset('assets/images/hero/img1.png'),
+                'alt' => 'Ghana Armed Forces',
+                'attribution' => null,
+            ],
+        ];
+
+        $militaryPortraits = unsplash_military_portraits(4);
+        foreach ($militaryPortraits as $pp) {
+            $portraitImages[] = [
+                'src' => $pp['regular_url'] ?? '',
+                'alt' => $pp['alt'] ?? 'Ghana Armed Forces',
+                'attribution' => $pp['attribution'] ?? null,
+            ];
         }
 
         $activeCycle = Cycle::where('status', 'active')->orderBy('start_date', 'desc')->first();
@@ -57,7 +81,7 @@ class WebController extends Controller
             ->take(4)
             ->get();
 
-        return view('public.landing', compact('images', 'activeCycle', 'totalApplicants', 'shortlistedCount', 'screeningCount', 'selectedCount', 'recentNews', 'unsplashPhoto'));
+        return view('public.landing', compact('images', 'portraitImages', 'activeCycle', 'totalApplicants', 'shortlistedCount', 'screeningCount', 'selectedCount', 'recentNews', 'unsplashPhoto'));
     }
 
     public function eligibilityChecker(): View
@@ -140,7 +164,34 @@ class WebController extends Controller
     public function contact(): View
     {
         $unsplashPhoto = unsplash_hero();
+        $contactAddress = SystemSetting::getValue('contact_address', 'Ghana Armed Forces Headquarters, Burma Camp, Accra');
+        $contactPhone = SystemSetting::getValue('contact_phone', '+233 (0) 302 123 456');
+        $contactEmail = SystemSetting::getValue('contact_email', 'recruitment@gaf.mil.gh');
 
-        return view('public.contact', compact('unsplashPhoto'));
+        return view('public.contact', compact('unsplashPhoto', 'contactAddress', 'contactPhone', 'contactEmail'));
+    }
+
+    public function sendContactMessage(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name'    => 'required|string|max:100',
+            'email'   => 'required|email|max:100',
+            'subject' => 'required|string|max:200',
+            'message' => 'required|string|min:10|max:5000',
+        ]);
+
+        try {
+            $contactMessage = ContactMessage::create($validated);
+
+            // Send email notification to the configured contact address
+            $contactEmail = SystemSetting::getValue('contact_email', 'amoaheugene23@gmail.com');
+            Mail::to($contactEmail)->send(new ContactNotificationMail($contactMessage));
+
+            return redirect()->route('contact')
+                ->with('success', 'Your message has been sent successfully. We will get back to you shortly.');
+        } catch (\Exception $e) {
+            return redirect()->route('contact')
+                ->with('error', 'Sorry, we could not send your message. Please try again later.');
+        }
     }
 }

@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4-turbo"
     openai_embedding_model: str = "text-embedding-3-small"
-    internal_api_key: str = "dmrms-internal-key-2026"
+    internal_api_key: str = ""
     rate_limit_per_minute: int = 10
     log_level: str = "INFO"
 

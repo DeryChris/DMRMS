@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="themeManager()">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -35,7 +35,10 @@
 
             @can('manage_applications')
             @php $isApplications = request()->routeIs('admin.applications'); @endphp
-            <a href="{{ route('admin.applications') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isApplications ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+            <a href="{{ route('admin.applications') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isApplications ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                @if($isApplications)
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                @endif
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span x-show="!sidebarCollapsed">Applications</span>
             </a>
@@ -44,14 +47,17 @@
             @can('manage_applications')
             <div x-data="{ open: false }">
                 @php $isApplicants = request()->routeIs('admin.applicants*') || request()->routeIs('admin.recruited*'); @endphp
-                <button @click="open = !open" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isApplicants ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                <button @click="open = !open" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isApplicants ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                    @if($isApplicants)
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                    @endif
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>
                     <span x-show="!sidebarCollapsed" class="flex-1 text-left">Applicants</span>
                     <svg x-show="!sidebarCollapsed" class="w-4 h-4 text-white/30 transition-transform duration-200" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
                 <div x-show="open && !sidebarCollapsed" x-cloak class="ml-9 space-y-0.5 mt-0.5 border-l border-white/10 pl-3">
-                    <a href="{{ route('admin.applicants') }}" class="block px-3 py-2 text-xs text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-all {{ request()->routeIs('admin.applicants*') ? 'text-white' : '' }}">All Applicants</a>
-                    <a href="{{ route('admin.recruited') }}" class="block px-3 py-2 text-xs text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-all {{ request()->routeIs('admin.recruited*') ? 'text-white' : '' }}">Recruited</a>
+                    <a href="{{ route('admin.applicants') }}" class="block px-3 py-2 text-xs rounded-lg transition-all {{ request()->routeIs('admin.applicants*') ? 'text-gaf-khaki bg-white/10 font-medium' : 'text-white/50 hover:text-white hover:bg-white/10' }}">All Applicants</a>
+                    <a href="{{ route('admin.recruited') }}" class="block px-3 py-2 text-xs rounded-lg transition-all {{ request()->routeIs('admin.recruited*') ? 'text-gaf-khaki bg-white/10 font-medium' : 'text-white/50 hover:text-white hover:bg-white/10' }}">Recruited</a>
                 </div>
             </div>
             @endcan
@@ -59,7 +65,10 @@
             @hasanyrole('admin|super_admin|recruitment_officer')
             @can('manage_cycles')
             @php $isCycles = request()->routeIs('admin.cycles'); @endphp
-            <a href="{{ route('admin.cycles') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isCycles ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+            <a href="{{ route('admin.cycles') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isCycles ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                @if($isCycles)
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                @endif
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 <span x-show="!sidebarCollapsed">Cycles</span>
             </a>
@@ -68,7 +77,10 @@
             @hasanyrole('admin|super_admin|scheduling_officer')
             @can('manage_scheduling')
             @php $isScheduling = request()->routeIs('admin.scheduling'); @endphp
-            <a href="{{ route('admin.scheduling') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isScheduling ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+            <a href="{{ route('admin.scheduling') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isScheduling ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                @if($isScheduling)
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                @endif
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 <span x-show="!sidebarCollapsed">Scheduling</span>
             </a>
@@ -77,7 +89,10 @@
             @hasanyrole('admin|super_admin|screening_officer')
             @can('manage_screening')
             @php $isScreening = request()->routeIs('admin.screening-results'); @endphp
-            <a href="{{ route('admin.screening-results') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isScreening ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+            <a href="{{ route('admin.screening-results') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isScreening ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                @if($isScreening)
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                @endif
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                 <span x-show="!sidebarCollapsed">Screening</span>
             </a>
@@ -86,26 +101,38 @@
             @hasanyrole('admin|super_admin')
             @can('manage_selection')
             @php $isSelection = request()->routeIs('admin.selection'); @endphp
-            <a href="{{ route('admin.selection') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isSelection ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+            <a href="{{ route('admin.selection') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isSelection ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                @if($isSelection)
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                @endif
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span x-show="!sidebarCollapsed">Selection</span>
             </a>
             @endcan
             @can('manage_reports')
             @php $isKpi = request()->routeIs('admin.kpi'); @endphp
-            <a href="{{ route('admin.kpi') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isKpi ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+            <a href="{{ route('admin.kpi') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isKpi ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                @if($isKpi)
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                @endif
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
                 <span x-show="!sidebarCollapsed">KPIs</span>
             </a>
             @php $isReports = request()->routeIs('admin.reports'); @endphp
-            <a href="{{ route('admin.reports') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isReports ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+            <a href="{{ route('admin.reports') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isReports ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                @if($isReports)
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                @endif
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 <span x-show="!sidebarCollapsed">Reports</span>
             </a>
             @endcan
             @can('manage_announcements')
             @php $isNews = request()->routeIs('admin.announcements*'); @endphp
-            <a href="{{ route('admin.announcements.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isNews ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+            <a href="{{ route('admin.announcements.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isNews ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                @if($isNews)
+                <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                @endif
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
                 <span x-show="!sidebarCollapsed">News Feed</span>
             </a>
@@ -117,49 +144,80 @@
                 <div x-show="!sidebarCollapsed" class="px-3 pb-2 text-xs text-white/30 uppercase tracking-wider font-semibold">Administration</div>
                 @can('manage_users')
                 @php $isUsers = request()->routeIs('admin.users'); @endphp
-                <a href="{{ route('admin.users') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isUsers ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                <a href="{{ route('admin.users') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isUsers ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                    @if($isUsers)
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                    @endif
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>
                     <span x-show="!sidebarCollapsed">Users</span>
                 </a>
                 @endcan
                 @can('manage_settings')
                 @php $isAi = request()->routeIs('admin.ai-config'); @endphp
-                <a href="{{ route('admin.ai-config') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isAi ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                <a href="{{ route('admin.ai-config') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isAi ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                    @if($isAi)
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                    @endif
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     <span x-show="!sidebarCollapsed">AI Settings</span>
                 </a>
                 @endcan
                 @can('view_audit_logs')
                 @php $isAudit = request()->routeIs('admin.audit-logs'); @endphp
-                <a href="{{ route('admin.audit-logs') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isAudit ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                <a href="{{ route('admin.audit-logs') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isAudit ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                    @if($isAudit)
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                    @endif
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <span x-show="!sidebarCollapsed">Audit Logs</span>
                 </a>
                 @endcan
                 @can('send_notifications')
                 @php $isSendNotif = request()->routeIs('admin.notifications.*'); @endphp
-                <a href="{{ route('admin.notifications.create') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isSendNotif ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                <a href="{{ route('admin.notifications.create') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isSendNotif ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                    @if($isSendNotif)
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                    @endif
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                     <span x-show="!sidebarCollapsed">Send Notification</span>
                 </a>
                 @endcan
                 @can('manage_backups')
                 @php $isBackups = request()->routeIs('admin.backups*'); @endphp
-                <a href="{{ route('admin.backups.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isBackups ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                <a href="{{ route('admin.backups.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isBackups ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                    @if($isBackups)
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                    @endif
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
                     <span x-show="!sidebarCollapsed">Backups</span>
                 </a>
                 @endcan
                 @can('manage_security')
                 @php $isSecurity = request()->routeIs('admin.security*'); @endphp
-                <a href="{{ route('admin.security.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isSecurity ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                <a href="{{ route('admin.security.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isSecurity ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                    @if($isSecurity)
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                    @endif
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                     <span x-show="!sidebarCollapsed">Security</span>
                 </a>
                 @endcan
                 @can('manage_settings')
+                @php $isSettings = request()->routeIs('admin.settings'); @endphp
+                <a href="{{ route('admin.settings') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isSettings ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                    @if($isSettings)
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                    @endif
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span x-show="!sidebarCollapsed">Settings</span>
+                </a>
+                @endcan
+                @can('manage_settings')
                 @php $isBarracks = request()->routeIs('admin.barracks*'); @endphp
-                <a href="{{ route('admin.barracks.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group {{ $isBarracks ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                <a href="{{ route('admin.barracks.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative {{ $isBarracks ? 'bg-gaf-green text-white' : 'text-white/60 hover:text-white hover:bg-white/10' }}" x-bind:class="{'justify-center': sidebarCollapsed}">
+                    @if($isBarracks)
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gaf-khaki rounded-r-full shadow-[0_0_6px_rgba(212,175,55,0.5)]"></span>
+                    @endif
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                     <span x-show="!sidebarCollapsed">Barracks</span>
                 </a>

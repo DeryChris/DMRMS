@@ -75,3 +75,36 @@ if (!function_exists('unsplash_hero')) {
         }
     }
 }
+
+if (!function_exists('unsplash_photos')) {
+    function unsplash_photos(int $count = 3, string $query = 'ghana military', string $orientation = 'landscape'): array
+    {
+        try {
+            return app(\App\Services\Media\UnsplashService::class)->randomPhotos($count, $query, $orientation);
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+}
+
+if (!function_exists('unsplash_search_photos')) {
+    function unsplash_search_photos(string $query, int $perPage = 5, ?string $orientation = 'landscape'): array
+    {
+        try {
+            return app(\App\Services\Media\UnsplashService::class)->searchPhotos($query, $perPage, $orientation);
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+}
+
+if (!function_exists('unsplash_military_portraits')) {
+    function unsplash_military_portraits(int $count = 4): array
+    {
+        try {
+            return app(\App\Services\Media\UnsplashService::class)->militaryPortraits($count);
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+}

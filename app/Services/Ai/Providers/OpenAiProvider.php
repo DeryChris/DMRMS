@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 class OpenAiProvider implements AiProviderInterface
 {
     protected string $apiKey;
+    protected string $baseUrl;
     protected string $model;
     protected string $embeddingModel;
     protected int $maxTokens;
@@ -17,10 +18,24 @@ class OpenAiProvider implements AiProviderInterface
     public function __construct()
     {
         $this->apiKey = config('ai.openai.api_key');
+        $this->baseUrl = rtrim(config('ai.openai.base_url', 'https://api.openai.com/v1'), '/');
         $this->model = config('ai.openai.model', 'gpt-4-turbo');
         $this->embeddingModel = config('ai.openai.embedding_model', 'text-embedding-3-small');
         $this->maxTokens = config('ai.openai.max_tokens', 4096);
         $this->temperature = config('ai.openai.temperature', 0.7);
+    }
+
+    protected function buildClient(): \Illuminate\Http\Client\PendingRequest
+    {
+        $client = Http::withToken($this->apiKey)->timeout(120);
+
+        if (str_contains($this->baseUrl, 'openrouter.ai')) {
+            $client = $client
+                ->withHeader('HTTP-Referer', config('app.url', 'http://localhost:8000'))
+                ->withHeader('X-Title', 'DMRMS');
+        }
+
+        return $client;
     }
 
     public function chat(array $messages, array $options = []): array
@@ -28,9 +43,8 @@ class OpenAiProvider implements AiProviderInterface
         $start = microtime(true);
 
         try {
-            $response = Http::withToken($this->apiKey)
-                ->timeout(60)
-                ->post('https://api.openai.com/v1/chat/completions', array_merge([
+            $response = $this->buildClient()
+                ->post("{$this->baseUrl}/chat/completions", array_merge([
                     'model'       => $this->model,
                     'messages'    => $messages,
                     'max_tokens'  => $this->maxTokens,
@@ -133,9 +147,9 @@ PROMPT;
                 ],
             ];
 
-            $response = Http::withToken($this->apiKey)
+            $response = $this->buildClient()
                 ->timeout(120)
-                ->post('https://api.openai.com/v1/chat/completions', [
+                ->post("{$this->baseUrl}/chat/completions", [
                     'model'      => $this->model,
                     'messages'   => $messages,
                     'max_tokens' => 4096,
@@ -162,9 +176,9 @@ PROMPT;
         $start = microtime(true);
 
         try {
-            $response = Http::withToken($this->apiKey)
+            $response = $this->buildClient()
                 ->timeout(30)
-                ->post('https://api.openai.com/v1/embeddings', [
+                ->post("{$this->baseUrl}/embeddings", [
                     'model' => $this->embeddingModel,
                     'input' => $text,
                 ]);
@@ -202,12 +216,13 @@ PROMPT;
         $processingTime = round((microtime(true) - $start) * 1000, 2);
         $tokensUsed = $data['usage']['total_tokens'] ?? 0;
         $cost = $this->calculateCost($tokensUsed, $data['model'] ?? $this->model);
+        $content = $data['choices'][0]['message']['content'] ?? json_encode($data);
 
         $this->logUsage($promptType, $tokensUsed, $cost);
 
         return [
             'success'         => true,
-            'data'            => $data['choices'][0] ?? $data,
+            'data'            => ['content' => $content],
             'model'           => $data['model'] ?? $this->model,
             'tokens_used'     => $tokensUsed,
             'processing_time' => $processingTime,

@@ -10,7 +10,7 @@ class SubscriptionMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $admin = $request->user('admin');
+        $admin = $request->user();
 
         if (!$admin) {
             return response()->json([

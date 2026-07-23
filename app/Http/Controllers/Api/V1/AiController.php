@@ -7,18 +7,20 @@ use App\Models\Application;
 use App\Models\Document;
 use App\Models\Cycle;
 use App\Models\AiUsage;
-use App\Models\Subscription;
-use App\Services\Ai\AiGateway;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Services\Ai\AiGateway;
+use App\Services\AiContextService;
 
 class AiController extends Controller
 {
     protected AiGateway $aiGateway;
+    protected AiContextService $aiContext;
 
-    public function __construct(AiGateway $aiGateway)
+    public function __construct(AiGateway $aiGateway, AiContextService $aiContext)
     {
         $this->aiGateway = $aiGateway;
+        $this->aiContext = $aiContext;
     }
 
     public function eligibilityAnalysis(Request $request): JsonResponse
@@ -116,11 +118,7 @@ class AiController extends Controller
 
         $history = $request->input('history', []);
 
-        $messages = array_merge(
-            [['role' => 'system', 'content' => 'You are an AI assistant for the Defence Manpower Recruitment Management System (DMRMS).']],
-            $history,
-            [['role' => 'user', 'content' => $validated['message']]]
-        );
+        $messages = $this->aiContext->chatMessages(applicant: null, message: $validated['message'], history: $history);
 
         $response = $this->aiGateway->chatWithMessages($messages);
 
@@ -184,22 +182,19 @@ class AiController extends Controller
     {
         $admin = $request->user();
 
-        $usage = AiUsage::where('user_id', $admin->id)
+        $usage = AiUsage::where('admin_id', $admin->id)
             ->selectRaw('feature, COUNT(*) as count, SUM(tokens_used) as total_tokens, SUM(cost) as total_cost')
             ->groupBy('feature')
             ->get();
 
-        $totals = AiUsage::where('user_id', $admin->id)
+        $totals = AiUsage::where('admin_id', $admin->id)
             ->selectRaw('COUNT(*) as total_requests, SUM(tokens_used) as total_tokens, SUM(cost) as total_cost')
             ->first();
-
-        $subscription = Subscription::where('user_id', $admin->id)->first();
 
         return response()->json([
             'data' => [
                 'usage'        => $usage,
                 'totals'       => $totals,
-                'subscription' => $subscription,
             ],
         ]);
     }
@@ -219,7 +214,7 @@ class AiController extends Controller
     private function logUsage(Request $request, string $feature, array $result): void
     {
         AiUsage::create([
-            'user_id'         => $request->user()?->id,
+            'admin_id'         => $request->user()?->id,
             'feature'         => $feature,
             'tokens_used'     => $result['tokens_used'] ?? $result['tokens'] ?? 0,
             'cost'            => $result['cost'] ?? 0,

@@ -113,7 +113,7 @@
                 @php $f = 'author'; @endphp
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Author</label>
-                    <input type="text" name="{{ $f }}" value="{{ old($f, $announcement?->author ?? auth()->user()?->name ?? auth('web')->user()?->name ?? '') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                    <input type="text" name="{{ $f }}" value="{{ old($f, $announcement?->author ?? auth()->user()?->name ?? auth('web')->user()?->name ?? '') }}" oninput="this.value = this.value.replace(/[0-9]/g, '')" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 @php $f = 'tags'; @endphp

@@ -3,7 +3,9 @@
 @section('title', 'Security - Ghana Armed Forces')
 
 @section('content')
-<div x-data="{ activeTab: 'password' }" class="space-y-6">
+<div id="security-old-data" data-old-tab="{{ session('active_tab', 'password') }}" class="hidden"></div>
+
+<div x-data="{ activeTab: '{{ session('active_tab', 'password') }}' }" x-init="{{ $errors->any() ? 'activeTab = document.getElementById(\'security-old-data\')?.dataset?.oldTab || \'password\'' : '' }}" class="space-y-6">
     <h1 class="font-heading font-bold text-2xl text-gray-800">Security Management</h1>
 
 
@@ -20,6 +22,7 @@
         <h2 class="font-heading font-bold text-lg text-gray-800 mb-4">Password Policy</h2>
         <form method="POST" action="{{ route('admin.security.password-policy') }}" class="space-y-4 max-w-lg">
             @csrf
+            <input type="hidden" name="_tab" value="password">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Length</label>
                 <input type="number" name="min_length" value="{{ old('min_length', $passwordPolicy['min_length']) }}" class="w-full px-4 py-2 border rounded-lg text-sm {{ $errors->has('min_length') ? 'border-red-500' : 'border-gray-300' }}">
@@ -53,6 +56,7 @@
         <h2 class="font-heading font-bold text-lg text-gray-800 mb-4">MFA / Two-Factor Authentication</h2>
         <form method="POST" action="{{ route('admin.security.mfa') }}" class="space-y-4 max-w-lg">
             @csrf
+            <input type="hidden" name="_tab" value="mfa">
             <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                 <div>
                     <p class="text-sm font-medium text-gray-800">Force MFA for All Admins</p>
@@ -147,6 +151,7 @@
         <h2 class="font-heading font-bold text-lg text-gray-800 mb-4">IP Access Control</h2>
         <form method="POST" action="{{ route('admin.security.ip-access') }}" class="space-y-4 max-w-lg">
             @csrf
+            <input type="hidden" name="_tab" value="ipaccess">
             <label class="flex items-center space-x-3 mb-4">
                 <input type="checkbox" name="enabled" value="1" {{ $ipAccess['enabled'] ? 'checked' : '' }} class="w-4 h-4 text-gaf-green border-gray-300 rounded">
                 <span class="text-sm font-medium text-gray-700">Enable IP Access Control</span>

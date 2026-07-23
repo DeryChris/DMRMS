@@ -10,6 +10,7 @@ class AdministratorSeeder extends Seeder
 {
     public function run(): void
     {
+        // WARNING: Change these passwords immediately in production
         $admin = User::create([
             'first_name' => 'General',
             'last_name' => 'Admin',

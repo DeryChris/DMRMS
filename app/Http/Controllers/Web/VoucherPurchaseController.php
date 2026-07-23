@@ -23,10 +23,9 @@ class VoucherPurchaseController extends Controller
         $this->voucherService = $voucherService;
     }
 
-    public function showPurchaseForm(): View
+    public function showPurchaseForm(Request $request): View
     {
         $activeCycles = Cycle::where('status', 'active')
-            ->where('application_deadline', '>', now())
             ->orderBy('start_date', 'desc')
             ->get();
 
@@ -38,8 +37,9 @@ class VoucherPurchaseController extends Controller
         ];
 
         $unsplashPhoto = unsplash_hero();
+        $selectedCycleId = $request->query('cycle_id');
 
-        return view('public.buy-voucher', compact('activeCycles', 'paymentMethods', 'unsplashPhoto'));
+        return view('public.buy-voucher', compact('activeCycles', 'paymentMethods', 'unsplashPhoto', 'selectedCycleId'));
     }
 
     public function purchase(Request $request): RedirectResponse
@@ -104,7 +104,6 @@ class VoucherPurchaseController extends Controller
             ->get();
 
         $activeCycles = Cycle::where('status', 'active')
-            ->where('application_deadline', '>', now())
             ->orderBy('start_date', 'desc')
             ->get();
 

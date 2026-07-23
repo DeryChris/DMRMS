@@ -48,7 +48,7 @@ class BarrackSeeder extends Seeder
             ['name' => 'Nalerigu Military Post', 'location' => 'Nalerigu'],
         ],
         'Oti' => [
-            ['name' => 'Volta Barracks', 'location' => 'Ho'],
+            ['name' => 'Dambai Military Post', 'location' => 'Dambai'],
         ],
         'Savannah' => [
             ['name' => 'Damongo Military Post', 'location' => 'Damongo'],

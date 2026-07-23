@@ -15,7 +15,7 @@ class ApiAiProvider implements AiProviderInterface
     public function __construct()
     {
         $this->baseUrl = config('ai.api_service.url', 'http://localhost:8000/api/v1');
-        $this->apiKey = config('ai.api_service.api_key', 'dmrms-internal-key-2026');
+        $this->apiKey = config('ai.api_service.api_key');
         $this->timeout = config('ai.api_service.timeout', 120);
     }
 

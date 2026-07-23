@@ -84,7 +84,7 @@ class OpenAIClient:
 
         input_tokens = response.usage.prompt_tokens if response.usage else 0
         output_tokens = response.usage.completion_tokens if response.usage else 0
-        self._track_cost(model, input_tokens, output_tokens)
+        cost = self._track_cost(model, input_tokens, output_tokens)
 
         return {
             "content": response.choices[0].message.content,
@@ -92,7 +92,7 @@ class OpenAIClient:
             "tokens_used": output_tokens,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
-            "cost": self._track_cost(model, input_tokens, output_tokens),
+            "cost": cost,
         }
 
     async def vision_analysis(

@@ -129,7 +129,10 @@
     </div>
 </div>
 
+<div id="applicant-old-data" data-old="{{ json_encode(old()) }}" data-edit-id="{{ request()->route('applicant') ?? '' }}" class="hidden"></div>
+
 <div x-data="{ open: false, form: { id: null, first_name: '', last_name: '', email: '', contact_number: '', region: '', status: 'active' } }"
+     x-init="{{ $errors->any() && old('first_name') ? '$nextTick(() => { const d = document.getElementById(\'applicant-old-data\'); if(!d)return; try{const o=JSON.parse(d.dataset.old||\'{}\'); open=true; form.first_name=o.first_name||\'\'; form.last_name=o.last_name||\'\'; form.email=o.email||\'\'; form.contact_number=o.contact_number||\'\'; form.region=o.region||\'\'; form.status=o.status||\'active\'; }catch(e){} })' : '' }}"
      x-on:open-edit.window="open = true; form.id = $event.detail.id; form.first_name = $event.detail.first_name; form.last_name = $event.detail.last_name; form.email = $event.detail.email; form.contact_number = $event.detail.contact_number; form.region = $event.detail.region; form.status = $event.detail.status"
      x-show="open"
      x-cloak
@@ -145,12 +148,12 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs text-gray-500 font-medium mb-1">First Name</label>
-                    <input type="text" name="first_name" x-model="form.first_name" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('first_name') ? 'border-red-500' : 'border-gray-200' }}">
+                    <input type="text" name="first_name" x-model="form.first_name" @input="form.first_name = $event.target.value.replace(/[0-9]/g, '')" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('first_name') ? 'border-red-500' : 'border-gray-200' }}">
                     @error('first_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-xs text-gray-500 font-medium mb-1">Last Name</label>
-                    <input type="text" name="last_name" x-model="form.last_name" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('last_name') ? 'border-red-500' : 'border-gray-200' }}">
+                    <input type="text" name="last_name" x-model="form.last_name" @input="form.last_name = $event.target.value.replace(/[0-9]/g, '')" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('last_name') ? 'border-red-500' : 'border-gray-200' }}">
                     @error('last_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
@@ -162,7 +165,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs text-gray-500 font-medium mb-1">Contact Number</label>
-                    <input type="text" name="contact_number" x-model="form.contact_number" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('contact_number') ? 'border-red-500' : 'border-gray-200' }}">
+                    <input type="text" name="contact_number" x-model="form.contact_number" @input="form.contact_number = $event.target.value.replace(/\D/g, '').substring(0, 10)" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('contact_number') ? 'border-red-500' : 'border-gray-200' }}">
                     @error('contact_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>

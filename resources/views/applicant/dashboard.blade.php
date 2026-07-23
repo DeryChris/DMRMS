@@ -10,8 +10,53 @@
     </div>
 
     <div class="mb-10">
-        <x-applicant-status-timeline :currentStage="$currentStage" :stages="$stages" />
+        <x-applicant-status-timeline :currentStage="$currentStage" :stages="$stages" :clickableStages="$canGoBack ? ['draft', 'submitted'] : []" />
     </div>
+
+    {{-- Rejected Documents Alert --}}
+    @if($hasRejectedDocs)
+    <div class="mb-8">
+        <div class="bg-red-50 border-l-4 border-red-500 rounded-r-xl shadow-sm p-6">
+            <div class="flex items-start space-x-4">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-heading font-semibold text-red-800">Documents Require Re-upload</h3>
+                    <p class="text-sm text-red-700 mt-1">The following document(s) were rejected and need to be corrected before your application can proceed:</p>
+                    <ul class="mt-2 space-y-1">
+                        @foreach($rejectedDocTypes as $docType)
+                        <li class="flex items-center space-x-2 text-sm text-red-700">
+                            <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span class="font-medium">{{ $docType }}</span>
+                        </li>
+                        @endforeach
+                    </ul>
+                    <div class="mt-4">
+                        <a href="{{ route('applicant.documents') }}" class="inline-flex items-center space-x-2 bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            <span>Review &amp; Re-upload Documents</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Go-back hint when applicant can return to earlier stages --}}
+    @if($canGoBack && !$hasRejectedDocs && $application && in_array($application->status, ['submitted', 'documents_verified']))
+    <div class="mb-8">
+        <div class="bg-blue-50 border-l-4 border-blue-500 rounded-r-xl shadow-sm p-5">
+            <div class="flex items-start space-x-3">
+                <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <p class="text-sm text-blue-800">You can click the <strong>Draft</strong> or <strong>Submitted</strong> steps in the progress bar above to go back and edit your application details or documents.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     @if($application && in_array($application->status, ['selected', 'recruited', 'rejected', 'disqualified', 'reserve']))
     <div class="mb-8">

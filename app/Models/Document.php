@@ -19,6 +19,8 @@ class Document extends Model
         'mime_type',
         'upload_date',
         'verification_status',
+        'is_draft',
+        'finalized_at',
         'verified_by',
         'verified_at',
         'fraud_risk_score',
@@ -42,9 +44,11 @@ class Document extends Model
             'extracted_data' => 'array',
             'cross_reference_results' => 'array',
             'ai_verified' => 'boolean',
+            'is_draft' => 'boolean',
             'ai_verified_at' => 'datetime',
             'upload_date' => 'datetime',
             'verified_at' => 'datetime',
+            'finalized_at' => 'datetime',
         ];
     }
 

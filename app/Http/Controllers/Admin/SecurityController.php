@@ -54,8 +54,17 @@ class SecurityController extends Controller
         return view('admin.security.index', compact('passwordPolicy', 'mfaSettings', 'sessions', 'failedLogins', 'ipAccess'));
     }
 
+    private function persistTab(Request $request): void
+    {
+        if ($request->has('_tab')) {
+            session(['active_tab' => $request->input('_tab')]);
+        }
+    }
+
     public function updatePasswordPolicy(Request $request): RedirectResponse
     {
+        $this->persistTab($request);
+
         $validated = $request->validate([
             'min_length' => 'required|integer|min:4|max:100',
             'require_special' => 'boolean',
@@ -74,6 +83,8 @@ class SecurityController extends Controller
 
     public function updateMfa(Request $request): RedirectResponse
     {
+        $this->persistTab($request);
+
         $validated = $request->validate([
             'forced' => 'boolean',
         ]);
@@ -92,6 +103,8 @@ class SecurityController extends Controller
 
     public function updateIpAccess(Request $request): RedirectResponse
     {
+        $this->persistTab($request);
+
         $validated = $request->validate([
             'enabled' => 'boolean',
             'whitelist' => 'nullable|string',

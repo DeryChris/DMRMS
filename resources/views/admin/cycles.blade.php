@@ -3,7 +3,7 @@
 @section('title', 'Recruitment Cycles - Ghana Armed Forces')
 
 @section('content')
-<div x-data="cycleManager()" x-init="{{ $errors->any() && old('name') ? '$nextTick(() => showModal = true)' : '' }}" class="space-y-6">
+<div x-data="cycleManager()" x-init="{{ $errors->any() && old('name') ? '$nextTick(() => { showModal = true; restoreOld() })' : '' }}" class="space-y-6">
     <div class="flex items-center justify-between gradient-border pb-4">
         <h1 class="font-heading font-bold text-2xl text-gray-800">Recruitment Cycles</h1>
         <button @click="openCreate()" class="px-4 py-2 bg-gaf-green text-white rounded-lg text-sm font-medium hover:bg-gaf-dark-green transition">+ New Cycle</button>
@@ -46,21 +46,21 @@
                                     <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Edit</span>
                                 </button>
                             @endif
-                            @if($c->status === 'draft')
-                                <form action="{{ route('admin.cycles.publish', $c) }}" method="POST" class="inline" onsubmit="return confirm('Publish this cycle? It will become visible to applicants.')">
+                            @if(in_array($c->status, ['draft', 'closed']))
+                                <form action="{{ route('admin.cycles.activate', $c) }}" method="POST" class="inline" onsubmit="return confirm('Activate this cycle? It will become visible to applicants.')">
                                     @csrf @method('PUT')
-                                    <button type="submit" class="relative group p-1.5 rounded-lg hover:bg-green-50 text-green-500 hover:text-green-700 transition-colors" title="Publish">
+                                    <button type="submit" class="relative group p-1.5 rounded-lg hover:bg-green-50 text-green-500 hover:text-green-700 transition-colors" title="Activate">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Publish</span>
+                                        <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">{{ $c->status === 'draft' ? 'Publish' : 'Activate' }}</span>
                                     </button>
                                 </form>
                             @endif
                             @if($c->status === 'active')
-                                <form action="{{ route('admin.cycles.close', $c) }}" method="POST" class="inline" onsubmit="return confirm('Close this cycle? New applications will not be accepted.')">
+                                <form action="{{ route('admin.cycles.close', $c) }}" method="POST" class="inline" onsubmit="return confirm('Deactivate this cycle? New applications will not be accepted.')">
                                     @csrf @method('PUT')
-                                    <button type="submit" class="relative group p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors" title="Close">
+                                    <button type="submit" class="relative group p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors" title="Deactivate">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Close</span>
+                                        <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Deactivate</span>
                                     </button>
                                 </form>
                             @endif
@@ -87,6 +87,8 @@
         </table>
     </div>
 
+    <div id="cycle-old-data" data-old="{{ json_encode(old()) }}" class="hidden"></div>
+
     {{-- Create/Edit Modal --}}
     <div x-show="showModal" x-cloak class="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-8 bg-black bg-opacity-50 overflow-y-auto" @click.outside="showModal = false">
         <div class="glass-strong rounded-xl shadow-lg w-full max-w-2xl mx-4 p-8" style="background:rgba(255,255,255,0.95);backdrop-filter:blur(16px);">
@@ -106,7 +108,7 @@
                     @php $f = 'cycle_code'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Cycle Code</label>
-                        <input type="text" name="{{ $f }}" x-model="form.cycle_code" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" :readonly="editingId" required>
+                        <input type="text" name="{{ $f }}" x-model="form.cycle_code" @input="form.cycle_code = $event.target.value.replace(/[^a-zA-Z0-9_-]/g, '')" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" :readonly="editingId" required>
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'start_date'; @endphp
@@ -323,6 +325,37 @@ function cycleManager() {
                     }
                 };
                 this.showModal = true;
+            },
+            restoreOld() {
+                const el = document.getElementById('cycle-old-data');
+                if (!el) return;
+                try {
+                    const old = JSON.parse(el.dataset.old || '{}');
+                    if (old.name) this.form.name = old.name;
+                    if (old.cycle_code) this.form.cycle_code = old.cycle_code;
+                    if (old.start_date) this.form.start_date = old.start_date;
+                    if (old.end_date) this.form.end_date = old.end_date;
+                    if (old.application_deadline) this.form.deadline = old.application_deadline;
+                    if (old.total_vacancies) this.form.vacancies = old.total_vacancies;
+                    if (old.voucher_price !== undefined && old.voucher_price !== null && old.voucher_price !== '') this.form.voucher_price = old.voucher_price;
+                    if (old.requirements) {
+                        if (old.requirements.min_age) this.form.req.min_age = old.requirements.min_age;
+                        if (old.requirements.max_age) this.form.req.max_age = old.requirements.max_age;
+                        if (old.requirements.min_height_male) this.form.req.min_height_male = old.requirements.min_height_male;
+                        if (old.requirements.min_height_female) this.form.req.min_height_female = old.requirements.min_height_female;
+                        if (old.requirements.nationality) this.form.req.nationality = old.requirements.nationality;
+                        if (old.requirements.marital_status) this.form.req.marital_status = old.requirements.marital_status;
+                        if (old.requirements.education_levels) this.form.req.education_levels = old.requirements.education_levels;
+                        if (old.requirements.national_id_required !== undefined) this.form.req.national_id_required = old.requirements.national_id_required === '1';
+                    }
+                    if (old.scoring_weights) {
+                        if (old.scoring_weights.medical) this.form.scoring.medical = parseFloat(old.scoring_weights.medical);
+                        if (old.scoring_weights.interview) this.form.scoring.interview = parseFloat(old.scoring_weights.interview);
+                        if (old.scoring_weights.fitness) this.form.scoring.fitness = parseFloat(old.scoring_weights.fitness);
+                        if (old.scoring_weights.eligibility) this.form.scoring.eligibility = parseFloat(old.scoring_weights.eligibility);
+                    }
+                    if (old.ai_enabled !== undefined) this.form.ai_enabled = old.ai_enabled === '1';
+                } catch (e) {}
             }
     }
 }

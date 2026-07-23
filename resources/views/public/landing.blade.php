@@ -62,8 +62,22 @@
                 <a href="{{ route('recruitment.portal') }}" class="inline-block bg-gaf-khaki text-gaf-dark-green px-8 py-4 rounded-lg font-heading font-bold text-lg hover:bg-yellow-500 transition transform hover:scale-105 shadow-lg">View Recruitment Portal</a>
                 @endif
             </div>
-            <div class="md:w-1/2 flex justify-center">
-                <img src="{{ asset('assets/images/hero/img1.png') }}" alt="GAF Recruitment" class="w-full max-w-md rounded-xl shadow-2xl border-4 border-gaf-khaki/30">
+            <div class="md:w-1/2 flex justify-center" x-data="portraitCarousel()">
+                <div class="relative w-full max-w-md aspect-[3/4]">
+                    <template x-for="(p, i) in portraits" :key="i">
+                        <img :src="p.src" :alt="p.alt" x-show="i === currentIndex" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-500" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="w-full h-full object-cover rounded-xl shadow-2xl border-4 border-gaf-khaki/30 absolute inset-0">
+                    </template>
+                    <div class="absolute -bottom-7 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10">
+                        <template x-for="(p, i) in portraits" :key="'dot'+i">
+                            <button @click="goTo(i)" :class="['w-2 h-2 rounded-full transition-all duration-300', i === currentIndex ? 'bg-gaf-khaki w-5' : 'bg-gray-300 hover:bg-gray-400']"></button>
+                        </template>
+                    </div>
+                    <template x-if="portraits[currentIndex]?.attribution?.name && portraits[currentIndex]?.attribution?.name !== 'Unsplash'">
+                        <div class="absolute bottom-2 right-2 z-20 text-[10px] text-white/60 bg-black/30 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                            Photo by <a :href="portraits[currentIndex].attribution.link + '?utm_source=dmrms&utm_medium=referral'" target="_blank" class="underline hover:text-white/90" x-text="portraits[currentIndex].attribution.name"></a> on Unsplash
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
     </div>
@@ -72,11 +86,11 @@
             <button @click="goTo(i)" :class="['w-2.5 h-2.5 rounded-full slide-indicator', i === currentIndex ? 'bg-gaf-khaki w-6' : 'bg-white/40 hover:bg-white/70']"></button>
         </template>
     </div>
-    @if($unsplashPhoto && ($unsplashPhoto['attribution']['name'] ?? '') !== 'Unsplash')
-    <div class="absolute bottom-4 right-4 z-20 text-xs text-white/50">
-        Photo by <a href="{{ ($unsplashPhoto['attribution']['link'] ?? '#') }}?utm_source=dmrms&utm_medium=referral" target="_blank" class="underline hover:text-white/90" rel="noopener noreferrer">{{ $unsplashPhoto['attribution']['name'] ?? 'Unknown' }}</a> on <a href="https://unsplash.com/?utm_source=dmrms&utm_medium=referral" target="_blank" class="underline hover:text-white/90" rel="noopener noreferrer">Unsplash</a>
-    </div>
-    @endif
+    <template x-if="currentAttribution">
+        <div class="absolute bottom-4 right-4 z-20 text-xs text-white/50">
+            Photo by <a :href="currentAttribution.link + '?utm_source=dmrms&utm_medium=referral'" target="_blank" class="underline hover:text-white/90" x-text="currentAttribution.name"></a> on <a href="https://unsplash.com/?utm_source=dmrms&utm_medium=referral" target="_blank" class="underline hover:text-white/90" rel="noopener noreferrer">Unsplash</a>
+        </div>
+    </template>
 </div>
 <script>
 function heroSlideshow() {
@@ -88,7 +102,8 @@ function heroSlideshow() {
         timer: null,
         init() {
             if (!this.slides.length) return;
-            this.slides.forEach((s, i) => s.cls = anims[i % anims.length]);
+            this.slides.forEach((s, i) => { s.cls = anims[i % anims.length]; s.attribution = s.attribution || null; });
+            this.updateAttribution();
             this.start();
         },
         start() {
@@ -100,11 +115,46 @@ function heroSlideshow() {
         next() {
             this.prevIndex = this.currentIndex;
             this.currentIndex = (this.currentIndex + 1) % this.slides.length;
+            this.updateAttribution();
         },
         goTo(i) {
             if (i === this.currentIndex) return;
             this.stop();
             this.prevIndex = this.currentIndex;
+            this.currentIndex = i;
+            this.updateAttribution();
+            this.start();
+        },
+        get currentAttribution() {
+            const slide = this.slides[this.currentIndex];
+            return slide?.attribution?.name && slide.attribution.name !== 'Unsplash' ? slide.attribution : null;
+        },
+        updateAttribution() {
+            // triggers reactivity for currentAttribution getter
+        }
+    }
+}
+function portraitCarousel() {
+    return {
+        portraits: @json($portraitImages),
+        currentIndex: 0,
+        timer: null,
+        init() {
+            if (!this.portraits.length) return;
+            this.start();
+        },
+        start() {
+            this.timer = setInterval(() => { this.next(); }, 4000);
+        },
+        stop() {
+            if (this.timer) { clearInterval(this.timer); this.timer = null; }
+        },
+        next() {
+            this.currentIndex = (this.currentIndex + 1) % this.portraits.length;
+        },
+        goTo(i) {
+            if (i === this.currentIndex) return;
+            this.stop();
             this.currentIndex = i;
             this.start();
         }

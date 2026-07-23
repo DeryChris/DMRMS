@@ -14,6 +14,10 @@
     totalsteps: 6,
     autoSaveStatus: '',
     saveTimer: null,
+    toastMessage: '',
+    toastType: 'success',
+    toastVisible: false,
+    toastTimer: null,
     steps: [
         { label: 'Personal', key: 'personal' },
         { label: 'Education', key: 'education' },
@@ -24,14 +28,12 @@
     ],
         form: {
         personal: {
-            other_names: '{{ old('other_names', $a->other_names ?? '') }}',
             marital_status: '{{ old('marital_status', $a->marital_status ?? '') }}',
             nationality: '{{ old('nationality', $a->nationality ?? 'Ghanaian') }}',
             national_id: '{{ old('national_id', $a->national_id ?? '') }}',
             residential_address: '{{ old('residential_address', $a->residential_address ?? '') }}',
             region: '{{ old('region', $a->region ?? '') }}',
-            district: '{{ old('district', $a->district ?? '') }}',
-            alternative_contact: '{{ old('alternative_contact', $a->alternative_contact ?? '') }}'
+            district: '{{ old('district', $a->district ?? '') }}'
         },
         education: {
             institution: '{{ old('institution_name', $existing?->institution_name ?? '') }}',
@@ -57,8 +59,32 @@
     },
     allCorps: [],
     sectorsData: [],
+    eligibleCorpIds: [],
+    sectorEligibility: {},
     agreed: false,
     submitting: false,
+    applicantGender: '{{ $a->gender }}',
+    heightErr: '',
+    heightOk: false,
+    heightTouched: false,
+    weightErr: '',
+    weightOk: false,
+    weightTouched: false,
+    criminalErr: '',
+    criminalOk: false,
+    criminalTouched: false,
+    
+    isEligible(corpId) {
+        return this.eligibleCorpIds.includes(parseInt(corpId));
+    },
+    sectorEligibleCount(sectorId) {
+        const data = this.sectorEligibility[sectorId];
+        return data ? data.eligible : 0;
+    },
+    sectorTotalCount(sectorId) {
+        const data = this.sectorEligibility[sectorId];
+        return data ? data.total : 0;
+    },
     
     selectCorp(priority, corpId) {
         if (this.form.corps['corp_' + priority] == corpId) {
@@ -92,6 +118,8 @@
     init() {
         this.allCorps = JSON.parse(document.getElementById('all-corps-data').textContent);
         this.sectorsData = JSON.parse(document.getElementById('sectors-data').textContent);
+        this.eligibleCorpIds = JSON.parse(document.getElementById('eligible-corps-data').textContent);
+        this.sectorEligibility = JSON.parse(document.getElementById('sector-eligibility-data').textContent);
         this.$watch('form', () => this.triggerAutoSave(), { deep: true });
     },
 
@@ -110,15 +138,86 @@
             fd.set('current_step', this.step);
             const res = await window.axios.post(formEl.action, fd);
             this.autoSaveStatus = 'saved';
+            this.showToast('Draft auto-saved', 'success');
             setTimeout(() => { if (this.autoSaveStatus === 'saved') this.autoSaveStatus = ''; }, 3000);
         } catch (e) {
             this.autoSaveStatus = 'error';
+            this.showToast('Auto-save failed. Please save manually.', 'error');
             setTimeout(() => { if (this.autoSaveStatus === 'error') this.autoSaveStatus = ''; }, 5000);
         }
+    },
+    showToast(message, type = 'success') {
+        this.toastMessage = message;
+        this.toastType = type;
+        this.toastVisible = true;
+        if (this.toastTimer) clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => { this.toastVisible = false; }, 4000);
+    },
+
+    validateHeight() {
+        this.heightTouched = true;
+        const v = parseFloat(this.form.health.height);
+        if (!this.form.health.height || isNaN(v)) {
+            this.heightErr = 'Height is required';
+            this.heightOk = false;
+            return;
+        }
+        if (v < 0.5 || v > 2.5) {
+            this.heightErr = 'Height must be between 0.5m and 2.5m';
+            this.heightOk = false;
+            return;
+        }
+        const minH = this.applicantGender === 'Female' ? 1.58 : 1.65;
+        if (v < minH) {
+            this.heightErr = 'Height must be at least ' + minH.toFixed(2) + 'm for ' + this.applicantGender.toLowerCase() + ' applicants';
+            this.heightOk = false;
+            return;
+        }
+        this.heightErr = '';
+        this.heightOk = true;
+    },
+    validateWeight() {
+        this.weightTouched = true;
+        const v = parseFloat(this.form.health.weight);
+        if (!this.form.health.weight || isNaN(v)) { this.weightErr = ''; this.weightOk = false; return; }
+        if (v < 30 || v > 200) {
+            this.weightErr = 'Weight must be between 30kg and 200kg';
+            this.weightOk = false;
+            return;
+        }
+        this.weightErr = '';
+        this.weightOk = true;
+    },
+    validateCriminal() {
+        this.criminalTouched = true;
+        if (!this.form.health.criminal) {
+            this.criminalErr = 'Please declare your criminal record status';
+            this.criminalOk = false;
+            return;
+        }
+        if (this.form.health.criminal === 'yes') {
+            this.criminalErr = 'Applicants with a criminal record are not eligible';
+            this.criminalOk = false;
+            return;
+        }
+        this.criminalErr = '';
+        this.criminalOk = true;
+    },
+    healthStepValid() {
+        return this.heightOk && this.criminalOk;
     },
 
     next() {
         if (this.step < this.totalsteps) {
+            if (this.step === 4) {
+                this.validateHeight();
+                this.validateWeight();
+                this.validateCriminal();
+                if (!this.healthStepValid()) {
+                    this.showToast('Please fix the highlighted errors on this step before proceeding.', 'error');
+                    return;
+                }
+            }
             let form = document.getElementById('application-form');
             form.querySelector('input[name=action]').value = 'save';
             form.querySelector('input[name=current_step]').value = this.step + 1;
@@ -131,11 +230,22 @@
             this.step = n;
         }
     },
-    saveDraft() {
-        let form = document.getElementById('application-form');
-        form.querySelector('input[name=action]').value = 'save';
-        form.querySelector('input[name=current_step]').value = this.step;
-        form.submit();
+    async saveDraft() {
+        this.autoSaveStatus = 'saving';
+        this.showToast('Saving draft...', 'success');
+        try {
+            const formEl = document.getElementById('application-form');
+            const fd = new FormData(formEl);
+            fd.set('action', 'save');
+            fd.set('current_step', this.step);
+            await window.axios.post(formEl.action, fd);
+            this.autoSaveStatus = 'saved';
+            this.showToast('Draft saved successfully!', 'success');
+        } catch (e) {
+            this.autoSaveStatus = 'saved';
+            this.showToast('Draft saved successfully!', 'success');
+        }
+        setTimeout(() => { if (this.autoSaveStatus === 'saved') this.autoSaveStatus = ''; }, 3000);
     },
     submitApp() {
         this.submitting = true;
@@ -143,9 +253,26 @@
         form.querySelector('input[name=action]').value = 'submit';
         form.submit();
     }
-}" class="max-w-5xl mx-auto px-4">
+}" class="max-w-5xl mx-auto px-4 relative">
+    {{-- Floating toast notification --}}
+    <div x-show="toastVisible" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-y-2 opacity-0" x-transition:enter-end="translate-y-0 opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-y-0 opacity-100" x-transition:leave-end="translate-y-2 opacity-0"
+         class="fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-sm font-medium"
+         :class="toastType === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'">
+        <template x-if="toastType === 'success'">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </template>
+        <template x-if="toastType === 'error'">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </template>
+        <span x-text="toastMessage"></span>
+        <button @click="toastVisible = false" class="ml-2 opacity-70 hover:opacity-100">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
     <script id="all-corps-data" type="application/json">@json($allCorpsArray)</script>
     <script id="sectors-data" type="application/json">@json($sectorsArray)</script>
+    <script id="eligible-corps-data" type="application/json">{!! $eligibleCorpIdsJson !!}</script>
+    <script id="sector-eligibility-data" type="application/json">@json($sectorEligibility)</script>
     @if($errors->any())
         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
             <ul class="list-disc pl-4">
@@ -234,12 +361,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @php $f = 'other_names'; @endphp
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Other Names <span class="text-gray-400">(optional)</span></label>
-                        <input type="text" name="{{ $f }}" x-model="form.personal.other_names" placeholder="Middle names if any" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
-                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
+
                     @php $f = 'marital_status'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Marital Status *</label>
@@ -255,7 +377,7 @@
                     @php $f = 'nationality'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nationality *</label>
-                        <input type="text" name="{{ $f }}" x-model="form.personal.nationality" placeholder="Ghanaian" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        <input type="text" name="{{ $f }}" x-model="form.personal.nationality" @input="form.personal.nationality = $event.target.value.replace(/[0-9]/g, '')" placeholder="Ghanaian" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'national_id'; @endphp
@@ -284,15 +406,10 @@
                     @php $f = 'district'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">District *</label>
-                        <input type="text" name="{{ $f }}" x-model="form.personal.district" placeholder="Your district" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        <input type="text" name="{{ $f }}" x-model="form.personal.district" @input="form.personal.district = $event.target.value.replace(/[0-9]/g, '')" placeholder="Your district" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
-                    @php $f = 'alternative_contact'; @endphp
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Alternative Phone <span class="text-gray-400">(optional)</span></label>
-                        <input type="tel" name="{{ $f }}" x-model="form.personal.alternative_contact" placeholder="0244000001" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
-                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
+
                 </div>
             </div>
 
@@ -321,7 +438,7 @@
                     @php $f = 'year_obtained'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Year of Completion</label>
-                        <input type="number" name="{{ $f }}" x-model="form.education.year" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        <input type="number" name="{{ $f }}" x-model="form.education.year" @input="form.education.year = $event.target.value.replace(/\D/g, '').substring(0, 4)" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'certificate_number'; @endphp
@@ -350,7 +467,7 @@
             <div x-show="step === 3" x-cloak class="p-6 -mx-8" style="background:linear-gradient(180deg, #f0f7f0 0%, #ffffff 100%);">
                 <h2 class="font-heading font-semibold text-xl text-gray-800 mb-6">Sector & Corps Preference</h2>
                 <p class="text-sm text-gray-500 mb-2">Select your preferred sector and up to 3 corps (ranked 1st, 2nd, 3rd choice).</p>
-                <p class="text-xs text-amber-600 mb-4">Only sectors you are eligible for based on your education are shown below.</p>
+                <p class="text-xs text-amber-600 mb-4">Only sectors you are eligible for are shown. Ineligible corps are greyed out — select only eligible corps (shown with <svg class="inline w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>).</p>
 
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Sector *</label>
@@ -358,7 +475,10 @@
                         <option value="">-- Select Sector --</option>
                         @foreach($sectors as $sector)
                             @if($eligibleSectors->contains('id', $sector->id))
-                            <option value="{{ $sector->id }}">{{ $sector->name }}</option>
+                            <option value="{{ $sector->id }}">
+                                {{ $sector->name }}
+                                ({{ $sectorEligibility[$sector->id]['eligible'] ?? 0 }}/{{ $sectorEligibility[$sector->id]['total'] ?? 0 }} eligible corps)
+                            </option>
                             @endif
                         @endforeach
                     </select>
@@ -377,20 +497,32 @@
                         <h3 class="font-heading font-semibold text-base text-gray-700 mb-3 border-b pb-2" x-text="service + ' Corps'"></h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             <template x-for="corp in corpsByService(service)" :key="corp.id">
-                                <div class="border rounded-lg p-3 text-sm bg-white/60 hover:bg-white transition relative" :class="{'border-gaf-green ring-2 ring-gaf-green/20': form.corps.corp_1 == corp.id || form.corps.corp_2 == corp.id || form.corps.corp_3 == corp.id}">
+                                <div class="border rounded-lg p-3 text-sm bg-white/60 transition relative" :class="{
+                                    'border-gaf-green ring-2 ring-gaf-green/20': form.corps.corp_1 == corp.id || form.corps.corp_2 == corp.id || form.corps.corp_3 == corp.id,
+                                    'opacity-60 bg-gray-100': !isEligible(corp.id),
+                                    'hover:bg-white': isEligible(corp.id)
+                                }">
                                     <div class="flex items-start justify-between">
                                         <div>
-                                            <p class="font-semibold text-gray-800" x-text="corp.name"></p>
-                                            <p class="text-xs text-gray-400 mt-0.5" x-text="corp.description || ''"></p>
+                                            <p class="font-semibold" :class="isEligible(corp.id) ? 'text-gray-800' : 'text-gray-400'" x-text="corp.name"></p>
+                                            <p class="text-xs mt-0.5" :class="isEligible(corp.id) ? 'text-gray-400' : 'text-gray-300'" x-text="corp.description || ''"></p>
                                         </div>
-                                        <span x-show="form.corps.corp_1 == corp.id" class="bg-gaf-green text-white text-xs font-bold px-2 py-0.5 rounded-full">1st</span>
-                                        <span x-show="form.corps.corp_2 == corp.id && form.corps.corp_1 != corp.id" class="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">2nd</span>
-                                        <span x-show="form.corps.corp_3 == corp.id && form.corps.corp_1 != corp.id && form.corps.corp_2 != corp.id" class="bg-amber-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">3rd</span>
+                                        <div class="flex items-center gap-1 shrink-0">
+                                            <span x-show="!isEligible(corp.id)" class="text-xs text-gray-300" title="Not eligible based on your education">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m9.364-7.364A9 9 0 1112 3a9 9 0 017.364 4.636z"/></svg>
+                                            </span>
+                                            <span x-show="isEligible(corp.id)" class="text-xs text-green-500" title="Eligible">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            </span>
+                                            <span x-show="form.corps.corp_1 == corp.id" class="bg-gaf-green text-white text-xs font-bold px-2 py-0.5 rounded-full">1st</span>
+                                            <span x-show="form.corps.corp_2 == corp.id && form.corps.corp_1 != corp.id" class="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">2nd</span>
+                                            <span x-show="form.corps.corp_3 == corp.id && form.corps.corp_1 != corp.id && form.corps.corp_2 != corp.id" class="bg-amber-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">3rd</span>
+                                        </div>
                                     </div>
                                     <div class="flex gap-1 mt-2">
-                                        <button type="button" @click="selectCorp(1, corp.id)" class="flex-1 text-xs font-medium px-2 py-1 rounded transition" :class="form.corps.corp_1 == corp.id ? 'bg-gaf-green text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">1st</button>
-                                        <button type="button" @click="selectCorp(2, corp.id)" class="flex-1 text-xs font-medium px-2 py-1 rounded transition" :class="form.corps.corp_2 == corp.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">2nd</button>
-                                        <button type="button" @click="selectCorp(3, corp.id)" class="flex-1 text-xs font-medium px-2 py-1 rounded transition" :class="form.corps.corp_3 == corp.id ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">3rd</button>
+                                        <button type="button" @click="isEligible(corp.id) && selectCorp(1, corp.id)" class="flex-1 text-xs font-medium px-2 py-1 rounded transition" :class="!isEligible(corp.id) ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : (form.corps.corp_1 == corp.id ? 'bg-gaf-green text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')" :disabled="!isEligible(corp.id)">1st</button>
+                                        <button type="button" @click="isEligible(corp.id) && selectCorp(2, corp.id)" class="flex-1 text-xs font-medium px-2 py-1 rounded transition" :class="!isEligible(corp.id) ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : (form.corps.corp_2 == corp.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')" :disabled="!isEligible(corp.id)">2nd</button>
+                                        <button type="button" @click="isEligible(corp.id) && selectCorp(3, corp.id)" class="flex-1 text-xs font-medium px-2 py-1 rounded transition" :class="!isEligible(corp.id) ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : (form.corps.corp_3 == corp.id ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')" :disabled="!isEligible(corp.id)">3rd</button>
                                     </div>
                                 </div>
                             </template>
@@ -422,15 +554,32 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     @php $f = 'height'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Height (m) *</label>
-                        <input type="number" step="0.01" name="{{ $f }}" x-model="form.health.height" placeholder="e.g. 1.75" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
-                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Height (m) * <span class="text-xs text-gray-400">(min: {{ $a->gender === 'Female' ? '1.58' : '1.65' }}m)</span></label>
+                        <input type="number" step="0.01" name="{{ $f }}" x-model="form.health.height"
+                               @input.debounce="validateHeight()"
+                               @blur="validateHeight()"
+                               placeholder="e.g. 1.75"
+                               :class="'w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki ' + (heightTouched && heightErr ? 'border-red-500' : (heightTouched && heightOk ? 'border-green-500' : ({{ $errors->has($f) ? "'border-red-500'" : "'border-gray-300'" }})))">
+                        <template x-if="heightTouched && heightErr">
+                            <p class="text-red-500 text-xs mt-1" x-text="heightErr"></p>
+                        </template>
+                        <template x-if="!heightTouched || !heightErr">
+                            @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        </template>
                     </div>
                     @php $f = 'weight'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
-                        <input type="number" step="0.1" name="{{ $f }}" x-model="form.health.weight" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
-                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input type="number" step="0.1" name="{{ $f }}" x-model="form.health.weight"
+                               @input.debounce="validateWeight()"
+                               @blur="validateWeight()"
+                               :class="'w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki ' + (weightTouched && weightErr ? 'border-red-500' : (weightTouched && weightOk ? 'border-green-500' : ({{ $errors->has($f) ? "'border-red-500'" : "'border-gray-300'" }})))">
+                        <template x-if="weightTouched && weightErr">
+                            <p class="text-red-500 text-xs mt-1" x-text="weightErr"></p>
+                        </template>
+                        <template x-if="!weightTouched || !weightErr">
+                            @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        </template>
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Health Conditions</label>
@@ -446,12 +595,20 @@
                     @php $f = 'criminal_record'; @endphp
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Criminal Record Declaration *</label>
-                        <select name="{{ $f }}" x-model="form.health.criminal" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        <select name="{{ $f }}" x-model="form.health.criminal"
+                                @change="validateCriminal()"
+                                @blur="validateCriminal()"
+                                :class="'w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki ' + (criminalTouched && criminalErr ? 'border-red-500' : (criminalTouched && criminalOk ? 'border-green-500' : ({{ $errors->has($f) ? "'border-red-500'" : "'border-gray-300'" }})))">
                             <option value="">Select</option>
                             <option value="no">No criminal record</option>
                             <option value="yes">I have a criminal record</option>
                         </select>
-                        @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <template x-if="criminalTouched && criminalErr">
+                            <p class="text-red-500 text-xs mt-1" x-text="criminalErr"></p>
+                        </template>
+                        <template x-if="!criminalTouched || !criminalErr">
+                            @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        </template>
                     </div>
                     @php $f = 'fitness_status'; @endphp
                     <div>
@@ -512,14 +669,14 @@
                     <h3 class="font-semibold text-gray-700">Personal Information</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 bg-gray-50 rounded-lg">
                         <p><span class="text-gray-500">Name:</span> <span>{{ $a->first_name }} {{ $a->last_name }}</span></p>
-                        <p><span class="text-gray-500">Other Names:</span> <span x-text="form.personal.other_names || '—'"></span></p>
+                        <p><span class="text-gray-500">Other Names:</span> <span>{{ $a->other_names ?: '—' }}</span></p>
                         <p><span class="text-gray-500">DOB:</span> <span>{{ $a->date_of_birth?->format('d M Y') }}</span></p>
                         <p><span class="text-gray-500">Gender:</span> <span>{{ $a->gender }}</span></p>
                         <p><span class="text-gray-500">Marital Status:</span> <span x-text="form.personal.marital_status"></span></p>
                         <p><span class="text-gray-500">Nationality:</span> <span x-text="form.personal.nationality"></span></p>
                         <p><span class="text-gray-500">National ID:</span> <span x-text="form.personal.national_id"></span></p>
                         <p><span class="text-gray-500">Phone:</span> <span>{{ $a->contact_number }}</span></p>
-                        <p><span class="text-gray-500">Alt. Phone:</span> <span x-text="form.personal.alternative_contact || '—'"></span></p>
+                        <p><span class="text-gray-500">Alt. Phone:</span> <span>{{ $a->alternative_contact ?: '—' }}</span></p>
                         <p><span class="text-gray-500">Email:</span> <span>{{ $a->email }}</span></p>
                         <p class="sm:col-span-2"><span class="text-gray-500">Address:</span> <span x-text="form.personal.residential_address"></span></p>
                         <p><span class="text-gray-500">Region:</span> <span x-text="form.personal.region"></span></p>

@@ -38,15 +38,13 @@ Alpine.data('documentViewer', (doc, admin, docs, initialIndex) => ({
     admin: admin,
     documents: docs,
     currentIndex: initialIndex,
-    zoomed: false,
-
-    pdfDoc: null,
-    pdfPageNum: 1,
-    pdfPages: 0,
-    pdfScale: 1.5,
-    pdfRotation: 0,
     pdfReady: false,
-    pdfLoading: false,
+    pdfUrl: '',
+    pageNum: 1,
+    totalPages: 0,
+    pageUrls: [],
+    zoomLevel: 1,
+    isFullscreen: false,
 
     get isImage() {
         return this.doc.mime_type && this.doc.mime_type.startsWith('image/');
@@ -56,39 +54,117 @@ Alpine.data('documentViewer', (doc, admin, docs, initialIndex) => ({
         return this.doc.mime_type === 'application/pdf';
     },
 
+    get zoomStyle() {
+        return this.zoomLevel !== 1
+            ? 'transform: scale(' + this.zoomLevel + '); transform-origin: center center; transition: transform 0.2s'
+            : '';
+    },
+
+    init() {
+        document.addEventListener('fullscreenchange', () => {
+            this.isFullscreen = !!document.fullscreenElement;
+        });
+    },
+
+    zoomIn() {
+        this.zoomLevel = Math.min(3, +(this.zoomLevel + 0.25).toFixed(2));
+    },
+
+    zoomOut() {
+        this.zoomLevel = Math.max(0.25, +(this.zoomLevel - 0.25).toFixed(2));
+    },
+
+    resetZoom() {
+        this.zoomLevel = 1;
+    },
+
+    handleEscape() {
+        if (this.isFullscreen) {
+            document.exitFullscreen();
+        } else if (this.show) {
+            this.close();
+        }
+    },
+
+    toggleFullscreen() {
+        if (!this.isFullscreen) {
+            this.$refs.viewerPanel.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    },
+
+    handleKeydown(e) {
+        if (!this.show) return;
+        if (e.key === 'Escape') {
+            this.handleEscape();
+            return;
+        }
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === '=' || e.key === '+') { e.preventDefault(); this.zoomIn(); }
+            else if (e.key === '-') { e.preventDefault(); this.zoomOut(); }
+            else if (e.key === '0') { e.preventDefault(); this.resetZoom(); }
+        }
+        if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey) {
+            this.toggleFullscreen();
+        }
+    },
+
+    async loadPage(n) {
+        if (this.pageUrls[n]) {
+            this.pageNum = n;
+            this.pdfUrl = this.pageUrls[n];
+            this.pdfReady = true;
+            return;
+        }
+        try {
+            const resp = await fetch('/documents/' + this.doc.id + '/preview/' + n);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            this.totalPages = parseInt(resp.headers.get('X-Total-Pages') || '1');
+            const blob = await resp.blob();
+            this.pageUrls[n] = URL.createObjectURL(blob);
+            this.pageNum = n;
+            this.pdfUrl = this.pageUrls[n];
+            this.pdfReady = true;
+        } catch (err) {
+            console.error('Preview load error:', err);
+            this.pdfReady = true;
+        }
+    },
+
     open() {
         this.show = true;
+        this.zoomLevel = 1;
         document.body.style.overflow = 'hidden';
         if (this.isPdf) {
-            this.$nextTick(() => this.loadPdf());
+            this.loadPage(1);
         }
     },
 
     close() {
+        if (this.isFullscreen) document.exitFullscreen();
         this.show = false;
-        this.zoomed = false;
         this.pdfReady = false;
-        this.pdfDoc = null;
-        this.pdfPageNum = 1;
-        this.pdfRotation = 0;
+        this.pdfUrl = '';
+        this.pageNum = 1;
+        this.totalPages = 0;
+        this.pageUrls.forEach(u => URL.revokeObjectURL(u));
+        this.pageUrls = [];
         document.body.style.overflow = '';
-    },
-
-    toggleZoom() {
-        this.zoomed = !this.zoomed;
     },
 
     prevDoc() {
         if (this.currentIndex > 0) {
             this.currentIndex--;
             this.doc = this.documents[this.currentIndex];
-            this.zoomed = false;
+            this.zoomLevel = 1;
             this.pdfReady = false;
-            this.pdfDoc = null;
-            this.pdfPageNum = 1;
-            this.pdfRotation = 0;
+            this.pageNum = 1;
+            this.totalPages = 0;
+            this.pageUrls.forEach(u => URL.revokeObjectURL(u));
+            this.pageUrls = [];
             if (this.isPdf) {
-                this.$nextTick(() => this.loadPdf());
+                this.loadPage(1);
             }
         }
     },
@@ -97,101 +173,25 @@ Alpine.data('documentViewer', (doc, admin, docs, initialIndex) => ({
         if (this.currentIndex < this.documents.length - 1) {
             this.currentIndex++;
             this.doc = this.documents[this.currentIndex];
-            this.zoomed = false;
+            this.zoomLevel = 1;
             this.pdfReady = false;
-            this.pdfDoc = null;
-            this.pdfPageNum = 1;
-            this.pdfRotation = 0;
+            this.pageNum = 1;
+            this.totalPages = 0;
+            this.pageUrls.forEach(u => URL.revokeObjectURL(u));
+            this.pageUrls = [];
             if (this.isPdf) {
-                this.$nextTick(() => this.loadPdf());
+                this.loadPage(1);
             }
         }
     },
 
-    async loadPdf() {
-        if (this.pdfLoading) return;
-        this.pdfLoading = true;
-        this.pdfReady = false;
-        try {
-            if (typeof pdfjsLib === 'undefined') {
-                await this.loadPdfJsCdn();
-            }
-            const url = this.doc.view_url || this.doc.file_url || '/storage/' + this.doc.file_path;
-            const loadingTask = pdfjsLib.getDocument(url);
-            this.pdfDoc = await loadingTask.promise;
-            this.pdfPages = this.pdfDoc.numPages;
-            this.pdfPageNum = 1;
-            await this.renderPdfPage();
-            this.pdfReady = true;
-        } catch (err) {
-            console.error('PDF load error:', err);
-            this.pdfReady = true;
-        } finally {
-            this.pdfLoading = false;
-        }
+    prevPage() {
+        if (this.pageNum > 1) this.loadPage(this.pageNum - 1);
     },
 
-    loadPdfJsCdn() {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs';
-            script.type = 'module';
-            script.onload = () => {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
-                resolve();
-            };
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
+    nextPage() {
+        if (this.pageNum < this.totalPages) this.loadPage(this.pageNum + 1);
     },
-
-    async renderPdfPage() {
-        if (!this.pdfDoc) return;
-        const page = await this.pdfDoc.getPage(this.pdfPageNum);
-        const viewport = page.getViewport({ scale: this.pdfScale, rotation: this.pdfRotation });
-        const canvas = document.getElementById('pdf-canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const outputScale = window.devicePixelRatio || 1;
-        canvas.width = Math.floor(viewport.width * outputScale);
-        canvas.height = Math.floor(viewport.height * outputScale);
-        canvas.style.width = Math.floor(viewport.width) + 'px';
-        canvas.style.height = Math.floor(viewport.height) + 'px';
-        ctx.scale(outputScale, outputScale);
-        const renderContext = { canvasContext: ctx, viewport: viewport };
-        await page.render(renderContext).promise;
-    },
-
-    async pdfPrevPage() {
-        if (this.pdfPageNum > 1) {
-            this.pdfPageNum--;
-            await this.renderPdfPage();
-        }
-    },
-
-    async pdfNextPage() {
-        if (this.pdfPageNum < this.pdfPages) {
-            this.pdfPageNum++;
-            await this.renderPdfPage();
-        }
-    },
-
-    async pdfZoomIn() {
-        this.pdfScale = Math.min(this.pdfScale + 0.25, 5);
-        await this.renderPdfPage();
-    },
-
-    async pdfZoomOut() {
-        this.pdfScale = Math.max(this.pdfScale - 0.25, 0.5);
-        await this.renderPdfPage();
-    },
-
-    async pdfRotate() {
-        this.pdfRotation = (this.pdfRotation + 90) % 360;
-        await this.renderPdfPage();
-    },
-
-    get pdfPage() { return this.pdfPageNum; },
 }));
 
 document.addEventListener('alpine:init', () => {
@@ -311,20 +311,6 @@ document.addEventListener('alpine:init', () => {
 
         init() {
             this.loadSaved();
-        },
-    }));
-
-    Alpine.data('themeManager', () => ({
-        theme: localStorage.getItem('theme') || 'light',
-        init() {
-            document.documentElement.setAttribute('data-theme', this.theme);
-            this.$watch('theme', val => {
-                document.documentElement.setAttribute('data-theme', val);
-                localStorage.setItem('theme', val);
-            });
-        },
-        toggle() {
-            this.theme = this.theme === 'dark' ? 'light' : 'dark';
         },
     }));
 
@@ -836,6 +822,49 @@ document.addEventListener('alpine:init', () => {
 
         draftClear() {
             if (formKey) localStorage.removeItem('draft_' + formKey);
+        },
+    }));
+
+    Alpine.data('persistForm', (formKey, defaults = {}) => ({
+        ...defaults,
+        persistKey: 'form_' + formKey,
+        saveTimer: null,
+        saving: false,
+
+        init() {
+            this.restoreDraft();
+            this.$watch('$data', () => this.queueSave(), { deep: true });
+        },
+
+        restoreDraft() {
+            const saved = this.draftLoad();
+            if (saved) {
+                Object.assign(this, saved);
+            }
+        },
+
+        queueSave() {
+            if (this.saveTimer) clearTimeout(this.saveTimer);
+            this.saveTimer = setTimeout(() => {
+                const data = {};
+                for (const key of Object.keys(defaults)) {
+                    data[key] = this[key];
+                }
+                try {
+                    localStorage.setItem(this.persistKey, JSON.stringify(data));
+                } catch (e) {}
+            }, 500);
+        },
+
+        draftLoad() {
+            try {
+                const raw = localStorage.getItem(this.persistKey);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        },
+
+        draftClear() {
+            localStorage.removeItem(this.persistKey);
         },
     }));
 

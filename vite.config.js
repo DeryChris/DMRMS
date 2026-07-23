@@ -9,6 +9,7 @@ export default defineConfig({
         }),
     ],
     server: {
+        host: 'localhost',
         watch: {
             ignored: ['**/storage/**', '**/vendor/**', '**/node_modules/**', '**/.git/**', '**/public/build/**', '**/public/hot'],
         },

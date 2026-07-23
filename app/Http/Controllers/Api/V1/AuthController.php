@@ -36,8 +36,8 @@ class AuthController extends Controller
             'date_of_birth' => 'required|date',
             'gender'        => 'required|in:male,female',
             'marital_status'=> 'nullable|in:single,married,divorced,widowed',
-            'contact_number'=> 'required|string|max:20|unique:applicants,contact_number,NULL,id,deleted_at,NULL',
-            'alternative_contact' => 'nullable|string|max:20',
+            'contact_number'=> 'required|string|regex:/^[0-9]{10}$/|unique:applicants,contact_number,NULL,id,deleted_at,NULL',
+            'alternative_contact' => 'nullable|string|regex:/^[0-9]{10}$/',
             'email'         => 'required|email|max:255|unique:applicants,email,NULL,id,deleted_at,NULL',
             'residential_address' => 'required|string|max:500',
             'region'        => 'required|string|max:255',
@@ -97,16 +97,16 @@ class AuthController extends Controller
 
         $verificationCode = $applicant->verificationCodes()
             ->where('type', 'email')
-            ->where('code', $request->code)
-            ->where('expires_at', '>', now())
-            ->where('used', false)
+            ->where('code_value', $request->code)
+            ->where('expiry_date', '>', now())
+            ->where('used_status', false)
             ->first();
 
         if (!$verificationCode) {
             return response()->json(['message' => 'Invalid or expired verification code.'], 422);
         }
 
-        $verificationCode->update(['used' => true]);
+        $verificationCode->update(['used_status' => true, 'used_at' => now()]);
         $applicant->update(['email_verified_at' => now()]);
 
         return response()->json(['message' => 'Email verified successfully.']);
@@ -122,16 +122,16 @@ class AuthController extends Controller
 
         $verificationCode = $applicant->verificationCodes()
             ->where('type', 'phone')
-            ->where('code', $request->code)
-            ->where('expires_at', '>', now())
-            ->where('used', false)
+            ->where('code_value', $request->code)
+            ->where('expiry_date', '>', now())
+            ->where('used_status', false)
             ->first();
 
         if (!$verificationCode) {
             return response()->json(['message' => 'Invalid or expired verification code.'], 422);
         }
 
-        $verificationCode->update(['used' => true]);
+        $verificationCode->update(['used_status' => true, 'used_at' => now()]);
         $applicant->update(['phone_verified' => true]);
 
         return response()->json(['message' => 'Phone verified successfully.']);
@@ -224,16 +224,18 @@ class AuthController extends Controller
 
         $applicant->verificationCodes()->createMany([
             [
-                'type'       => 'email',
-                'code'       => $emailCode,
-                'expires_at' => now()->addMinutes(30),
-                'used'       => false,
+                'type'        => 'email',
+                'code_value'  => $emailCode,
+                'issue_date'  => now(),
+                'expiry_date' => now()->addMinutes(30),
+                'used_status' => false,
             ],
             [
-                'type'       => 'phone',
-                'code'       => $phoneCode,
-                'expires_at' => now()->addMinutes(30),
-                'used'       => false,
+                'type'        => 'phone',
+                'code_value'  => $phoneCode,
+                'issue_date'  => now(),
+                'expiry_date' => now()->addMinutes(30),
+                'used_status' => false,
             ],
         ]);
 

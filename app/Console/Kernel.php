@@ -10,6 +10,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('vouchers:expire')->daily();
+        $schedule->command('cycles:auto-deactivate')->hourly();
         $schedule->command('eligibility:process')->everyFifteenMinutes();
         $schedule->command('reminders:screening')->dailyAt('08:00');
         $schedule->command('audit:clean')->weeklyOn(0);
@@ -19,6 +20,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('decision:auto --sync')->dailyAt('02:00');
         $schedule->command('reserve:promote')->everyFifteenMinutes()->between('6:00', '20:00');
         $schedule->command('app:purge-soft-deleted')->dailyAt('03:00');
+        $schedule->command('app:cleanup-drafts --days=30')->dailyAt('04:00');
+
+        // Retry AI verification for documents stuck in pending/needs_review
+        $schedule->command('documents:retry-verification --hours=2')->everyTenMinutes();
     }
 
     protected function commands(): void

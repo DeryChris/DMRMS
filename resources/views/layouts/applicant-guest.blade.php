@@ -25,24 +25,21 @@
                 </div>
             </div>
             <div class="hidden md:flex items-center justify-center absolute left-1/2 -translate-x-1/2 space-x-6">
-                <a href="{{ route('landing') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Home</a>
-                <a href="{{ request()->routeIs('applicant.register') ? route('voucher.buy') : route('eligibility.checker') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">{{ request()->routeIs('applicant.register') ? 'Buy Voucher' : 'Eligibility Checker' }}</a>
-                <a href="{{ route('announcements') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Announcements</a>
-                <a href="{{ route('guide') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Guide</a>
-                <a href="{{ route('faq') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">FAQ</a>
-                <a href="{{ route('contact') }}" class="text-white hover:text-gaf-khaki transition text-sm font-medium">Contact</a>
+                <a href="{{ route('landing') }}" class="relative pb-0.5 border-b-2 {{ request()->routeIs('landing') ? 'text-gaf-khaki border-gaf-khaki' : 'text-white/80 border-transparent hover:text-gaf-khaki hover:border-gaf-khaki/50' }} transition text-sm font-medium">Home</a>
+                <a href="{{ request()->routeIs('applicant.register') ? route('voucher.buy') : route('eligibility.checker') }}" class="relative pb-0.5 border-b-2 {{ request()->routeIs('voucher.buy') || request()->routeIs('eligibility.checker') ? 'text-gaf-khaki border-gaf-khaki' : 'text-white/80 border-transparent hover:text-gaf-khaki hover:border-gaf-khaki/50' }} transition text-sm font-medium">{{ request()->routeIs('applicant.register') ? 'Buy Voucher' : 'Eligibility Checker' }}</a>
+                <a href="{{ route('announcements') }}" class="relative pb-0.5 border-b-2 {{ request()->routeIs('announcements') || request()->routeIs('announcements.show*') ? 'text-gaf-khaki border-gaf-khaki' : 'text-white/80 border-transparent hover:text-gaf-khaki hover:border-gaf-khaki/50' }} transition text-sm font-medium">Announcements</a>
+                <a href="{{ route('guide') }}" class="relative pb-0.5 border-b-2 {{ request()->routeIs('guide') ? 'text-gaf-khaki border-gaf-khaki' : 'text-white/80 border-transparent hover:text-gaf-khaki hover:border-gaf-khaki/50' }} transition text-sm font-medium">Guide</a>
+                <a href="{{ route('faq') }}" class="relative pb-0.5 border-b-2 {{ request()->routeIs('faq') ? 'text-gaf-khaki border-gaf-khaki' : 'text-white/80 border-transparent hover:text-gaf-khaki hover:border-gaf-khaki/50' }} transition text-sm font-medium">FAQ</a>
+                <a href="{{ route('contact') }}" class="relative pb-0.5 border-b-2 {{ request()->routeIs('contact') ? 'text-gaf-khaki border-gaf-khaki' : 'text-white/80 border-transparent hover:text-gaf-khaki hover:border-gaf-khaki/50' }} transition text-sm font-medium">Contact</a>
             </div>
             <div class="flex items-center space-x-3 ml-auto">
                 @if(request()->routeIs('applicant.login'))
                     <a href="{{ route('applicant.register') }}" class="bg-gaf-green text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gaf-dark-green transition">Register</a>
-                    <a href="{{ route('login') }}" class="bg-gaf-khaki text-gaf-green px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-500 transition">Admin</a>
                 @elseif(request()->routeIs('applicant.register'))
                     <a href="{{ route('applicant.login') }}" class="bg-gaf-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">Login</a>
-                    <a href="{{ route('login') }}" class="bg-gaf-khaki text-gaf-green px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-500 transition">Admin</a>
                 @else
                     <a href="{{ route('applicant.login') }}" class="bg-gaf-red text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">Login</a>
                     <a href="{{ route('applicant.register') }}" class="bg-gaf-green text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gaf-dark-green transition">Register</a>
-                    <a href="{{ route('login') }}" class="bg-gaf-khaki text-gaf-green px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-500 transition">Admin</a>
                 @endif
                 <x-theme-toggle :dark="true" />
                 <button @click="mobileMenu = !mobileMenu" class="md:hidden text-white">
@@ -53,12 +50,12 @@
             </div>
         </div>
         <div x-show="mobileMenu" x-cloak class="md:hidden bg-gaf-green border-t border-gaf-dark-green px-4 py-3 space-y-2">
-            <a href="{{ route('landing') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Home</a>
-            <a href="{{ request()->routeIs('applicant.register') ? route('voucher.buy') : route('eligibility.checker') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">{{ request()->routeIs('applicant.register') ? 'Buy Voucher' : 'Eligibility Checker' }}</a>
-            <a href="{{ route('announcements') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Announcements</a>
-            <a href="{{ route('guide') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Guide</a>
-            <a href="{{ route('faq') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">FAQ</a>
-            <a href="{{ route('contact') }}" class="block text-white hover:text-gaf-khaki py-1 text-sm">Contact</a>
+            <a href="{{ route('landing') }}" class="block py-1.5 text-sm transition {{ request()->routeIs('landing') ? 'text-gaf-khaki border-l-4 border-gaf-khaki pl-3 font-medium' : 'text-white/80 hover:text-gaf-khaki pl-4' }}">Home</a>
+            <a href="{{ request()->routeIs('applicant.register') ? route('voucher.buy') : route('eligibility.checker') }}" class="block py-1.5 text-sm transition {{ request()->routeIs('voucher.buy') || request()->routeIs('eligibility.checker') ? 'text-gaf-khaki border-l-4 border-gaf-khaki pl-3 font-medium' : 'text-white/80 hover:text-gaf-khaki pl-4' }}">{{ request()->routeIs('applicant.register') ? 'Buy Voucher' : 'Eligibility Checker' }}</a>
+            <a href="{{ route('announcements') }}" class="block py-1.5 text-sm transition {{ request()->routeIs('announcements') || request()->routeIs('announcements.show*') ? 'text-gaf-khaki border-l-4 border-gaf-khaki pl-3 font-medium' : 'text-white/80 hover:text-gaf-khaki pl-4' }}">Announcements</a>
+            <a href="{{ route('guide') }}" class="block py-1.5 text-sm transition {{ request()->routeIs('guide') ? 'text-gaf-khaki border-l-4 border-gaf-khaki pl-3 font-medium' : 'text-white/80 hover:text-gaf-khaki pl-4' }}">Guide</a>
+            <a href="{{ route('faq') }}" class="block py-1.5 text-sm transition {{ request()->routeIs('faq') ? 'text-gaf-khaki border-l-4 border-gaf-khaki pl-3 font-medium' : 'text-white/80 hover:text-gaf-khaki pl-4' }}">FAQ</a>
+            <a href="{{ route('contact') }}" class="block py-1.5 text-sm transition {{ request()->routeIs('contact') ? 'text-gaf-khaki border-l-4 border-gaf-khaki pl-3 font-medium' : 'text-white/80 hover:text-gaf-khaki pl-4' }}">Contact</a>
         </div>
     </nav>
     <div class="auth-split">

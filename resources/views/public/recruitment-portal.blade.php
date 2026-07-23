@@ -106,9 +106,9 @@
 
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                    <a href="{{ route('voucher.buy') }}" class="text-gaf-green hover:text-gaf-dark-green text-sm font-medium hover:underline">Buy Voucher &rarr;</a>
+                    <a href="{{ route('voucher.buy', ['cycle_id' => $cycle->id]) }}" class="text-gaf-green hover:text-gaf-dark-green text-sm font-medium hover:underline">Buy Voucher &rarr;</a>
                     <a href="{{ route('eligibility.checker') }}" class="text-gaf-green hover:text-gaf-dark-green text-sm font-medium hover:underline">Check eligibility &rarr;</a>
-                    <a href="{{ route('applicant.register') }}" class="inline-block bg-gaf-green text-white px-6 py-3 rounded-lg font-heading font-bold text-sm hover:bg-gaf-dark-green transition shadow">Apply Now</a>
+                    <a href="{{ route('voucher.buy', ['cycle_id' => $cycle->id]) }}" class="inline-block bg-gaf-green text-white px-6 py-3 rounded-lg font-heading font-bold text-sm hover:bg-gaf-dark-green transition shadow">Apply Now</a>
                 </div>
             </div>
         </div>

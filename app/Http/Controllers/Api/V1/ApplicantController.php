@@ -10,6 +10,7 @@ use App\Models\VerificationCode;
 use App\Models\Appointment;
 use App\Events\DocumentUploaded;
 use App\Services\Ai\AiGateway;
+use App\Services\AiContextService;
 use App\Services\Eligibility\EligibilityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,10 +22,11 @@ class ApplicantController extends Controller
     protected AiGateway $aiGateway;
     protected EligibilityService $eligibilityService;
 
-    public function __construct(AiGateway $aiGateway, EligibilityService $eligibilityService)
+    public function __construct(AiGateway $aiGateway, EligibilityService $eligibilityService, AiContextService $aiContext)
     {
         $this->aiGateway = $aiGateway;
         $this->eligibilityService = $eligibilityService;
+        $this->aiContext = $aiContext;
     }
 
     public function profile(Request $request): JsonResponse
@@ -33,8 +35,8 @@ class ApplicantController extends Controller
 
         if ($request->isMethod('put')) {
             $validated = $request->validate([
-                'contact_number'      => 'sometimes|string|max:20|unique:applicants,contact_number,' . $applicant->id . ',id,deleted_at,NULL',
-                'alternative_contact' => 'nullable|string|max:20',
+                'contact_number'      => 'sometimes|string|regex:/^[0-9]{10}$/|unique:applicants,contact_number,' . $applicant->id . ',id,deleted_at,NULL',
+                'alternative_contact' => 'nullable|string|regex:/^[0-9]{10}$/',
                 'residential_address' => 'sometimes|string|max:500',
                 'region'              => 'sometimes|string|max:255',
                 'district'            => 'sometimes|string|max:255',
@@ -125,9 +127,10 @@ class ApplicantController extends Controller
         $applicant = $request->user();
 
         if ($request->isMethod('post')) {
+            $allowedMimes = $request->input('document_type') === 'photograph' ? 'jpg,jpeg,png' : 'pdf,jpg,jpeg,png';
             $validated = $request->validate([
                 'document_type' => 'required|string|in:birth_certificate,national_id,certificate,photograph,medical_report,other',
-                'file'          => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'file'          => "required|file|mimes:{$allowedMimes}|max:5120",
                 'description'   => 'nullable|string|max:500',
             ]);
 
@@ -154,7 +157,7 @@ class ApplicantController extends Controller
             $path = $request->file('file')->store("documents/{$applicant->id}", 'public');
 
             $document = Document::create([
-                'applicant_id'   => $applicant->id,
+                'application_id' => $applicant->application?->id,
                 'document_type'  => $validated['document_type'],
                 'file_path'      => $path,
                 'file_name'      => $request->file('file')->getClientOriginalName(),
@@ -175,7 +178,9 @@ class ApplicantController extends Controller
         if ($request->isMethod('delete')) {
             $request->validate(['document_id' => 'required|exists:documents,id']);
 
-            $document = Document::where('applicant_id', $applicant->id)
+            $document = Document::whereHas('application', function ($q) use ($applicant) {
+                    $q->where('applicant_id', $applicant->id);
+                })
                 ->findOrFail($request->document_id);
 
             Storage::disk('public')->delete($document->file_path);
@@ -211,15 +216,15 @@ class ApplicantController extends Controller
 
         $code = $applicant->verificationCodes()
             ->where('type', 'eligibility')
-            ->where('expires_at', '>', now())
-            ->where('used', false)
+            ->where('expiry_date', '>', now())
+            ->where('used_status', false)
             ->first();
 
         if (!$code) {
             return response()->json(['message' => 'No valid verification code found.'], 404);
         }
 
-        return response()->json(['data' => ['code' => $code->code]]);
+        return response()->json(['data' => ['code' => $code->code_value]]);
     }
 
     public function appointment(Request $request): JsonResponse
@@ -296,10 +301,9 @@ class ApplicantController extends Controller
             'message' => 'required|string|max:2000',
         ]);
 
-        $response = $this->aiGateway->chatWithMessages([
-            ['role' => 'system', 'content' => 'You are a recruitment assistant for DMRMS.'],
-            ['role' => 'user', 'content' => $validated['message']],
-        ]);
+        $messages = $this->aiContext->chatMessages(applicant: $request->user(), message: $validated['message']);
+
+        $response = $this->aiGateway->chatWithMessages($messages);
 
         return response()->json([
             'data' => [

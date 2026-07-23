@@ -88,7 +88,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Heart Rate (bpm)</label>
-                    <input type="number" x-model="form.medical.heart_rate" min="30" max="250" placeholder="e.g. 72" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" x-model="form.medical.heart_rate" @input="form.medical.heart_rate = $event.target.value.replace(/\D/g, '')" min="30" max="250" placeholder="e.g. 72" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Vision (Left)</label>
@@ -108,15 +108,15 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Height (m)</label>
-                    <input type="number" x-model="form.medical.height_cm" step="0.01" min="0.5" max="2.5" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" x-model="form.medical.height_cm" @input="form.medical.height_cm = $event.target.value.replace(/[^0-9.]/g, '')" step="0.01" min="0.5" max="2.5" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
-                    <input type="number" x-model="form.medical.weight_kg" step="0.1" min="30" max="200" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" x-model="form.medical.weight_kg" @input="form.medical.weight_kg = $event.target.value.replace(/[^0-9.]/g, '')" step="0.1" min="30" max="200" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">BMI</label>
-                    <input type="number" x-model="form.medical.bmi" step="0.1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" x-model="form.medical.bmi" @input="form.medical.bmi = $event.target.value.replace(/[^0-9.]/g, '')" step="0.1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
             </div>
             <div class="mt-4">
@@ -155,23 +155,23 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Run Time (seconds)</label>
-                    <input type="number" x-model="form.fitness.run_time_seconds" min="0" placeholder="e.g. 750" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" x-model="form.fitness.run_time_seconds" @input="form.fitness.run_time_seconds = $event.target.value.replace(/\D/g, '')" min="0" placeholder="e.g. 750" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Push-ups (count)</label>
-                    <input type="number" x-model="form.fitness.push_ups" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" x-model="form.fitness.push_ups" @input="form.fitness.push_ups = $event.target.value.replace(/\D/g, '')" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Sit-ups (count)</label>
-                    <input type="number" x-model="form.fitness.sit_ups" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" x-model="form.fitness.sit_ups" @input="form.fitness.sit_ups = $event.target.value.replace(/\D/g, '')" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Pull-ups (count)</label>
-                    <input type="number" x-model="form.fitness.pull_ups" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" x-model="form.fitness.pull_ups" @input="form.fitness.pull_ups = $event.target.value.replace(/\D/g, '')" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Shuttle Run (seconds)</label>
-                    <input type="number" x-model="form.fitness.shuttle_run" step="0.1" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" x-model="form.fitness.shuttle_run" @input="form.fitness.shuttle_run = $event.target.value.replace(/[^0-9.]/g, '')" step="0.1" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Grade</label>
@@ -187,7 +187,7 @@
             </div>
             <div class="mt-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Overall Score (0-100)</label>
-                <input type="number" x-model="form.fitness.fitness_score" required min="0" max="100" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                <input type="number" x-model="form.fitness.fitness_score" @input="form.fitness.fitness_score = $event.target.value.replace(/\D/g, '')" required min="0" max="100" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
             </div>
             <div class="mt-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -246,7 +246,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Overall Score (0-100)</label>
-                    <input type="number" x-model="form.interview.interview_score" required min="0" max="100" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
+                    <input type="number" x-model="form.interview.interview_score" @input="form.interview.interview_score = $event.target.value.replace(/\D/g, '')" required min="0" max="100" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
             </div>
             <div class="mt-4">

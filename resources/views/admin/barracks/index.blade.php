@@ -3,7 +3,7 @@
 @section('title', 'Manage Barracks - Ghana Armed Forces')
 
 @section('content')
-<div x-data="barrackManager()" class="max-w-6xl mx-auto px-4">
+<div x-data="barrackManager()" x-init="{{ $errors->any() ? '$nextTick(() => { showModal = true; restoreOld() })' : '' }}" class="max-w-6xl mx-auto px-4">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 gradient-border pb-4">
         <div>
             <h1 class="font-heading font-bold text-2xl text-gray-800">Barracks / Camps</h1>
@@ -77,6 +77,8 @@
         @endif
     </div>
 
+    <div id="barrack-old-data" data-old="{{ json_encode(old()) }}" class="hidden"></div>
+
     {{-- Create/Edit Modal --}}
     <div x-show="showModal" x-cloak class="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-8 bg-black bg-opacity-50 overflow-y-auto" @click.outside="showModal = false">
         <div class="glass-strong rounded-xl shadow-lg w-full max-w-lg mx-4 p-8" style="background:rgba(255,255,255,0.95);backdrop-filter:blur(16px);">
@@ -100,7 +102,7 @@
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Barrack / Camp Name</label>
-                        <input type="text" name="name" x-model="form.name" placeholder="e.g. Burma Camp" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition {{ $errors->has('name') ? 'border-red-500' : 'border-gray-300' }}" required>
+                        <input type="text" name="name" x-model="form.name" @input="form.name = $event.target.value.replace(/[0-9]/g, '')" placeholder="e.g. Burma Camp" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition {{ $errors->has('name') ? 'border-red-500' : 'border-gray-300' }}" required>
                         @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
@@ -145,6 +147,17 @@ function barrackManager() {
             this.editingId = id;
             this.form = { region: region, name: name, location: location, is_active: isActive };
             this.showModal = true;
+        },
+        restoreOld() {
+            const el = document.getElementById('barrack-old-data');
+            if (!el) return;
+            try {
+                const old = JSON.parse(el.dataset.old || '{}');
+                if (old.region) this.form.region = old.region;
+                if (old.name) this.form.name = old.name;
+                if (old.location) this.form.location = old.location;
+                if (old.is_active !== undefined) this.form.is_active = old.is_active === '1';
+            } catch (e) {}
         }
     }
 }

@@ -9,6 +9,26 @@ use App\Http\Controllers\Web\ScreeningWebController;
 use App\Http\Controllers\Web\WebController;
 use Illuminate\Support\Facades\Route;
 
+// Debug routes — auto-login as draft applicant for form testing
+Route::get('/debug/applicant-form/{step?}', function ($step = 3) {
+    $applicant = \App\Models\Applicant::find(6);
+    if (!$applicant) {
+        return response('Debug applicant not found. Run: php artisan db:seed --class=ApplicantSeeder', 404);
+    }
+    \Illuminate\Support\Facades\Auth::guard('applicant')->login($applicant);
+    return redirect()->to('/applicant/application?step=' . (int) $step);
+})->name('debug.applicant-form');
+
+Route::get('/debug/set-degree/{field}', function ($field) {
+    $app = \App\Models\Application::where('status', 'draft')->first();
+    if (!$app) {
+        return response('No draft application found', 404);
+    }
+    $app->update(['degree_field' => $field]);
+    return redirect()->route('debug.applicant-form', ['step' => 3])
+        ->with('success', "Degree field set to: {$field}");
+})->name('debug.set-degree');
+
 // Public routes
 Route::get('/', [WebController::class, 'landing'])->name('landing');
 Route::get('/recruitment', [WebController::class, 'recruitmentPortal'])->name('recruitment.portal');
@@ -23,6 +43,7 @@ Route::get('/news/{id}/{slug?}', [WebController::class, 'announcementDetail'])->
 Route::get('/guide', [WebController::class, 'guide'])->name('guide');
 Route::get('/faq', [WebController::class, 'faq'])->name('faq');
 Route::get('/contact', [WebController::class, 'contact'])->name('contact');
+Route::post('/contact', [WebController::class, 'sendContactMessage'])->name('contact.send');
 
 // Breeze auth routes
 require __DIR__ . '/auth.php';
@@ -35,6 +56,7 @@ Route::middleware('auth:applicant,web')->group(function () {
     Route::put('/notifications/read-all', [\App\Http\Controllers\NotificationWebController::class, 'markAllAsRead']);
     Route::get('/notifications', [\App\Http\Controllers\NotificationWebController::class, 'allNotifications'])->name('notifications.all');
     Route::get('/documents/{id}/view', [AdminWebController::class, 'streamDocument'])->name('documents.view');
+    Route::get('/documents/{id}/preview/{page?}', [AdminWebController::class, 'previewDocument'])->name('documents.preview');
 });
 
 // Applicant auth routes
@@ -67,6 +89,7 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
         Route::get('/documents', [ApplicantWebController::class, 'documents'])->name('documents');
         Route::post('/documents/upload', [ApplicantWebController::class, 'uploadDocument'])->name('documents.upload');
         Route::delete('/documents/{id}', [ApplicantWebController::class, 'deleteDocument'])->name('documents.delete');
+        Route::post('/documents/discard-all', [ApplicantWebController::class, 'discardAllDocuments'])->name('documents.discard-all');
         Route::post('/documents/finalize', [ApplicantWebController::class, 'finalizeDocuments'])->name('documents.finalize');
         Route::get('/status', [ApplicantWebController::class, 'status'])->name('status');
         Route::get('/appointment', [ApplicantWebController::class, 'appointment'])->name('appointment');
@@ -123,6 +146,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_ad
         Route::put('/cycles/{cycle}', [AdminWebController::class, 'cycleUpdate'])->name('cycles.update');
         Route::put('/cycles/{cycle}/publish', [AdminWebController::class, 'cyclePublish'])->name('cycles.publish');
         Route::put('/cycles/{cycle}/close', [AdminWebController::class, 'cycleClose'])->name('cycles.close');
+        Route::put('/cycles/{cycle}/activate', [AdminWebController::class, 'cycleActivate'])->name('cycles.activate');
         Route::put('/cycles/{cycle}/archive', [AdminWebController::class, 'cycleArchive'])->name('cycles.archive');
     });
 
@@ -150,6 +174,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_ad
         Route::post('/selection/dismiss', [AdminWebController::class, 'dismissFromShortlist'])->name('selection.dismiss');
         Route::post('/selection/finalize', [AdminWebController::class, 'finalizeDecision'])->name('selection.finalize');
         Route::post('/selection/process-decisions', [AdminWebController::class, 'processDecisions'])->name('selection.process-decisions');
+        Route::post('/selection/allocate-corps', [AdminWebController::class, 'allocateCorps'])->name('selection.allocate-corps');
+        Route::get('/selection/allocation-stats', [AdminWebController::class, 'allocationStats'])->name('selection.allocation-stats');
+        Route::post('/selection/reset-allocations', [AdminWebController::class, 'resetAllocations'])->name('selection.reset-allocations');
     });
 
     // Dashboard stats — all admin roles
@@ -162,10 +189,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_ad
         Route::post('/reports/export', [AdminWebController::class, 'exportReport'])->name('reports.export');
     });
 
-    // Settings + AI Config — admin + super_admin only
-    Route::middleware('role:admin,super_admin')->group(function () {
+    // Settings — super_admin only
+    Route::middleware('role:super_admin')->group(function () {
         Route::get('/settings', [AdminWebController::class, 'settings'])->name('settings');
         Route::post('/settings', [AdminWebController::class, 'settingsStore'])->name('settings.store');
+    });
+
+    // AI Config — admin + super_admin only
+    Route::middleware('role:admin,super_admin')->group(function () {
         Route::get('/ai-config', [AdminWebController::class, 'aiConfig'])->name('ai-config');
         Route::post('/ai-config/save', [AdminWebController::class, 'aiConfigSave'])->name('ai-config.save');
     });
