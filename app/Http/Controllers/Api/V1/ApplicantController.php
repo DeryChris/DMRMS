@@ -14,6 +14,7 @@ use App\Services\AiContextService;
 use App\Services\Eligibility\EligibilityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -154,20 +155,39 @@ class ApplicantController extends Controller
                 }
             }
 
-            $path = $request->file('file')->store("documents/{$applicant->id}", 'public');
+            $document = null;
 
-            $document = Document::create([
-                'application_id' => $applicant->application?->id,
-                'document_type'  => $validated['document_type'],
-                'file_path'      => $path,
-                'file_name'      => $request->file('file')->getClientOriginalName(),
-                'file_size'      => $request->file('file')->getSize(),
-                'mime_type'      => $request->file('file')->getMimeType(),
-                'description'    => $validated['description'] ?? null,
-                'verification_status' => 'pending',
-            ]);
+            DB::transaction(function () use ($applicant, $request, $validated, &$document) {
+                // Store the new file FIRST so if storage fails we don't lose the old doc
+                $path = $request->file('file')->store("documents/{$applicant->id}", 'public');
 
-            DocumentUploaded::dispatch($document);
+                // Delete old document if re-uploading
+                if ($applicant->application) {
+                    $existing = Document::where('application_id', $applicant->application->id)
+                        ->where('document_type', $validated['document_type'])
+                        ->first();
+
+                    if ($existing) {
+                        Storage::disk('public')->delete($existing->file_path);
+                        $existing->delete();
+                    }
+                }
+
+                $document = Document::create([
+                    'application_id' => $applicant->application?->id,
+                    'document_type'  => $validated['document_type'],
+                    'file_path'      => $path,
+                    'file_name'      => $request->file('file')->getClientOriginalName(),
+                    'file_size'      => $request->file('file')->getSize(),
+                    'mime_type'      => $request->file('file')->getMimeType(),
+                    'description'    => $validated['description'] ?? null,
+                    'verification_status' => 'pending',
+                ]);
+            });
+
+            if ($document) {
+                DocumentUploaded::dispatch($document);
+            }
 
             return response()->json([
                 'message'  => 'Document uploaded successfully.',

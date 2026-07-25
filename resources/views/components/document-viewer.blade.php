@@ -124,6 +124,7 @@
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full" :class="doc.verification_status === 'verified' ? 'bg-green-100 text-green-700' : (doc.verification_status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700')" x-text="doc.verification_status || 'pending'"></span>
                     </div>
                     <div class="flex items-center space-x-2">
+                        {{-- Approve button --}}
                         <template x-if="doc.verification_status !== 'verified'">
                             <form method="POST" :action="'/admin/documents/' + doc.id + '/verify'" class="inline">
                                 @csrf
@@ -131,16 +132,65 @@
                                 <button type="submit" class="px-4 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Approve</button>
                             </form>
                         </template>
+
+                        {{-- Reject button — opens overlay modal (rendered outside overflow-hidden below) --}}
                         <template x-if="doc.verification_status !== 'rejected'">
-                            <form method="POST" :action="'/admin/documents/' + doc.id + '/verify'" class="inline">
-                                @csrf
-                                <input type="hidden" name="status" value="rejected">
-                                <button type="submit" class="px-4 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition">Reject</button>
-                            </form>
+                            <button @click="rejectOpen = true" type="button" class="px-4 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition inline-flex items-center gap-1">
+                                Reject
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+                            </button>
                         </template>
                     </div>
                 </div>
             </template>
         </div>
     </div>
+
+    {{-- Reject reason overlay — RENDERED OUTSIDE overflow-hidden so it CAN overlay the viewer --}}
+    <template x-if="admin && rejectOpen">
+        <div class="fixed inset-0 z-[300] flex items-center justify-center bg-black/30" @click.self="rejectOpen = false">
+            <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[28rem] max-h-[85vh] overflow-y-auto" @click.stop>
+                <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="font-heading font-semibold text-gray-800 text-sm">Reject Document</h3>
+                    <button @click="rejectOpen = false" class="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition" type="button">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <form method="POST" :action="'/admin/documents/' + doc.id + '/verify'">
+                    @csrf
+                    <input type="hidden" name="status" value="rejected">
+                    <div class="p-5 space-y-2">
+                        <p class="text-xs font-semibold text-gray-700 mb-1">Select the reason for rejection:</p>
+                        <template x-for="reason in rejectReasons" :key="reason.value">
+                            <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-red-50 cursor-pointer transition border border-transparent has-[:checked]:border-red-200 has-[:checked]:bg-red-50">
+                                <input type="radio" name="rejection_reason" :value="reason.value" x-model="rejectSelected" class="mt-0.5 text-red-600 focus:ring-red-500">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-800" x-text="reason.label"></span>
+                                    <p class="text-xs text-gray-500 mt-0.5" x-text="reason.description"></p>
+                                </div>
+                            </label>
+                        </template>
+                        <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-red-50 cursor-pointer transition border border-transparent has-[:checked]:border-red-200 has-[:checked]:bg-red-50">
+                            <input type="radio" name="rejection_reason" value="custom" x-model="rejectSelected" class="mt-0.5 text-red-600 focus:ring-red-500">
+                            <div>
+                                <span class="text-sm font-medium text-gray-800">Other (custom reason)</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Type a specific reason below</p>
+                            </div>
+                        </label>
+                        <div x-show="rejectSelected === 'custom'" x-cloak class="mt-2">
+                            <textarea name="custom_reason" x-model="rejectCustomText" placeholder="Type the rejection reason here..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-red-200 focus:border-red-400" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="px-5 py-4 border-t border-gray-100 flex items-center justify-end gap-2">
+                        <button @click="rejectOpen = false" type="button" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Cancel</button>
+                        <button type="submit"
+                                class="px-5 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                :disabled="!rejectSelected">
+                            Reject Document
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </template>
 </div>

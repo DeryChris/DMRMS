@@ -90,7 +90,7 @@
 
                 <div class="space-y-5">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Region</label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Region <span class="text-red-500">*</span></label>
                         <select name="region" x-model="form.region" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition {{ $errors->has('region') ? 'border-red-500' : 'border-gray-300' }}" required>
                             <option value="">Select Region</option>
                             @foreach($regions as $region)
@@ -101,13 +101,13 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Barrack / Camp Name</label>
-                        <input type="text" name="name" x-model="form.name" @input="form.name = $event.target.value.replace(/[0-9]/g, '')" placeholder="e.g. Burma Camp" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition {{ $errors->has('name') ? 'border-red-500' : 'border-gray-300' }}" required>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Barrack / Camp Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" x-model="form.name" @input="form.name = $event.target.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '')" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+" title="Only letters, spaces, hyphens, and apostrophes" placeholder="e.g. Burma Camp" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition {{ $errors->has('name') ? 'border-red-500' : 'border-gray-300' }}" required>
                         @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Location <span class="text-gray-400">(optional)</span></label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Location <span class="text-gray-400 font-normal">(Optional)</span></label>
                         <input type="text" name="location" x-model="form.location" placeholder="e.g. Accra" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-green/30 focus:border-gaf-green outline-none transition {{ $errors->has('location') ? 'border-red-500' : 'border-gray-300' }}">
                         @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>

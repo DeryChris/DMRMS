@@ -174,7 +174,7 @@ class WebController extends Controller
     public function sendContactMessage(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'    => 'required|string|max:100',
+            'name'    => ['required', 'string', 'max:100', 'regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u'],
             'email'   => 'required|email|max:100',
             'subject' => 'required|string|max:200',
             'message' => 'required|string|min:10|max:5000',

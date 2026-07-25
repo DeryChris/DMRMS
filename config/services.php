@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'paystack' => [
+        'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+    ],
+
+    'mnotify' => [
+        'api_key'   => env('MNOTIFY_API_KEY'),
+        'sender_id' => env('MNOTIFY_SENDER_ID', 'DMRMS'),
+        'base_url'  => 'https://api.mnotify.com/api',
+        'enabled'   => env('MNOTIFY_ENABLED', false),
+    ],
+
 ];

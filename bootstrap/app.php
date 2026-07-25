@@ -5,6 +5,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Http\Middleware\HandleCors;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,6 +21,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'ai.rate.limit' => \App\Http\Middleware\AiRateLimitMiddleware::class,
             'applicant.access' => \App\Http\Middleware\CheckApplicantAccess::class,
             'password.expiry' => \App\Http\Middleware\CheckPasswordExpiry::class,
+        ]);
+
+        $middleware->api(prepend: [
+            HandleCors::class,
+        ]);
+
+        // Exclude Paystack webhook from CSRF protection
+        $middleware->validateCsrfTokens(except: [
+            '/api/webhooks/paystack',
         ]);
 
         RedirectIfAuthenticated::redirectUsing(function (Request $request) {

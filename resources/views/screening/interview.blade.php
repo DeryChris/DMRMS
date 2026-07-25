@@ -59,43 +59,43 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Communication (1-10)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Communication (1-10) <span class="text-red-500">*</span></label>
                             <select name="communication" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                                 @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}" {{ old('communication') == $i ? 'selected' : '' }}>{{ $i }}</option>@endfor
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Confidence (1-10)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Confidence (1-10) <span class="text-red-500">*</span></label>
                             <select name="confidence" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                                 @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}" {{ old('confidence') == $i ? 'selected' : '' }}>{{ $i }}</option>@endfor
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Appearance (1-10)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Appearance (1-10) <span class="text-red-500">*</span></label>
                             <select name="appearance" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                                 @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}" {{ old('appearance') == $i ? 'selected' : '' }}>{{ $i }}</option>@endfor
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Knowledge (1-10)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Knowledge (1-10) <span class="text-red-500">*</span></label>
                             <select name="knowledge" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                                 @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}" {{ old('knowledge') == $i ? 'selected' : '' }}>{{ $i }}</option>@endfor
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Attitude (1-10)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Attitude (1-10) <span class="text-red-500">*</span></label>
                             <select name="attitude" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                                 @for($i = 1; $i <= 10; $i++)<option value="{{ $i }}" {{ old('attitude') == $i ? 'selected' : '' }}>{{ $i }}</option>@endfor
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Overall Score (0-100)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Overall Score (0-100) <span class="text-red-500">*</span></label>
                             <input type="number" name="interview_score" value="{{ old('interview_score') }}" required min="0" max="100" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Decision</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Decision <span class="text-red-500">*</span></label>
                         <select name="interview_decision" required class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                             <option value="">Select decision...</option>
                             <option value="pass" {{ old('interview_decision') === 'pass' ? 'selected' : '' }}>PASS - Recommended</option>
@@ -104,7 +104,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes / Observations</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes / Observations <span class="text-gray-400 font-normal">(Optional)</span></label>
                         <textarea name="notes" rows="4" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" placeholder="Enter interview notes...">{{ old('notes') }}</textarea>
                     </div>
 

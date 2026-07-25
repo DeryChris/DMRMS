@@ -31,7 +31,7 @@
 
     <div class="glass-strong rounded-xl shadow-sm p-8 text-center">
         <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Enter Verification Code</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Enter Verification Code <span class="text-red-500">*</span></label>
             <input type="text" x-model="code" @keydown.enter="verifyCode()" placeholder="e.g. GAF-2026-8472" class="w-full max-w-md border border-gray-300 rounded-lg px-4 py-4 text-lg text-center focus:ring-2 focus:ring-gaf-khaki">
             <p x-show="error" x-text="error" class="text-red-600 text-sm mt-2"></p>
         </div>

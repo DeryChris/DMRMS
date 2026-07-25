@@ -8,6 +8,9 @@ use App\Http\Controllers\Api\V1\ScreeningController;
 use App\Http\Controllers\Api\V1\AiController;
 use Illuminate\Support\Facades\Route;
 
+// Paystack webhook (no auth, no CSRF)
+Route::post('/webhooks/paystack', [\App\Http\Controllers\Web\PaystackWebhookController::class, 'handleWebhook'])->name('paystack.webhook');
+
 Route::prefix('v1')->name('api.v1.')->group(function () {
 
     // Public endpoints (no auth)

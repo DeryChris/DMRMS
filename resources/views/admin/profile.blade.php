@@ -59,13 +59,13 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                 @php $f = 'first_name'; @endphp
                 <div>
-                    <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">First Name <span class="text-red-500">*</span></label>
                     <input type="text" id="{{ $f }}" name="{{ $f }}" value="{{ old($f, $user->first_name) }}" oninput="this.value = this.value.replace(/[0-9]/g, '')" required class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 @php $f = 'last_name'; @endphp
                 <div>
-                    <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">Last Name <span class="text-red-500">*</span></label>
                     <input type="text" id="{{ $f }}" name="{{ $f }}" value="{{ old($f, $user->last_name) }}" oninput="this.value = this.value.replace(/[0-9]/g, '')" required class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -88,20 +88,20 @@
             <div class="space-y-4 mb-5">
                 @php $f = 'current_password'; @endphp
                 <div>
-                    <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                    <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">Current Password <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="password" id="{{ $f }}" name="{{ $f }}" required class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 @php $f = 'password'; @endphp
                 <div>
-                    <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">New Password <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="password" id="{{ $f }}" name="{{ $f }}" required class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     <p class="text-xs text-gray-400 mt-1">Minimum {{ $policy->getMinLength() }} characters{{ $policy->getValidationRules()[1] ?? '' ? ' with uppercase, numbers, and special characters' : '' }}.</p>
                 </div>
                 @php $f = 'password_confirmation'; @endphp
                 <div>
-                    <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                    <label for="{{ $f }}" class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="password" id="{{ $f }}" name="{{ $f }}" required class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>

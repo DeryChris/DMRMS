@@ -192,6 +192,23 @@ Alpine.data('documentViewer', (doc, admin, docs, initialIndex) => ({
     nextPage() {
         if (this.pageNum < this.totalPages) this.loadPage(this.pageNum + 1);
     },
+
+    // ─── Reject state (overlay modal) ────────────────────────────────
+    rejectOpen: false,
+    rejectSelected: '',
+    rejectCustomText: '',
+    rejectReasons: [
+        { value: 'not_clear',             label: 'Not clear or readable',           description: 'Document image is blurry, too dark, or text cannot be read clearly.' },
+        { value: 'not_original',          label: 'Not an original document',        description: 'Document appears to be a photocopy, screenshot, or scan of a copy.' },
+        { value: 'tampered',              label: 'Signs of tampering or alteration', description: 'Document shows evidence of digital editing, white-out, or alterations.' },
+        { value: 'expired',               label: 'Document has expired',            description: 'The document\'s expiry date has passed or it is no longer valid.' },
+        { value: 'information_mismatch',  label: 'Info mismatch with record',       description: 'Name, DOB, or other details do not match the applicant\'s profile.' },
+        { value: 'wrong_document',        label: 'Wrong document type',             description: 'The uploaded file does not match the required document type.' },
+        { value: 'missing_fields',        label: 'Missing required fields',         description: 'Document is missing critical information like name, number, or stamps.' },
+        { value: 'forgery_suspected',     label: 'Suspected forgery',               description: 'Security features appear counterfeit or the document looks fabricated.' },
+        { value: 'low_quality_photo',     label: 'Photo does not meet specs',       description: 'Passport photo fails requirements (background, size, expression, lighting).' },
+        { value: 'incomplete',            label: 'Document is incomplete',          description: 'The document appears truncated, cropped, or missing pages.' },
+    ],
 }));
 
 document.addEventListener('alpine:init', () => {

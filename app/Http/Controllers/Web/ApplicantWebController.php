@@ -12,9 +12,11 @@ use App\Services\Ai\AiGateway;
 use App\Services\Application\CorpMatchingService;
 use App\Services\Eligibility\EligibilityService;
 use App\Services\Notification\NotificationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -46,14 +48,26 @@ class ApplicantWebController extends Controller
         $hasRejectedDocs = false;
         $rejectedDocTypes = [];
         $allDocsVerified = false;
+        $rejectedReasons = [];
         if ($application) {
             $requiredDocs = ['birth_certificate', 'certificate', 'national_id', 'photograph'];
-            $rejected = $application->documents()
+            $rejectedDocs = $application->documents()
                 ->where('verification_status', 'rejected')
-                ->pluck('document_type')
-                ->toArray();
-            $hasRejectedDocs = !empty($rejected);
-            $rejectedDocTypes = array_map(fn($t) => str_replace('_', ' ', ucfirst($t)), $rejected);
+                ->get();
+            $hasRejectedDocs = $rejectedDocs->isNotEmpty();
+            $rejectedDocTypes = $rejectedDocs->map(fn($d) => str_replace('_', ' ', ucfirst($d->document_type)))->toArray();
+            $rejectedReasons = $rejectedDocs->mapWithKeys(fn($d) => [
+                str_replace('_', ' ', ucfirst($d->document_type)) => $d->rejection_reason ?? 'No specific reason provided.',
+            ])->toArray();
+
+            // Debug: log rejected doc query result
+            \Illuminate\Support\Facades\Log::debug('Dashboard rejected docs check', [
+                'applicant_id' => $applicant->id,
+                'application_id' => $application->id,
+                'application_status' => $application->status,
+                'rejected_found' => $rejectedDocs->pluck('document_type')->toArray(),
+                'has_rejected_docs' => $hasRejectedDocs,
+            ]);
 
             $verified = $application->documents()
                 ->whereIn('document_type', $requiredDocs)
@@ -61,12 +75,31 @@ class ApplicantWebController extends Controller
                 ->pluck('document_type')
                 ->toArray();
             $allDocsVerified = empty(array_diff($requiredDocs, $verified));
+        } else {
+            \Illuminate\Support\Facades\Log::debug('Dashboard: no application found', [
+                'applicant_id' => $applicant->id,
+            ]);
+        }
+
+        // ── Document disqualification detection ────────────────────────
+        // If the application is rejected and there are rejected documents,
+        // this is a disqualification (not a fixable re-upload scenario).
+        $documentDisqualified = false;
+        $disqualificationDocTypes = [];
+        $disqualificationReasons = [];
+        if ($application && $application->status === 'rejected' && $hasRejectedDocs) {
+            // Only show disqualification if this is NOT an eligibility failure
+            // and there's no final decision yet (which has its own card).
+            if (!$eligibilityFailed && !$finalDecision) {
+                $documentDisqualified = true;
+                $disqualificationDocTypes = $rejectedDocTypes;
+                $disqualificationReasons = $rejectedReasons;
+            }
         }
 
         // Can the applicant go back to edit application/documents?
-        $lockedStatuses = ['screening_completed', 'final_decision_pending', 'selected', 'rejected', 'disqualified', 'reserve', 'recruited'];
-        $isLocked = $application && in_array($application->status, $lockedStatuses);
-        $canGoBack = !$isLocked && ($hasRejectedDocs || !$allDocsVerified);
+        // Only when documents were rejected with fixable reasons (application not fully rejected).
+        $canGoBack = !$documentDisqualified && $hasRejectedDocs;
 
         $stageMap = [
             'registered' => 1,
@@ -102,17 +135,23 @@ class ApplicantWebController extends Controller
             ['title' => 'Final Decision', 'key' => 'decision', 'status' => $currentStage >= 10 ? 'completed' : 'pending'],
         ];
 
+        // Get eligibility result for rejection reasons
+        $eligibilityResult = $application?->eligibilityResult;
+        $eligibilityFailed = $application && $application->status === 'eligibility_failed';
+
         return view('applicant.dashboard', compact(
             'applicant', 'application', 'notifications', 'currentStage', 'stages',
             'statusText', 'finalDecision', 'hasRejectedDocs', 'rejectedDocTypes',
-            'allDocsVerified', 'canGoBack', 'isLocked'
+            'allDocsVerified', 'canGoBack', 'eligibilityResult', 'eligibilityFailed',
+            'rejectedReasons', 'documentDisqualified', 'disqualificationDocTypes',
+            'disqualificationReasons'
         ));
     }
 
     public function offerLetter()
     {
         $applicant = Auth::guard('applicant')->user();
-        $application = $applicant->application()->with('cycle', 'finalDecision')->first();
+        $application = $applicant->application()->with('cycle', 'finalDecision.barrack')->first();
 
         if (!$application || !in_array($application->status, ['selected', 'recruited'])) {
             abort(404, 'Offer letter not available.');
@@ -202,7 +241,7 @@ class ApplicantWebController extends Controller
         ));
     }
 
-    public function saveApplication(Request $request): RedirectResponse
+    public function saveApplication(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $applicant = Auth::guard('applicant')->user();
 
@@ -219,7 +258,7 @@ class ApplicantWebController extends Controller
                 'height' => 'required|numeric|min:0.5|max:2.5',
                 'criminal_record' => 'required|string|in:yes,no',
                 'marital_status' => 'required|string|in:Single,Married,Divorced,Widowed',
-                'nationality' => 'required|string|max:50',
+                'nationality' => 'required|string|max:50|regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u',
                 'national_id' => 'required|string|max:20',
                 'residential_address' => 'required|string',
                 'region' => 'required|string|max:50',
@@ -242,7 +281,7 @@ class ApplicantWebController extends Controller
         $required = $isDraft ? 'nullable' : 'required';
 
         $appValidated = $request->validate([
-            'cycle_id' => 'required|exists:cycles,id',
+            'cycle_id' => "{$required}|exists:cycles,id",
             'education_level' => "{$required}|string|max:255",
             'institution_name' => 'nullable|string|max:255',
             'degree_field' => 'nullable|string|max:255',
@@ -262,17 +301,26 @@ class ApplicantWebController extends Controller
         $personalValidated = $request->validate([
             'other_names' => 'nullable|string|max:50',
             'marital_status' => "{$required}|string|in:Single,Married,Divorced,Widowed",
-            'nationality' => "{$required}|string|max:50",
+            'nationality' => ["{$required}", 'string', 'max:50', 'regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u'],
             'national_id' => "{$required}|string|max:20",
             'residential_address' => "{$required}|string",
             'region' => "{$required}|string|max:50",
-            'district' => "{$required}|string|max:50",
+            'district' => ["{$required}", 'string', 'max:50', 'regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u'],
             'alternative_contact' => 'nullable|string|regex:/^[0-9]{10}$/',
         ]);
 
+        // During draft saves, strip empty/null values so we only persist what was actually filled.
+        // This prevents NOT NULL database columns from rejecting partial saves.
+        if ($isDraft) {
+            $appValidated = array_filter($appValidated, fn ($v) => $v !== null && $v !== '');
+            $personalValidated = array_filter($personalValidated, fn ($v) => $v !== null && $v !== '');
+        }
+
         $appValidated['criminal_record'] = !empty($appValidated['criminal_record']) && $appValidated['criminal_record'] === 'yes';
 
-        $applicant->update($personalValidated);
+        if (!empty($personalValidated)) {
+            $applicant->update($personalValidated);
+        }
 
         $application = $applicant->application;
 
@@ -285,11 +333,20 @@ class ApplicantWebController extends Controller
             $application->update($appValidated);
             $message = 'Application updated successfully.';
         } else {
-            $application = Application::create(array_merge($appValidated, [
-                'applicant_id' => $applicant->id,
-                'application_date' => now(),
-                'status' => 'draft',
-            ]));
+            // Provide defaults for NOT NULL columns so a minimal partial save (draft) never fails.
+            $application = Application::create(array_merge([
+                'cycle_id'          => null,
+                'education_level'   => '',
+                'institution_name'  => '',
+                'qualification'     => '',
+                'degree_field'      => '',
+                'year_obtained'     => '',
+                'height'            => 0,
+                'criminal_record'   => false,
+                'applicant_id'      => $applicant->id,
+                'application_date'  => now(),
+                'status'            => 'draft',
+            ], $appValidated));
             $message = 'Application created successfully.';
         }
 
@@ -481,36 +538,71 @@ class ApplicantWebController extends Controller
             $photoPath = $file->getRealPath();
             $imageInfo = @getimagesize($photoPath);
             if (!$imageInfo || $imageInfo[0] !== 450 || $imageInfo[1] !== 540) {
-                return redirect()->back()->withErrors(['file' => 'Passport photo must be exactly 450×540 pixels. Your image is ' . ($imageInfo[0] ?? 0) . '×' . ($imageInfo[1] ?? 0) . '.'])->withInput();
+                $msg = 'Passport photo must be exactly 450×540 pixels. Your image is ' . ($imageInfo[0] ?? 0) . '×' . ($imageInfo[1] ?? 0) . '.';
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $msg, 'errors' => ['file' => [$msg]]], 422);
+                }
+                return redirect()->back()->withErrors(['file' => $msg])->withInput();
             }
-            $this->validateWhiteBackground($photoPath, $file->getMimeType());
-        }
-
-        $existing = Document::where('application_id', $application->id)
-            ->where('document_type', $validated['document_type'])
-            ->first();
-
-        if ($existing) {
-            Storage::disk('public')->delete($existing->file_path);
-            $existing->delete();
+            try {
+                $this->validateWhiteBackground($photoPath, $file->getMimeType());
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+                }
+                throw $e;
+            }
         }
 
         $file = $request->file('file');
-        $path = $file->store("documents/{$applicant->id}", 'public');
 
-        Document::create([
-            'application_id' => $application->id,
-            'document_type' => $validated['document_type'],
-            'file_name' => $file->getClientOriginalName(),
-            'file_path' => $path,
-            'file_size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
-            'upload_date' => now(),
-            'verification_status' => 'pending',
-            'is_draft' => true,
-        ]);
+        $newDoc = null;
 
-        return redirect()->route('applicant.documents')->with('success', 'Document uploaded successfully.');
+        DB::transaction(function () use ($application, $applicant, $file, $validated, &$newDoc) {
+            // Store the new file FIRST so if storage fails we don't lose the old doc
+            $path = $file->store("documents/{$applicant->id}", 'public');
+
+            // Delete the old document (file + DB record)
+            $existing = Document::where('application_id', $application->id)
+                ->where('document_type', $validated['document_type'])
+                ->first();
+
+            if ($existing) {
+                Storage::disk('public')->delete($existing->file_path);
+                $existing->delete();
+            }
+
+            // Create the new document record — always finalized + AI-verified instantly
+            $newDoc = Document::create([
+                'application_id' => $application->id,
+                'document_type' => $validated['document_type'],
+                'file_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'upload_date' => now(),
+                'verification_status' => 'pending',
+                'is_draft' => false,
+                'finalized_at' => now(),
+            ]);
+        });
+
+        // Trigger AI verification immediately (no need for "Proceed to Application" step)
+        if ($newDoc) {
+            DocumentUploaded::dispatch($newDoc);
+        }
+
+        // AJAX response — used by the frontend for auto-advance to next doc type
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Document uploaded. AI verification queued.',
+                'document_type' => $validated['document_type'],
+                'uploaded_doc_types' => $application->fresh()->documents()->pluck('document_type')->toArray(),
+            ]);
+        }
+
+        return redirect()->route('applicant.documents')->with('success', 'Document uploaded. AI verification has been queued — you will see the result shortly.');
     }
 
     public function finalizeDocuments(): RedirectResponse
@@ -592,6 +684,53 @@ class ApplicantWebController extends Controller
         ]);
 
         return redirect()->route('applicant.documents')->with('success', 'All draft documents discarded successfully.');
+    }
+
+    public function dashboardStatus(): JsonResponse
+    {
+        $applicant = Auth::guard('applicant')->user();
+        $application = $applicant->application;
+
+        $hasRejectedDocs = false;
+        $rejectedDocTypes = [];
+        $rejectedReasons = [];
+        $rejected = [];
+
+        if ($application) {
+            $rejectedDocs = $application->documents()
+                ->where('verification_status', 'rejected')
+                ->get();
+            $rejected = $rejectedDocs->pluck('document_type')->toArray();
+            $hasRejectedDocs = $rejectedDocs->isNotEmpty();
+            $rejectedDocTypes = $rejectedDocs->map(fn($d) => str_replace('_', ' ', ucfirst($d->document_type)))->values()->toArray();
+            $rejectedReasons = $rejectedDocs->mapWithKeys(fn($d) => [
+                str_replace('_', ' ', ucfirst($d->document_type)) => $d->rejection_reason ?? 'No specific reason provided.',
+            ])->toArray();
+        }
+
+        // Detect document disqualification (rejected docs + app rejected + no final decision)
+        $documentDisqualified = false;
+        $disqualificationDocTypes = [];
+        $disqualificationReasons = [];
+        if ($application && $application->status === 'rejected' && $hasRejectedDocs) {
+            $finalDecision = $application->finalDecision;
+            if (!$finalDecision) {
+                $documentDisqualified = true;
+                $disqualificationDocTypes = $rejectedDocTypes;
+                $disqualificationReasons = $rejectedReasons;
+            }
+        }
+
+        return response()->json([
+            'hasRejectedDocs' => $hasRejectedDocs,
+            'rejectedDocTypes' => $rejectedDocTypes,
+            'rejectedReasons' => $rejectedReasons,
+            'rejectedCount' => count($rejected),
+            'applicationStatus' => $application?->status,
+            'documentDisqualified' => $documentDisqualified,
+            'disqualificationDocTypes' => $disqualificationDocTypes,
+            'disqualificationReasons' => (object) $disqualificationReasons,
+        ]);
     }
 
     public function status(): View

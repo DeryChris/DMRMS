@@ -20,6 +20,13 @@ class CheckPasswordExpiry
         $service = app(PasswordPolicyService::class);
 
         if ($service->isPasswordExpired($user->password_changed_at)) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your password has expired. Please reset it to continue.'
+                ], 403);
+            }
+
             $guard = $request->user() ? 'web' : 'applicant';
             $route = $guard === 'web'
                 ? 'admin.password.request'

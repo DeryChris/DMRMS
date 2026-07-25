@@ -6,6 +6,7 @@ use App\Models\Application;
 use App\Models\EligibilityResult;
 use App\Services\Eligibility\EligibilityEngine;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class ProcessEligibilityBatch extends Command
 {
@@ -38,8 +39,13 @@ class ProcessEligibilityBatch extends Command
                 'evaluation_date' => now(),
             ]);
 
-            $app->update([
-                'status' => $result['overall_status'] === 'eligible' ? 'under_review' : 'completed',
+            $newStatus = $result['overall_status'] === 'eligible' ? 'eligibility_passed' : 'eligibility_failed';
+            $app->update(['status' => $newStatus]);
+
+            Log::info('Eligibility processed via batch command', [
+                'application_id' => $app->id,
+                'result' => $result['overall_status'],
+                'new_status' => $newStatus,
             ]);
 
             $count++;

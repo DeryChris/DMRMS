@@ -16,6 +16,14 @@
         rejected: {{ $rejectedCount }},
         successRate: {{ $successRate }}
     },
+    docStats: {
+        totalDocs: {{ $totalDocs ?? 0 }},
+        verifiedDocs: {{ $verifiedDocs ?? 0 }},
+        pendingDocs: {{ $pendingDocs ?? 0 }},
+        rejectedDocs: {{ $rejectedDocs ?? 0 }},
+        needsReviewDocs: {{ $needsReviewDocs ?? 0 }},
+        verifiedTodayDocs: {{ $verifiedTodayDocs ?? 0 }}
+    },
     pollTimer: null,
     init() {
         this.pollTimer = setInterval(() => this.refresh(), 30000);
@@ -30,6 +38,9 @@
             const data = await res.json();
             Object.keys(data).forEach(key => {
                 if (key in this.stats) this.stats[key] = data[key];
+            });
+            Object.keys(data).forEach(key => {
+                if (key in this.docStats) this.docStats[key] = data[key];
             });
         } catch (e) {}
     }
@@ -119,6 +130,71 @@
             </div>
             <p class="text-2xl font-bold text-gray-900 mt-3" x-text="stats.successRate.toFixed(1) + '%'">{{ $successRate }}%</p>
             <p class="text-xs text-gray-500 mt-1">Success Rate</p>
+        </div>
+    </div>
+
+    <!-- 📄 Document Verification Stats -->
+    <div class="gradient-border pb-4 pt-2">
+        <div class="flex items-center space-x-2">
+            <svg class="w-5 h-5 text-gaf-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <h2 class="text-base font-heading font-bold text-gaf-dark-green">Document Verification</h2>
+            <span class="text-xs text-gray-400 font-normal">AI & admin review progress</span>
+        </div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 -mt-2">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-lg bg-gaf-green/10 flex items-center justify-center group-hover:bg-gaf-green/20 transition-colors">
+                    <svg class="w-5 h-5 text-gaf-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-text="docStats.totalDocs.toLocaleString()">{{ $totalDocs ?? 0 }}</p>
+            <p class="text-xs text-gray-500 mt-1">Total Documents</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-text="docStats.verifiedDocs.toLocaleString()">{{ $verifiedDocs ?? 0 }}</p>
+            <p class="text-xs text-gray-500 mt-1">Verified</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-text="docStats.pendingDocs.toLocaleString()">{{ $pendingDocs ?? 0 }}</p>
+            <p class="text-xs text-gray-500 mt-1">Pending</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-text="docStats.rejectedDocs.toLocaleString()">{{ $rejectedDocs ?? 0 }}</p>
+            <p class="text-xs text-gray-500 mt-1">Rejected</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-text="docStats.needsReviewDocs.toLocaleString()">{{ $needsReviewDocs ?? 0 }}</p>
+            <p class="text-xs text-gray-500 mt-1">Needs Review</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all group">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-lg bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition-colors">
+                    <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 mt-3" x-text="docStats.verifiedTodayDocs.toLocaleString()">{{ $verifiedTodayDocs ?? 0 }}</p>
+            <p class="text-xs text-gray-500 mt-1">Verified Today</p>
         </div>
     </div>
 

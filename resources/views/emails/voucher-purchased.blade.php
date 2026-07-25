@@ -18,6 +18,8 @@ Thank you for purchasing a recruitment voucher. Please use the credentials below
 |---|---|
 | Recruitment Cycle | {{ $voucher->cycle->name }} |
 | Amount Paid | GHS {{ number_format($voucher->cost, 2) }} |
+| Payment Method | {{ $voucher->payment && $voucher->payment->channel ? \App\Models\Payment::channelLabel($voucher->payment->channel) : ($voucher->payment_method ? ucfirst(str_replace('_', ' ', $voucher->payment_method)) : 'N/A') }} |
+| Transaction Ref | {{ $voucher->payment->paystack_reference ?? ($voucher->payment_reference ?? 'N/A') }} |
 | Valid Until | {{ $voucher->expires_at?->format('M d, Y H:i') }} |
 </x-mail::table>
 

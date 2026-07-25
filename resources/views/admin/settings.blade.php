@@ -16,13 +16,13 @@
                 <div class="space-y-4">
                     @php $f = 'system_name'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">System Name</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">System Name <span class="text-red-500">*</span></label>
                         <input type="text" name="{{ $f }}" value="{{ old($f, $settings['system_name']) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'support_email'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Support Email</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Support Email <span class="text-red-500">*</span></label>
                         <input type="email" name="{{ $f }}" value="{{ old($f, $settings['support_email']) }}" class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>

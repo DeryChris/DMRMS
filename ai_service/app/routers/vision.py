@@ -1,4 +1,6 @@
+import json
 import logging
+import re
 import tempfile
 from pathlib import Path
 
@@ -8,6 +10,7 @@ from pydantic import BaseModel
 from app.security import optional_api_key
 from app.services.openai_client import OpenAIClient
 from app.services.fallback import FallbackProcessor
+from app.services.prompt_manager import prompt_manager
 from app.utils.image_processing import preprocess_image, validate_image_quality
 
 logger = logging.getLogger("dmrms-ai.vision")
@@ -96,7 +99,11 @@ async def analyze_document(
 
 
 @router.post("/fraud-check", response_model=FraudCheckResult)
-async def fraud_check(file: UploadFile = File(...), api_key: str | None = Depends(optional_api_key)):
+async def fraud_check(
+    file: UploadFile = File(...),
+    doc_type: str = "general",
+    api_key: str | None = Depends(optional_api_key),
+):
     if file.content_type not in ("image/jpeg", "image/png"):
         raise HTTPException(status_code=400, detail="Only JPEG and PNG images are supported.")
 
@@ -107,28 +114,104 @@ async def fraud_check(file: UploadFile = File(...), api_key: str | None = Depend
 
     try:
         base64_image = preprocess_image(tmp_path)
+
+        # Use the enhanced fraud detection prompt from prompt manager
+        fraud_prompt_template = prompt_manager.get_system_prompt("fraud_detection")
+        user_prompt = prompt_manager.render_prompt("fraud_detection", {
+            "doc_type": doc_type,
+            "image_data": "(image provided as base64)",
+            "previous_records": "(no previous records available)",
+        })
+
+        prompt = f"{fraud_prompt_template}\n\n{user_prompt}\n\nReturn ONLY valid JSON (no markdown, no explanation)."
+
         result = await openai_client.vision_analysis(
             image_path=base64_image,
-            prompt="Analyze this document image for signs of tampering, forgery, or digital manipulation. Look for inconsistent lighting, pixel irregularities, mismatched fonts, altered signatures, or any other artifacts that suggest fraud.",
+            prompt=prompt,
         )
 
-        content = result.get("content", "").lower()
-        is_authentic = "authentic" in content or "genuine" in content
-        issues = []
-        if "tamper" in content:
-            issues.append("Signs of tampering detected")
-        if "forgery" in content or "fake" in content:
-            issues.append("Possible forgery indicators")
-        if "inconsistent" in content:
-            issues.append("Inconsistent elements found")
+        # Parse structured JSON from AI response
+        content = result.get("content", "")
+        parsed = _extract_fraud_json(content)
 
-        return FraudCheckResult(
-            is_authentic=is_authentic,
-            confidence=result.get("confidence", 0.5) if not is_authentic else 0.8,
-            issues=issues,
-        )
+        if parsed and "overall_assessment" in parsed:
+            assessment = parsed["overall_assessment"]
+            is_authentic = assessment.get("authentic", False)
+            confidence = assessment.get("confidence", 0.5)
+
+            # Collect all fraud indicators from the structured response
+            issues = parsed.get("fraud_indicators", [])
+            if not isinstance(issues, list):
+                issues = []
+
+            # Also extract anomalies from sub-sections
+            signature = parsed.get("signature_analysis", {})
+            if signature.get("anomalies"):
+                issues.append(f"Signature anomaly: {signature['anomalies']}")
+
+            font = parsed.get("font_analysis", {})
+            if font.get("font_consistency") == "inconsistent" and font.get("anomalies"):
+                issues.append(f"Font inconsistency: {font['anomalies']}")
+
+            forensics = parsed.get("digital_forensics", {})
+            for key, val in forensics.items():
+                if val and any(w in str(val).lower() for w in ["artifact", "inconsisten", "anomal", "cut", "fake", "suspicious", "replacement", "mismatch"]):
+                    issues.append(f"{key}: {val}")
+
+            return FraudCheckResult(
+                is_authentic=is_authentic,
+                confidence=min(confidence, 0.95) if is_authentic else max(confidence, 0.5),
+                issues=list(set(issues)),  # deduplicate
+            )
+        else:
+            # Fallback: attempt keyword extraction if JSON parsing fails
+            content_lower = content.lower()
+            is_authentic = "authentic" in content_lower or "genuine" in content_lower
+            issues = []
+            if "tamper" in content_lower:
+                issues.append("Signs of tampering detected")
+            if "forgery" in content_lower or "fake" in content_lower:
+                issues.append("Possible forgery indicators")
+            if "inconsistent" in content_lower:
+                issues.append("Inconsistent elements found")
+            if "manipulat" in content_lower:
+                issues.append("Digital manipulation detected")
+
+            return FraudCheckResult(
+                is_authentic=is_authentic,
+                confidence=result.get("confidence", 0.5),
+                issues=issues,
+            )
     except Exception as e:
         logger.error("Fraud check failed: %s", e)
         raise HTTPException(status_code=500, detail="Fraud check failed.")
     finally:
         Path(tmp_path).unlink(missing_ok=True)
+
+
+def _extract_fraud_json(text: str) -> dict | None:
+    """Extract structured JSON from AI response, handling markdown and formatting."""
+    if not text:
+        return None
+
+    # Remove markdown code block fences
+    text = re.sub(r'```(?:json)?\s*', '', text)
+
+    # Try to find JSON object
+    match = re.search(r'\{.*\}', text, re.DOTALL)
+    if not match:
+        return None
+
+    try:
+        return json.loads(match.group(0))
+    except json.JSONDecodeError:
+        # Try to fix common issues: trailing commas, single quotes
+        fixed = re.sub(r',\s*}', '}', text)
+        fixed = re.sub(r',\s*]', ']', fixed)
+        try:
+            match2 = re.search(r'\{.*\}', fixed, re.DOTALL)
+            if match2:
+                return json.loads(match2.group(0))
+        except json.JSONDecodeError:
+            pass
+        return None

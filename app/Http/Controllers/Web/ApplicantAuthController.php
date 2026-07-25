@@ -78,9 +78,9 @@ class ApplicantAuthController extends Controller
         $validated = $request->validate([
             'serial_number' => 'required|string|exists:vouchers,serial_number',
             'pin_code'      => 'required|string',
-            'first_name'    => ['required', 'string', 'max:50'],
-            'last_name'     => ['required', 'string', 'max:50'],
-            'other_names'   => ['nullable', 'string', 'max:50'],
+            'first_name'    => ['required', 'string', 'max:50', 'regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u'],
+            'last_name'     => ['required', 'string', 'max:50', 'regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u'],
+            'other_names'   => ['nullable', 'string', 'max:50', 'regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u'],
             'contact_number' => ['required', 'string', 'regex:/^[0-9]{10}$/'],
             'alternative_contact' => ['nullable', 'string', 'regex:/^[0-9]{10}$/'],
             'date_of_birth' => ['required', 'date', 'before:18 years ago'],

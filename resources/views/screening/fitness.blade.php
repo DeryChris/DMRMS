@@ -60,27 +60,27 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Run Time (seconds)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Run Time (seconds) <span class="text-red-500">*</span></label>
                             <input type="number" name="run_time_seconds" value="{{ old('run_time_seconds') }}" min="0" placeholder="e.g. 750" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Push-ups (count)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Push-ups (count) <span class="text-red-500">*</span></label>
                             <input type="number" name="push_ups" value="{{ old('push_ups') }}" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Sit-ups (count)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sit-ups (count) <span class="text-red-500">*</span></label>
                             <input type="number" name="sit_ups" value="{{ old('sit_ups') }}" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Pull-ups (count)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Pull-ups (count) <span class="text-red-500">*</span></label>
                             <input type="number" name="pull_ups" value="{{ old('pull_ups') }}" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Shuttle Run (seconds)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Shuttle Run (seconds) <span class="text-red-500">*</span></label>
                             <input type="number" name="shuttle_run" value="{{ old('shuttle_run') }}" step="0.1" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Grade</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Grade <span class="text-red-500">*</span></label>
                             <select name="fitness_grade" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                                 <option value="">--</option>
                                 <option value="a" {{ old('fitness_grade') === 'a' ? 'selected' : '' }}>A (Excellent)</option>
@@ -93,12 +93,12 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Overall Score (0-100)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Overall Score (0-100) <span class="text-red-500">*</span></label>
                         <input type="number" name="fitness_score" value="{{ old('fitness_score') }}" required min="0" max="100" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes <span class="text-gray-400 font-normal">(Optional)</span></label>
                         <textarea name="notes" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki" placeholder="Enter fitness observations...">{{ old('notes') }}</textarea>
                     </div>
 

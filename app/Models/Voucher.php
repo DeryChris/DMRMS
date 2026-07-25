@@ -11,6 +11,7 @@ class Voucher extends Model
 
     protected $fillable = [
         'cycle_id',
+        'payment_id',
         'serial_number',
         'pin_code',
         'purchased_at',
@@ -45,5 +46,10 @@ class Voucher extends Model
     public function applicant(): BelongsTo
     {
         return $this->belongsTo(Applicant::class, 'used_by');
+    }
+
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class);
     }
 }

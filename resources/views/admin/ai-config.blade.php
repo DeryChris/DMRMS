@@ -35,14 +35,14 @@
         <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
             <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Provider Settings</h3>
             <div class="space-y-4">
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">AI Provider</label>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">AI Provider <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <select name="provider" x-model="provider" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                         <option value="openai" {{ $aiSettings['provider'] === 'openai' ? 'selected' : '' }}>OpenAI</option>
                         <option value="anthropic" {{ $aiSettings['provider'] === 'anthropic' ? 'selected' : '' }}>Anthropic</option>
                         <option value="google" {{ $aiSettings['provider'] === 'google' ? 'selected' : '' }}>Google AI</option>
                     </select>
                 </div>
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">Model</label><input type="text" name="model" value="{{ $aiSettings['model'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Model <span class="text-gray-400 font-normal">(Optional)</span></label><input type="text" name="model" value="{{ $aiSettings['model'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
                 <div class="flex items-center space-x-2 text-sm">
                     <span class="w-2.5 h-2.5 rounded-full {{ $aiHealth ?? true ? 'bg-green-500' : 'bg-red-500' }} inline-block"></span>
                     <span class="text-gray-600">{{ $aiHealth ?? true ? 'Connected' : 'Disconnected' }}</span>
@@ -66,15 +66,15 @@
         <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
             <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Budget Settings</h3>
             <div class="space-y-4">
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">Monthly Budget Cap ($)</label><input type="number" name="monthly_budget_cap" value="{{ $aiSettings['monthly_budget_cap'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">Daily Budget Cap ($)</label><input type="number" name="daily_budget_cap" value="{{ $aiSettings['daily_budget_cap'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Monthly Budget Cap ($) <span class="text-gray-400 font-normal">(Optional)</span></label><input type="number" name="monthly_budget_cap" value="{{ $aiSettings['monthly_budget_cap'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Daily Budget Cap ($) <span class="text-gray-400 font-normal">(Optional)</span></label><input type="number" name="daily_budget_cap" value="{{ $aiSettings['daily_budget_cap'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
             </div>
         </div>
         <div class="glass-strong rounded-xl shadow-sm p-6 gradient-border-left">
             <h3 class="font-heading font-semibold text-lg text-gray-800 mb-4">Rate Limiting</h3>
             <div class="space-y-4">
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">Max Requests Per Minute</label><input type="number" name="max_requests_per_minute" value="{{ $aiSettings['max_requests_per_minute'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">Max Tokens Per Request</label><input type="number" name="max_tokens_per_request" value="{{ $aiSettings['max_tokens_per_request'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Max Requests Per Minute <span class="text-gray-400 font-normal">(Optional)</span></label><input type="number" name="max_requests_per_minute" value="{{ $aiSettings['max_requests_per_minute'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Max Tokens Per Request <span class="text-gray-400 font-normal">(Optional)</span></label><input type="number" name="max_tokens_per_request" value="{{ $aiSettings['max_tokens_per_request'] }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki"></div>
             </div>
         </div>
     </div>
@@ -107,11 +107,11 @@
                     <input type="checkbox" name="auto_recruit" value="1" {{ ($aiSettings['auto_recruit'] ?? false) ? 'checked' : '' }} class="w-5 h-5 text-gaf-green border-gray-300 rounded focus:ring-gaf-khaki">
                 </label>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Enrollment Delay (days)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Enrollment Delay (days) <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="number" name="enrollment_delay_days" value="{{ $aiSettings['enrollment_delay_days'] ?? 14 }}" min="1" max="365" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Default Training Battalion</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Default Training Battalion <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="text" name="default_training_battalion" value="{{ $aiSettings['default_training_battalion'] ?? 'GAF Training Depot' }}" maxlength="100" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
             </div>
@@ -124,19 +124,19 @@
             <p class="text-xs text-gray-500 mb-4">Default weights for composite score calculation. Per-cycle overrides can be set in the cycle editor.</p>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Medical</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Medical <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="number" name="scoring_weights_medical" value="{{ $aiSettings['scoring_weights_medical'] ?? 0.40 }}" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Interview</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Interview <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="number" name="scoring_weights_interview" value="{{ $aiSettings['scoring_weights_interview'] ?? 0.30 }}" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Fitness</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Fitness <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="number" name="scoring_weights_fitness" value="{{ $aiSettings['scoring_weights_fitness'] ?? 0.20 }}" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Eligibility</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Eligibility <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="number" name="scoring_weights_eligibility" value="{{ $aiSettings['scoring_weights_eligibility'] ?? 0.10 }}" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>
             </div>
@@ -153,7 +153,7 @@
                     <input type="checkbox" name="auto_promote_reserve" value="1" {{ ($aiSettings['auto_promote_reserve'] ?? false) ? 'checked' : '' }} class="w-5 h-5 text-gaf-green border-gray-300 rounded focus:ring-gaf-khaki">
                 </label>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Reserve Ratio</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reserve Ratio <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <p class="text-xs text-gray-400 mb-1">Percentage of vacancies allocated to reserve list (e.g. 0.20 = 20%)</p>
                     <input type="number" name="reserve_ratio" value="{{ $aiSettings['reserve_ratio'] ?? 0.20 }}" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki">
                 </div>

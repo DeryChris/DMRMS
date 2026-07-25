@@ -73,7 +73,7 @@
 
             @php $f = 'excerpt'; @endphp
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Excerpt</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Excerpt <span class="text-gray-400 font-normal">(Optional)</span></label>
                 <textarea name="{{ $f }}" rows="2" maxlength="500" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" placeholder="Brief summary shown in cards...">{{ old($f, $announcement?->excerpt) }}</textarea>
                 @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
@@ -91,7 +91,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Featured Image</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Featured Image <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <div class="flex items-center gap-2">
                         <input type="file" name="featured_image" accept="image/*" @change="previewImage($event)" class="w-full text-sm">
                         <button type="button" @click="fetchUnsplash" :disabled="fetchingUnsplash" class="shrink-0 px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition disabled:opacity-50" x-text="fetchingUnsplash ? 'Fetching...' : 'Unsplash'"></button>
@@ -103,7 +103,7 @@
                     <p class="text-xs text-gray-400 mt-1">Upload an image or click <strong>Unsplash</strong> to fetch from Unsplash (uses the announcement title as search query).</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Gallery Images (multi)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Gallery Images (multi) <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="file" name="media_gallery[]" multiple accept="image/*" class="w-full text-sm">
                     <p class="text-xs text-gray-400 mt-1">Upload multiple images for the gallery.</p>
                 </div>
@@ -112,19 +112,19 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 @php $f = 'author'; @endphp
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Author</label>
-                    <input type="text" name="{{ $f }}" value="{{ old($f, $announcement?->author ?? auth()->user()?->name ?? auth('web')->user()?->name ?? '') }}" oninput="this.value = this.value.replace(/[0-9]/g, '')" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Author <span class="text-gray-400 font-normal">(Optional)</span></label>
+                    <input type="text" name="{{ $f }}" value="{{ old($f, $announcement?->author ?? auth()->user()?->name ?? auth('web')->user()?->name ?? '') }}" oninput="this.value = this.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '')" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+" title="Only letters, spaces, hyphens, and apostrophes" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 @php $f = 'tags'; @endphp
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated) <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="text" name="{{ $f }}" value="{{ old($f, $tags ?? '') }}" placeholder="e.g. recruitment, 2026, gaf" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 @php $f = 'published_at'; @endphp
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Publish Date</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Publish Date <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="date" name="{{ $f }}" value="{{ old($f, $announcement?->published_at?->format('Y-m-d')) }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                     @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>

@@ -24,6 +24,9 @@ class Kernel extends ConsoleKernel
 
         // Retry AI verification for documents stuck in pending/needs_review
         $schedule->command('documents:retry-verification --hours=2')->everyTenMinutes();
+
+        // Verify stale Paystack payments every 5 minutes
+        $schedule->command('payments:verify-stale')->everyFiveMinutes();
     }
 
     protected function commands(): void

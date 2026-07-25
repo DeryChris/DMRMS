@@ -70,6 +70,22 @@
                 <p class="text-gray-400 text-xs uppercase tracking-wide">Valid Until</p>
                 <p class="font-medium text-gray-900">{{ $voucher->expires_at?->format('M d, Y H:i') }}</p>
             </div>
+            @if($payment)
+            <div>
+                <p class="text-gray-400 text-xs uppercase tracking-wide">Payment Method</p>
+                <p class="font-medium text-gray-900">{{ \App\Models\Payment::channelLabel($payment->channel) }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400 text-xs uppercase tracking-wide">Transaction Ref</p>
+                <p class="font-mono font-medium text-xs text-gray-900">{{ $payment->paystack_reference }}</p>
+            </div>
+            @if($payment->channel === 'mobile_money')
+            <div class="col-span-2">
+                <p class="text-gray-400 text-xs uppercase tracking-wide">Mobile Money</p>
+                <p class="font-medium text-gray-900">{{ \App\Models\Payment::momoProviderLabel($payment->momo_provider) }} &middot; {{ $payment->momo_phone }}</p>
+            </div>
+            @endif
+            @endif
         </div>
 
         <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700">

@@ -213,14 +213,23 @@ DB_USERNAME=dmrms
 DB_PASSWORD=your_password
 
 
-# Mail (use Mailtrap for development)
+# Mail (Gmail SMTP for development/production)
 MAIL_MAILER=smtp
-MAIL_HOST=sandbox.smtp.mailtrap.io
-MAIL_PORT=2525
-MAIL_USERNAME=your_mailtrap_username
-MAIL_PASSWORD=your_mailtrap_password
-MAIL_FROM_ADDRESS="noreply@dmrms.gov.gh"
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD="your-app-password"
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="your-email@gmail.com"
 MAIL_FROM_NAME="${APP_NAME}"
+
+# Or use Mailtrap for local testing without real delivery:
+# MAIL_MAILER=smtp
+# MAIL_HOST=sandbox.smtp.mailtrap.io
+# MAIL_PORT=2525
+# MAIL_USERNAME=your_mailtrap_username
+# MAIL_PASSWORD=your_mailtrap_password
+# MAIL_FROM_ADDRESS="noreply@dmrms.gov.gh"
 
 # AI Service
 AI_SERVICE_URL=http://localhost:8000
@@ -291,7 +300,29 @@ npm run dev
 
 The AI microservice is a Python FastAPI application in the `ai_service/` directory.
 
-### 4.1 Create Virtual Environment
+### 4.1 One-Command Setup (Recommended)
+
+Use the platform-specific setup script in the `ai_service/` directory. It handles:
+- Python virtual environment creation
+- pip dependency installation
+- PDF-to-image converter installation (Poppler or ImageMagick)
+- `.env` file creation from `.env.example`
+
+```bash
+cd ai_service
+
+# Windows (PowerShell — Run as Administrator)
+powershell -ExecutionPolicy Bypass -File setup.ps1
+
+# Linux / macOS
+chmod +x setup.sh && ./setup.sh
+```
+
+
+
+### 4.2 Manual Setup (Alternative)
+
+#### 4.2.1 Create Virtual Environment
 
 ```bash
 cd ai_service
@@ -306,7 +337,7 @@ source venv/bin/activate
 
 
 
-### 4.2 Install Dependencies
+#### 4.2.2 Install Python Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -314,7 +345,45 @@ pip install -r requirements.txt
 
 
 
-### 4.3 Configure AI Service
+#### 4.2.3 Install PDF → Image Converter
+
+The AI requires a system tool to convert PDF documents to images for analysis.
+Install **one** of the following:
+
+**Option A: Poppler (pdftoppm)** — Recommended, simpler
+
+```bash
+# Windows
+winget install oschwartz10612.Poppler
+
+# Linux (Debian/Ubuntu)
+sudo apt install poppler-utils
+
+# macOS
+brew install poppler
+
+# Verify
+pdftoppm --version
+```
+
+**Option B: ImageMagick + GhostScript** — In-process, faster
+
+```bash
+# Windows
+winget install ImageMagick.ImageMagick.Q16
+# Then download & install GhostScript from https://ghostscript.com/releases/gsdnld.html
+# Then enable php_imagick extension (see §1.1 for details)
+
+# Linux
+sudo apt install imagemagick ghostscript php-imagick
+
+# macOS
+brew install imagemagick ghostscript
+```
+
+
+
+#### 4.2.4 Configure AI Service
 
 ```bash
 copy .env.example .env
@@ -331,11 +400,11 @@ RATE_LIMIT_PER_MINUTE=10
 LOG_LEVEL=INFO
 ```
 
-> **Note:** The `INTERNAL_API_KEY` must match `AI_SERVICE_TOKEN` in the Laravel `.env` file.
+> **Important:** The `INTERNAL_API_KEY` must match `AI_SERVICE_TOKEN` in the Laravel `.env` file.
 
 
 
-### 4.4 Start the AI Service
+### 4.5 Start the AI Service
 
 ```bash
 uvicorn app.main:app --reload --port 8000
@@ -453,6 +522,16 @@ cd ai_service
 venv\Scripts\activate
 uvicorn app.main:app --reload --port 8000
 ```
+
+### Step 4 - PayStack service
+
+Run in terminal
+```
+ngrok http 8001
+```
+
+- copy the Forwarding Address shown on the terminal, (e.g ```https://prospectless-limacine-amaya.ngrok-free.dev``` )
+- then add ```/api/webhooks/paystack``` to the Forwarding Address, (e.g ```https://prospectless-limacine-amaya.ngrok-free.dev/api/webhooks/paystack``` )
 
 
 
@@ -584,10 +663,86 @@ cd ai_service && pytest tests/ -v
 | `Vite manifest not found`       | Assets not built                 | Run `npm run build`                             |
 | `419 Page Expired`              | CSRF token missing               | Clear browser cache/cookies                     |
 | Queue jobs not processing       | Worker not running               | Start `php artisan queue:work`                  |
+| Email not sending               | DNS resolution / SMTP failure    | See [DNS & Email Troubleshooting](#dns--email-troubleshooting) below |
 | AI health check fails           | `.env` missing or token mismatch | Check `ai_service/.env` exists and tokens match |
 
 
 
+
+### DNS & Email Troubleshooting
+
+If emails fail to send, the issue is often intermittent DNS resolution preventing the system from reaching Gmail's SMTP servers. Follow these steps to diagnose and fix:
+
+#### 1. Verify DNS Resolution
+
+Run this in Command Prompt to check if `smtp.gmail.com` resolves:
+```cmd
+nslookup smtp.gmail.com
+```
+
+Expected output shows an IP address (e.g., `142.250.xxx.xxx`). If it says `Non-existent domain` or `server failed`, DNS is the problem.
+
+#### 2. Check the Logs
+
+```bash
+# Search for email failures in Laravel logs
+Select-String -Path "storage/logs/laravel.log" -Pattern "Failed to send|Email sending failed|getaddrinfo"
+```
+
+Look for errors like `getaddrinfo for smtp.gmail.com failed: No such host is known`.
+
+#### 3. Flush DNS Cache
+
+Run Command Prompt as **Administrator** and flush the local DNS cache:
+```cmd
+ipconfig /flushdns
+```
+
+Then re-test: send a test email or access `http://localhost:8000` and trigger a notification.
+
+#### 4. Switch DNS Servers (Permanent Fix)
+
+If flushing doesn't help or the issue recurs, change your Windows network adapter to use Google DNS:
+
+1. Open **Control Panel → Network and Sharing Center → Change adapter settings**
+2. Right-click your active connection → **Properties**
+3. Select **Internet Protocol Version 4 (TCP/IPv4)** → **Properties**
+4. Choose **Use the following DNS server addresses**:
+   - **Preferred:** `8.8.8.8`
+   - **Alternate:** `8.8.4.4`
+5. Click **OK** and close all dialogs
+6. Run `ipconfig /flushdns` again
+
+#### 5. Verify Mailer Configuration
+
+The mailer is set to `smtp` for direct Gmail delivery:
+```ini
+MAIL_MAILER=smtp
+```
+
+The `MAIL_FROM_ADDRESS` must match the authenticated Gmail user (otherwise Gmail rejects the email):
+```ini
+MAIL_FROM_ADDRESS="amoaheugene23@gmail.com"
+```
+
+> **Note:** If DNS issues cause persistent SMTP failures, switch to `failover` mode temporarily:
+> ```ini
+> MAIL_MAILER=failover
+> ```
+> With `failover`, SMTP is tried first, and if it fails, the email content is saved to `storage/logs/laravel.log`. The email will NOT be delivered to the inbox — use this only as a diagnostic tool or temporary workaround.
+
+#### 6. Send a Test Email
+
+```bash
+php artisan tinker
+```
+
+Then paste:
+```php
+Mail::raw('Test from DMRMS', fn($msg) => $msg->to('your@email.com')->subject('DMRMS Test'));
+```
+
+If this succeeds, the email system is working and the failure was a temporary DNS glitch.
 
 ### Log Locations
 

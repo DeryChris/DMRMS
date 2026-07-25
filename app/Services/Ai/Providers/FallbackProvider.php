@@ -69,6 +69,36 @@ class FallbackProvider implements AiProviderInterface
         ];
     }
 
+    public function crossVerifyDocuments(array $documents, array $referenceData, string $prompt): array
+    {
+        $start = microtime(true);
+
+        $docNames = array_map(fn($d) => $d['label'] ?? $d['type'] ?? 'Unknown', $documents);
+
+        return [
+            'success'         => true,
+            'data'            => [
+                'overall_status'          => 'insufficient',
+                'overall_confidence'      => 0.0,
+                'comparison_summary'      => [
+                    'full_name'   => ['status' => 'missing', 'doc_a_value' => null, 'doc_b_value' => null],
+                    'date_of_birth' => ['status' => 'missing', 'doc_a_value' => null, 'doc_b_value' => null],
+                    'nationality' => ['status' => 'missing', 'doc_a_value' => null, 'doc_b_value' => null],
+                    'gender'      => ['status' => 'missing', 'doc_a_value' => null, 'doc_b_value' => null],
+                    'id_number'   => ['status' => 'missing', 'doc_a_value' => null, 'doc_b_value' => null],
+                    'photograph'  => ['status' => 'missing', 'doc_a_value' => null, 'doc_b_value' => null],
+                ],
+                'detected_inconsistencies' => ['Fallback mode — manual review required for: ' . implode(', ', $docNames)],
+                'supporting_evidence' => 'No AI provider available. Manual identity verification required.',
+                'final_verdict'       => 'Insufficient information — all documents require manual identity verification.',
+            ],
+            'model'           => 'fallback-cross-verify',
+            'tokens_used'     => 0,
+            'processing_time' => round((microtime(true) - $start) * 1000, 2),
+            'cost'            => 0.0,
+        ];
+    }
+
     public function getEmbeddings(string $text): array
     {
         $start = microtime(true);

@@ -34,19 +34,36 @@ class NotificationService
     {
         try {
             $to = $recipient->email ?? $recipient;
-            Mail::send($view, $data, function ($message) use ($to, $subject) {
-                $message->to($to)->subject($subject);
+            $fromAddress = config('mail.from.address', 'amoaheugene23@gmail.com');
+            $fromName = config('mail.from.name', 'Ghana Armed Forces');
+            Mail::send($view, $data, function ($message) use ($to, $subject, $fromAddress, $fromName) {
+                $message->to($to)
+                        ->subject($subject)
+                        ->from($fromAddress, $fromName);
             });
+            Log::info("Email sent successfully to {$to}", ['subject' => $subject, 'view' => $view]);
         } catch (\Exception $e) {
             $recipientInfo = is_object($recipient) ? ($recipient->email ?? 'unknown') : $recipient;
             Log::error("Email sending failed to {$recipientInfo}: " . $e->getMessage());
         }
     }
 
-    public function sendSms($phone, $message): void
+    public function sendSms($phone, $message, bool $isOtp = false): void
     {
         $logEntry = "[SMS] To: {$phone} | Message: {$message} | Time: " . Carbon::now()->toDateTimeString();
         Log::channel('sms')->info($logEntry);
+
+        // Send via mNotify if enabled
+        if (config('services.mnotify.enabled')) {
+            try {
+                $smsService = app(\App\Services\Sms\MnotifySmsService::class);
+                $smsService->send($phone, $message, $isOtp);
+            } catch (\Exception $e) {
+                Log::channel('sms')->error("[MNotify] SMS send failed: {$e->getMessage()}");
+            }
+        } else {
+            Log::channel('sms')->info('[SMS] mNotify disabled — message logged only (not sent)');
+        }
     }
 
     public function sendDashboard($userId, $type, $subject, $message): void
@@ -233,6 +250,11 @@ class NotificationService
             'message' => $info['message'],
         ]);
         $this->sendDashboard($applicant->id, "final_decision_{$status}", $info['subject'], $info['message']);
+
+        // Send SMS for positive decisions — immediate notification important
+        if (in_array($status, ['selected', 'admitted', 'recruited'])) {
+            $this->sendSms($applicant->contact_number, $info['message']);
+        }
     }
 
     public function cohortExpanded(Application $app, string $cycleName, int $newTotal): void
@@ -279,6 +301,48 @@ class NotificationService
         );
     }
 
+    public function documentRejected(\App\Models\Document $document, Applicant $applicant, string $reason): void
+    {
+        $app = $document->application;
+        $docType = str_replace('_', ' ', ucfirst($document->document_type));
+        $gafId = $app?->gaf_id ?? 'N/A';
+        $subject = 'Document Rejected — Action Required';
+        $message = "Your {$docType} document has been rejected. Reason: {$reason}. Please log in and re-upload a valid copy.";
+
+        // Send email to applicant
+        try {
+            Mail::send('emails.document-rejected', [
+                'applicant'    => $applicant,
+                'documentType' => $docType,
+                'gafId'        => $gafId,
+                'reason'       => $reason,
+                'subject'      => $subject,
+                'message'      => $message,
+            ], function ($mail) use ($applicant, $subject) {
+                $mail->to($applicant->email, $applicant->name)
+                     ->subject($subject);
+            });
+            Log::info("Document rejection email sent", [
+                'applicant' => $applicant->email,
+                'doc_type'  => $docType,
+                'reason'    => $reason,
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Document rejection email failed", [
+                'applicant' => $applicant->email,
+                'error'     => $e->getMessage(),
+            ]);
+        }
+
+        // Dashboard notification (in-app)
+        $this->sendDashboard(
+            $applicant->id,
+            'document_rejected',
+            $subject,
+            $message
+        );
+    }
+
     public function documentNeedsReview(\App\Models\Document $document): void
     {
         $app = $document->application;
@@ -296,6 +360,73 @@ class NotificationService
         );
     }
 
+    /**
+     * Notify the applicant that a single document was auto-verified by AI.
+     * Dashboard only (no email — too noisy; individual doc emails would flood
+     * the applicant when all 4 docs are processed in quick succession).
+     * The applicant is notified by email once via documentsVerified() when ALL
+     * required documents pass verification and the application advances.
+     */
+    public function documentAutoVerified(\App\Models\Document $document): void
+    {
+        $app = $document->application;
+        $applicant = $app?->applicant;
+        if (!$applicant) return;
+
+        $docType = str_replace('_', ' ', ucfirst($document->document_type));
+        $gafId = $app->gaf_id ?? 'N/A';
+        $confidencePct = round(($document->ai_confidence ?? 0) * 100);
+        $subject = "{$docType} Verified Successfully";
+        $message = "Dear {$applicant->first_name}, your {$docType} document for application {$gafId} has been verified with {$confidencePct}% confidence.";
+
+        $this->sendDashboard($applicant->id, 'document_verified', $subject, $message);
+    }
+
+    /**
+     * Notify the applicant that AI confidence was low and the document is being re-verified.
+     * Dashboard only (no email — this is an internal system retry, no action needed
+     * from the applicant; they'll be notified when the final result is ready).
+     */
+    public function documentRechecking(\App\Models\Document $document, int $attempt, int $maxRetries): void
+    {
+        $app = $document->application;
+        $applicant = $app?->applicant;
+        if (!$applicant) return;
+
+        $docType = str_replace('_', ' ', ucfirst($document->document_type));
+        $gafId = $app->gaf_id ?? 'N/A';
+        $confidencePct = round(($document->ai_confidence ?? 0) * 100);
+        $subject = "{$docType} — System Rechecking";
+        $message = "Dear {$applicant->first_name}, the AI verification confidence for your {$docType} was {$confidencePct}%. The system is automatically rechecking (attempt {$attempt}/{$maxRetries}). You will be notified of the result.";
+
+        $this->sendDashboard($applicant->id, 'document_rechecking', $subject, $message);
+    }
+
+    /**
+     * Notify the applicant that all AI verification attempts were exhausted
+     * and the document now requires manual admin review.
+     * Dashboard only (no email — no action required from the applicant;
+     * an admin will review it. The admin is notified separately via
+     * documentNeedsReview below).
+     */
+    public function documentNeedsReviewApplicant(\App\Models\Document $document, array $reasons = []): void
+    {
+        $app = $document->application;
+        $applicant = $app?->applicant;
+        if (!$applicant) return;
+
+        $docType = str_replace('_', ' ', ucfirst($document->document_type));
+        $gafId = $app->gaf_id ?? 'N/A';
+        $subject = "{$docType} Requires Manual Review";
+        $reasonText = !empty($reasons) ? ' Reasons: ' . implode(', ', $reasons) : '';
+        $message = "Dear {$applicant->first_name}, the system could not auto-verify your {$docType} document for application {$gafId}. An admin will review it shortly.{$reasonText}";
+
+        $this->sendDashboard($applicant->id, 'document_needs_review', $subject, $message);
+
+        // Also notify admins (reuse existing method)
+        $this->documentNeedsReview($document);
+    }
+
     public function sendEmailVerificationCode(Applicant $applicant, string $code): void
     {
         Mail::to($applicant)->send(new EmailVerificationMail($applicant, $code));
@@ -304,6 +435,6 @@ class NotificationService
     public function sendSmsVerificationCode(Applicant $applicant, string $code): void
     {
         $message = "Your verification code is: {$code}. Valid for 30 minutes.";
-        $this->sendSms($applicant->contact_number, $message);
+        $this->sendSms($applicant->contact_number, $message, isOtp: true);
     }
 }

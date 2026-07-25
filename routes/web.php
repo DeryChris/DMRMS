@@ -36,6 +36,11 @@ Route::get('/voucher/buy', [\App\Http\Controllers\Web\VoucherPurchaseController:
 Route::post('/voucher/buy', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'purchase'])->name('voucher.purchase');
 Route::get('/voucher/{voucher}/confirmation', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'confirmation'])->name('voucher.confirmation');
 Route::post('/voucher/buy/lookup', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'lookupVoucher'])->name('voucher.lookup');
+
+// Paystack payment routes (AJAX)
+Route::post('/voucher/buy/init', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'initPayment'])->name('voucher.init-payment');
+Route::get('/payment/{payment}/status', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'paymentStatus'])->name('payment.status');
+Route::post('/voucher/buy/submit-otp', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'submitOtp'])->name('voucher.submit-otp');
 Route::get('/eligibility-checker', [WebController::class, 'eligibilityChecker'])->name('eligibility.checker');
 Route::get('/announcements', [WebController::class, 'announcements'])->name('announcements');
 Route::get('/announcements/{id}', [WebController::class, 'announcementDetail'])->name('announcements.detail');
@@ -83,6 +88,8 @@ Route::prefix('applicant')->name('applicant.')->group(function () {
     Route::middleware(['auth:applicant', 'applicant.access', 'password.expiry'])->group(function () {
         Route::post('logout', [\App\Http\Controllers\Web\ApplicantAuthController::class, 'logout'])->name('logout');
         Route::get('/dashboard', [ApplicantWebController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard/status', [ApplicantWebController::class, 'dashboardStatus'])->name('dashboard.status');
+        Route::get('/dashboard/debug', [ApplicantWebController::class, 'dashboardDebug'])->name('dashboard.debug');
         Route::get('/application', [ApplicantWebController::class, 'applicationForm'])->name('application');
         Route::post('/application', [ApplicantWebController::class, 'saveApplication'])->name('application.save');
         Route::post('/application/submit', [ApplicantWebController::class, 'submitApplication'])->name('application.submit');

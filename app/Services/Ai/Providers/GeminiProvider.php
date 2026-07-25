@@ -201,6 +201,110 @@ PROMPT;
         }
     }
 
+    public function crossVerifyDocuments(array $documents, array $referenceData, string $prompt): array
+    {
+        $start = microtime(true);
+
+        try {
+            // Build parts: text prompt + one inline_data per document
+            $parts = [];
+
+            $parts[] = [
+                'text' => $prompt . "\n\nReference Data:\n" . json_encode($referenceData, JSON_PRETTY_PRINT),
+            ];
+
+            foreach ($documents as $doc) {
+                $filePath = $doc['path'];
+                $imageContent = base64_encode(file_get_contents($filePath));
+                $mimeType = mime_content_type($filePath) ?: 'image/jpeg';
+                $label = $doc['label'] ?? $doc['type'] ?? 'document';
+
+                // Add label text before each document image
+                $parts[] = ['text' => "--- Document: {$label} ---"];
+                $parts[] = [
+                    'inline_data' => [
+                        'mime_type' => $mimeType,
+                        'data'      => $imageContent,
+                    ],
+                ];
+            }
+
+            $response = Http::timeout(180)
+                ->post(self::API_BASE . "/models/{$this->model}:generateContent?key={$this->apiKey}", [
+                    'contents' => [
+                        [
+                            'role'  => 'user',
+                            'parts' => $parts,
+                        ],
+                    ],
+                    'generationConfig' => [
+                        'maxOutputTokens'  => 8192,
+                        'temperature'      => 0.2,
+                        'response_mime_type' => 'application/json',
+                        'response_schema'  => [
+                            'type' => 'OBJECT',
+                            'properties' => [
+                                'overall_status'      => ['type' => 'STRING'],
+                                'overall_confidence'  => ['type' => 'NUMBER'],
+                                'comparison_summary'  => [
+                                    'type' => 'OBJECT',
+                                    'properties' => [
+                                        'full_name'   => ['type' => 'OBJECT', 'properties' => ['status' => ['type' => 'STRING']]],
+                                        'date_of_birth' => ['type' => 'OBJECT', 'properties' => ['status' => ['type' => 'STRING']]],
+                                        'nationality' => ['type' => 'OBJECT', 'properties' => ['status' => ['type' => 'STRING']]],
+                                        'gender'      => ['type' => 'OBJECT', 'properties' => ['status' => ['type' => 'STRING']]],
+                                        'id_number'   => ['type' => 'OBJECT', 'properties' => ['status' => ['type' => 'STRING']]],
+                                        'photograph'  => ['type' => 'OBJECT', 'properties' => ['status' => ['type' => 'STRING']]],
+                                    ],
+                                ],
+                                'detected_inconsistencies' => ['type' => 'ARRAY', 'items' => ['type' => 'STRING']],
+                                'supporting_evidence' => ['type' => 'STRING'],
+                                'final_verdict'       => ['type' => 'STRING'],
+                            ],
+                            'required' => ['overall_status', 'overall_confidence', 'comparison_summary', 'detected_inconsistencies', 'supporting_evidence', 'final_verdict'],
+                        ],
+                    ],
+                ]);
+
+            if ($response->failed()) {
+                Log::error('Gemini cross-verify documents failed', ['status' => $response->status()]);
+                return $this->prepareErrorResponse('Cross-verify documents failed', $start);
+            }
+
+            $data = $response->json();
+            $result = $this->prepareSuccessResponse($data, $start, 'cross_verify_documents');
+
+            $content = $result['data']['content'] ?? '';
+            $parsed = $this->extractCrossVerifyJson($content);
+
+            return [
+                'success' => true,
+                'data'    => $parsed ?: ['raw_content' => $content],
+                'model'   => $result['model'] ?? $this->model,
+                'tokens_used' => $result['tokens_used'] ?? 0,
+                'processing_time' => $result['processing_time'] ?? 0,
+                'cost'    => $result['cost'] ?? 0,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Gemini cross-verify documents exception: ' . $e->getMessage());
+            return $this->prepareErrorResponse($e->getMessage(), $start);
+        }
+    }
+
+    protected function extractCrossVerifyJson(string $text): ?array
+    {
+        $text = preg_replace('/```(?:json)?\s*/i', '', $text);
+
+        if (preg_match('/\{.*\}/s', $text, $match)) {
+            $decoded = json_decode($match[0], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        return null;
+    }
+
     public function getEmbeddings(string $text): array
     {
         $start = microtime(true);

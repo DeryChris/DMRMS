@@ -132,9 +132,12 @@ class ProcessFinalDecision implements ShouldQueue
 
             $notifier->finalDecision($application);
 
+            // AutoRecruit is now dispatched instantly by the Application model's
+            // central status-change observer (booted/updated) — no 14-day delay.
+            // This dispatch is kept as a redundant safety net; the observer
+            // handles the immediate trigger for presentation/demo flow.
             if ($status === 'selected' && config('recruitment.auto_recruit.enabled', false)) {
-                $delayDays = (int) config('recruitment.auto_recruit.enrollment_delay_days', 14);
-                AutoRecruit::dispatch($application)->delay(now()->addDays($delayDays));
+                AutoRecruit::dispatch($application);
             }
         }
     }

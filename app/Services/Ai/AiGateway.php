@@ -28,6 +28,29 @@ class AiGateway
         return $this->getProvider()->chat($messages);
     }
 
+    public function crossVerifyDocuments(array $documents, array $referenceData, string $prompt): array
+    {
+        // Convert any PDF documents to images first
+        $converted = [];
+        try {
+            foreach ($documents as &$doc) {
+                $originalPath = $doc['path'];
+                $convertedPath = $this->convertToImage($originalPath);
+                $doc['path'] = $convertedPath;
+                if ($convertedPath !== $originalPath) {
+                    $converted[] = $convertedPath;
+                }
+            }
+            unset($doc);
+
+            return $this->getProvider()->crossVerifyDocuments($documents, $referenceData, $prompt);
+        } finally {
+            foreach ($converted as $tmp) {
+                @unlink($tmp);
+            }
+        }
+    }
+
     public function analyzeDocument(string $imagePath, string $documentType = '', array $context = []): array
     {
         if (empty($documentType)) {

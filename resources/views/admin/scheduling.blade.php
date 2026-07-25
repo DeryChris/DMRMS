@@ -18,17 +18,17 @@
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date <span class="text-red-500">*</span></label>
                     <input type="date" name="scheduled_date" required min="{{ now()->format('Y-m-d') }}" value="{{ old('scheduled_date') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('scheduled_date') ? 'border-red-500' : 'border-gray-300' }}">
                     @error('scheduled_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Time <span class="text-red-500">*</span></label>
                     <input type="time" name="scheduled_time" required value="{{ old('scheduled_time') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('scheduled_time') ? 'border-red-500' : 'border-gray-300' }}">
                     @error('scheduled_time') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Capacity <span class="text-red-500">*</span></label>
                     <input type="number" name="capacity" min="1" max="500" required value="{{ old('capacity') }}" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('capacity') ? 'border-red-500' : 'border-gray-300' }}">
                     @error('capacity') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>

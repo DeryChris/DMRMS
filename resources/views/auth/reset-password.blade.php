@@ -4,7 +4,7 @@
         <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
         <div>
-            <label for="email" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
+            <label for="email" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email Address <span style="color:#dc2626;">*</span></label>
             <input id="email" type="email" name="email" value="{{ old('email', $request->email) }}" placeholder="your@email.com" required autofocus autocomplete="username"
                    style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                    onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
@@ -13,7 +13,7 @@
         </div>
 
         <div>
-            <label for="password" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">New Password</label>
+            <label for="password" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">New Password <span style="color:#dc2626;">*</span></label>
             <div style="position:relative;" x-data="{ showPassword: false }">
                 <input id="password" :type="showPassword ? 'text' : 'password'" name="password" placeholder="Create a strong password" required autocomplete="new-password"
                        style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
@@ -35,7 +35,7 @@
         </div>
 
         <div>
-            <label for="password_confirmation" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Confirm Password</label>
+            <label for="password_confirmation" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Confirm Password <span style="color:#dc2626;">*</span></label>
             <div style="position:relative;" x-data="{ showPassword: false }">
                 <input id="password_confirmation" :type="showPassword ? 'text' : 'password'" name="password_confirmation" placeholder="Confirm your password" required autocomplete="new-password"
                        style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"

@@ -81,6 +81,52 @@ class ApiAiProvider implements AiProviderInterface
         }
     }
 
+    public function crossVerifyDocuments(array $documents, array $referenceData, string $prompt): array
+    {
+        $start = microtime(true);
+
+        try {
+            $payload = [
+                'reference_data' => $referenceData,
+                'prompt'         => $prompt,
+                'documents'      => [],
+            ];
+
+            foreach ($documents as $doc) {
+                $filePath = $doc['path'];
+                $docPayload = [
+                    'type'  => $doc['type'] ?? 'general',
+                    'label' => $doc['label'] ?? $doc['type'] ?? 'document',
+                ];
+
+                if (filter_var($filePath, FILTER_VALIDATE_URL) || str_starts_with($filePath, 'http')) {
+                    $docPayload['image_url'] = $filePath;
+                } else {
+                    $docPayload['image_base64'] = base64_encode(file_get_contents($filePath));
+                }
+
+                $payload['documents'][] = $docPayload;
+            }
+
+            $response = Http::withHeaders([
+                'X-API-Key' => $this->apiKey,
+                'Accept'    => 'application/json',
+            ])->timeout(180)
+                ->post("{$this->baseUrl}/vision/cross-verify", $payload);
+
+            if ($response->failed()) {
+                Log::error('AI Service cross-verify failed', ['status' => $response->status()]);
+                return $this->error('Cross-verify documents failed', $start);
+            }
+
+            $data = $response->json();
+            return $this->success($data, $start, 'cross_verify_documents');
+        } catch (\Exception $e) {
+            Log::error('AI Service cross-verify exception: ' . $e->getMessage());
+            return $this->error($e->getMessage(), $start);
+        }
+    }
+
     public function getEmbeddings(string $text): array
     {
         $start = microtime(true);

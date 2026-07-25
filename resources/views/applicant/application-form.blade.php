@@ -116,10 +116,10 @@
     },
 
     init() {
-        this.allCorps = JSON.parse(document.getElementById('all-corps-data').textContent);
-        this.sectorsData = JSON.parse(document.getElementById('sectors-data').textContent);
-        this.eligibleCorpIds = JSON.parse(document.getElementById('eligible-corps-data').textContent);
-        this.sectorEligibility = JSON.parse(document.getElementById('sector-eligibility-data').textContent);
+        try { this.allCorps = JSON.parse(document.getElementById('all-corps-data')?.textContent || '[]'); } catch(e) { this.allCorps = []; console.error('Failed to parse corps data', e); }
+        try { this.sectorsData = JSON.parse(document.getElementById('sectors-data')?.textContent || '[]'); } catch(e) { this.sectorsData = []; console.error('Failed to parse sectors data', e); }
+        try { this.eligibleCorpIds = JSON.parse(document.getElementById('eligible-corps-data')?.textContent || '[]'); } catch(e) { this.eligibleCorpIds = []; console.error('Failed to parse eligible corps data', e); }
+        try { this.sectorEligibility = JSON.parse(document.getElementById('sector-eligibility-data')?.textContent || '{}'); } catch(e) { this.sectorEligibility = {}; console.error('Failed to parse sector eligibility data', e); }
         this.$watch('form', () => this.triggerAutoSave(), { deep: true });
     },
 
@@ -132,15 +132,19 @@
     async doAutoSave() {
         this.autoSaveStatus = 'saving';
         try {
-            const formEl = document.getElementById('application-form');
-            const fd = new FormData(formEl);
+            const fd = this.buildFormData();
             fd.set('action', 'save');
             fd.set('current_step', this.step);
-            const res = await window.axios.post(formEl.action, fd);
-            this.autoSaveStatus = 'saved';
-            this.showToast('Draft auto-saved', 'success');
-            setTimeout(() => { if (this.autoSaveStatus === 'saved') this.autoSaveStatus = ''; }, 3000);
+            const res = await window.axios.post('{{ route("applicant.application.save") }}', fd);
+            if (res.data?.success) {
+                this.autoSaveStatus = 'saved';
+                this.showToast('Draft auto-saved', 'success');
+                setTimeout(() => { if (this.autoSaveStatus === 'saved') this.autoSaveStatus = ''; }, 3000);
+            } else {
+                throw new Error(res.data?.message || 'Save returned unsuccessful');
+            }
         } catch (e) {
+            console.error('Autosave failed:', e.response?.status, e.response?.data || e.message);
             this.autoSaveStatus = 'error';
             this.showToast('Auto-save failed. Please save manually.', 'error');
             setTimeout(() => { if (this.autoSaveStatus === 'error') this.autoSaveStatus = ''; }, 5000);
@@ -156,35 +160,23 @@
 
     validateHeight() {
         this.heightTouched = true;
-        const v = parseFloat(this.form.health.height);
-        if (!this.form.health.height || isNaN(v)) {
+        if (!this.form.health.height || isNaN(parseFloat(this.form.health.height))) {
             this.heightErr = 'Height is required';
             this.heightOk = false;
             return;
         }
-        if (v < 0.5 || v > 2.5) {
-            this.heightErr = 'Height must be between 0.5m and 2.5m';
-            this.heightOk = false;
-            return;
-        }
-        const minH = this.applicantGender === 'Female' ? 1.58 : 1.65;
-        if (v < minH) {
-            this.heightErr = 'Height must be at least ' + minH.toFixed(2) + 'm for ' + this.applicantGender.toLowerCase() + ' applicants';
-            this.heightOk = false;
-            return;
-        }
+        // Any height value is accepted here — actual checks happen in eligibility evaluation.
         this.heightErr = '';
         this.heightOk = true;
     },
     validateWeight() {
         this.weightTouched = true;
-        const v = parseFloat(this.form.health.weight);
-        if (!this.form.health.weight || isNaN(v)) { this.weightErr = ''; this.weightOk = false; return; }
-        if (v < 30 || v > 200) {
-            this.weightErr = 'Weight must be between 30kg and 200kg';
+        if (!this.form.health.weight || isNaN(parseFloat(this.form.health.weight))) {
+            this.weightErr = 'Weight is required';
             this.weightOk = false;
             return;
         }
+        // Any weight value is accepted here — actual checks happen in eligibility evaluation.
         this.weightErr = '';
         this.weightOk = true;
     },
@@ -195,16 +187,12 @@
             this.criminalOk = false;
             return;
         }
-        if (this.form.health.criminal === 'yes') {
-            this.criminalErr = 'Applicants with a criminal record are not eligible';
-            this.criminalOk = false;
-            return;
-        }
+        // Any declaration is accepted here — actual checks happen in eligibility evaluation.
         this.criminalErr = '';
         this.criminalOk = true;
     },
     healthStepValid() {
-        return this.heightOk && this.criminalOk;
+        return true;
     },
 
     next() {
@@ -234,24 +222,62 @@
         this.autoSaveStatus = 'saving';
         this.showToast('Saving draft...', 'success');
         try {
-            const formEl = document.getElementById('application-form');
-            const fd = new FormData(formEl);
+            const fd = this.buildFormData();
             fd.set('action', 'save');
             fd.set('current_step', this.step);
-            await window.axios.post(formEl.action, fd);
-            this.autoSaveStatus = 'saved';
-            this.showToast('Draft saved successfully!', 'success');
+            const res = await window.axios.post('{{ route("applicant.application.save") }}', fd);
+            if (res.data?.success) {
+                this.autoSaveStatus = 'saved';
+                this.showToast('Draft saved successfully!', 'success');
+                setTimeout(() => { if (this.autoSaveStatus === 'saved') this.autoSaveStatus = ''; }, 3000);
+            } else {
+                throw new Error(res.data?.message || 'Save returned unsuccessful');
+            }
         } catch (e) {
-            this.autoSaveStatus = 'saved';
-            this.showToast('Draft saved successfully!', 'success');
+            console.error('Save draft failed:', e.response?.status, e.response?.data || e.message);
+            this.autoSaveStatus = 'error';
+            this.showToast('Failed to save draft. Please try again.', 'error');
         }
-        setTimeout(() => { if (this.autoSaveStatus === 'saved') this.autoSaveStatus = ''; }, 3000);
     },
     submitApp() {
         this.submitting = true;
         let form = document.getElementById('application-form');
         form.querySelector('input[name=action]').value = 'submit';
         form.submit();
+    },
+    buildFormData() {
+        const fd = new FormData();
+        fd.append('_token', document.querySelector('meta[name=csrf-token]')?.content || '');
+        // Cycle
+        const cycleId = document.querySelector('input[name=cycle_id]')?.value;
+        if (cycleId) fd.append('cycle_id', cycleId);
+        // Personal — only send non-empty values
+        if (this.form.personal.marital_status) fd.append('marital_status', this.form.personal.marital_status);
+        if (this.form.personal.nationality) fd.append('nationality', this.form.personal.nationality);
+        if (this.form.personal.national_id) fd.append('national_id', this.form.personal.national_id);
+        if (this.form.personal.residential_address) fd.append('residential_address', this.form.personal.residential_address);
+        if (this.form.personal.region) fd.append('region', this.form.personal.region);
+        if (this.form.personal.district) fd.append('district', this.form.personal.district);
+        // Education — only send non-empty values
+        if (this.form.education.institution) fd.append('institution_name', this.form.education.institution);
+        if (this.form.education.degree_field) fd.append('degree_field', this.form.education.degree_field);
+        if (this.form.education.year) fd.append('year_obtained', this.form.education.year);
+        if (this.form.education.cert_number) fd.append('certificate_number', this.form.education.cert_number);
+        if (this.form.education.level) fd.append('education_level', this.form.education.level);
+        // Corps — only send non-empty values
+        if (this.form.corps.selected_sector_id) fd.append('selected_sector_id', this.form.corps.selected_sector_id);
+        if (this.form.corps.corp_1) fd.append('corp_1', this.form.corps.corp_1);
+        if (this.form.corps.corp_2) fd.append('corp_2', this.form.corps.corp_2);
+        if (this.form.corps.corp_3) fd.append('corp_3', this.form.corps.corp_3);
+        // Health — only send non-empty values
+        if (this.form.health.height) fd.append('height', this.form.health.height);
+        if (this.form.health.weight) fd.append('weight', this.form.health.weight);
+        if (Array.isArray(this.form.health.conditions) && this.form.health.conditions.length) {
+            this.form.health.conditions.forEach(c => fd.append('health_conditions[]', c));
+        }
+        if (this.form.health.criminal) fd.append('criminal_record', this.form.health.criminal);
+        if (this.form.health.fitness) fd.append('fitness_status', this.form.health.fitness);
+        return fd;
     }
 }" class="max-w-5xl mx-auto px-4 relative">
     {{-- Floating toast notification --}}
@@ -364,7 +390,7 @@
 
                     @php $f = 'marital_status'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Marital Status *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Marital Status <span class="text-red-500">*</span></label>
                         <select name="{{ $f }}" x-model="form.personal.marital_status" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                             <option value="">Select</option>
                             <option value="Single">Single</option>
@@ -376,25 +402,25 @@
                     </div>
                     @php $f = 'nationality'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nationality *</label>
-                        <input type="text" name="{{ $f }}" x-model="form.personal.nationality" @input="form.personal.nationality = $event.target.value.replace(/[0-9]/g, '')" placeholder="Ghanaian" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nationality <span class="text-red-500">*</span></label>
+                        <input type="text" name="{{ $f }}" x-model="form.personal.nationality" @input="form.personal.nationality = $event.target.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '')" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+" title="Only letters, spaces, hyphens, and apostrophes" placeholder="Ghanaian" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'national_id'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">National ID / Passport *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">National ID / Passport <span class="text-red-500">*</span></label>
                         <input type="text" name="{{ $f }}" x-model="form.personal.national_id" placeholder="GHA-XXXXXXXXX-X" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'residential_address'; @endphp
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Residential Address *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Residential Address <span class="text-red-500">*</span></label>
                         <textarea name="{{ $f }}" x-model="form.personal.residential_address" rows="2" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" placeholder="Street, City, Landmark"></textarea>
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'region'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Region *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Region <span class="text-red-500">*</span></label>
                         <select name="{{ $f }}" x-model="form.personal.region" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                             <option value="">Select Region</option>
                             @foreach($regions as $r)
@@ -405,8 +431,8 @@
                     </div>
                     @php $f = 'district'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">District *</label>
-                        <input type="text" name="{{ $f }}" x-model="form.personal.district" @input="form.personal.district = $event.target.value.replace(/[0-9]/g, '')" placeholder="Your district" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">District <span class="text-red-500">*</span></label>
+                        <input type="text" name="{{ $f }}" x-model="form.personal.district" @input="form.personal.district = $event.target.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '')" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+" title="Only letters, spaces, hyphens, and apostrophes" placeholder="Your district" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
@@ -419,13 +445,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     @php $f = 'institution_name'; @endphp
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Institution Name</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Institution Name <span class="text-red-500">*</span></label>
                         <input type="text" name="{{ $f }}" x-model="form.education.institution" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'degree_field'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Qualification Field / Degree Subject *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Qualification Field / Degree Subject <span class="text-red-500">*</span></label>
                         <select name="{{ $f }}" x-model="form.education.degree_field" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                             <option value="">-- Select your field of study (or &quot;General / WASSCE&quot; if none) --</option>
                             <option value="N/A">General / WASSCE (No specific field)</option>
@@ -437,19 +463,19 @@
                     </div>
                     @php $f = 'year_obtained'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Year of Completion</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Year of Completion <span class="text-red-500">*</span></label>
                         <input type="number" name="{{ $f }}" x-model="form.education.year" @input="form.education.year = $event.target.value.replace(/\D/g, '').substring(0, 4)" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'certificate_number'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Certificate Number</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Certificate Number <span class="text-gray-400 font-normal">(Optional)</span></label>
                         <input type="text" name="{{ $f }}" x-model="form.education.cert_number" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'education_level'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Education Level *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Education Level <span class="text-red-500">*</span></label>
                         <select name="{{ $f }}" x-model="form.education.level" required class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                             <option value="">Select</option>
                             <option value="ssce">SSCE/WASSCE</option>
@@ -470,7 +496,7 @@
                 <p class="text-xs text-amber-600 mb-4">Only sectors you are eligible for are shown. Ineligible corps are greyed out — select only eligible corps (shown with <svg class="inline w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>).</p>
 
                 <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Sector *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sector <span class="text-red-500">*</span></label>
                     <select name="selected_sector_id" x-model="form.corps.selected_sector_id" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('selected_sector_id') ? 'border-red-500' : 'border-gray-300' }}">
                         <option value="">-- Select Sector --</option>
                         @foreach($sectors as $sector)
@@ -554,7 +580,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     @php $f = 'height'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Height (m) * <span class="text-xs text-gray-400">(min: {{ $a->gender === 'Female' ? '1.58' : '1.65' }}m)</span></label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Height (m) <span class="text-red-500">*</span> <span class="text-xs text-gray-400">(min: {{ $a->gender === 'Female' ? '1.58' : '1.65' }}m)</span></label>
                         <input type="number" step="0.01" name="{{ $f }}" x-model="form.health.height"
                                @input.debounce="validateHeight()"
                                @blur="validateHeight()"
@@ -569,7 +595,7 @@
                     </div>
                     @php $f = 'weight'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg) <span class="text-gray-400 font-normal">(Optional)</span></label>
                         <input type="number" step="0.1" name="{{ $f }}" x-model="form.health.weight"
                                @input.debounce="validateWeight()"
                                @blur="validateWeight()"
@@ -582,7 +608,7 @@
                         </template>
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Health Conditions</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Health Conditions <span class="text-gray-400 font-normal">(Optional)</span></label>
                         <div class="grid grid-cols-2 gap-2">
                             @foreach($conditions as $cond)
                             <label class="flex items-center space-x-2 text-sm">
@@ -594,7 +620,7 @@
                     </div>
                     @php $f = 'criminal_record'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Criminal Record Declaration *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Criminal Record Declaration <span class="text-red-500">*</span></label>
                         <select name="{{ $f }}" x-model="form.health.criminal"
                                 @change="validateCriminal()"
                                 @blur="validateCriminal()"
@@ -612,7 +638,7 @@
                     </div>
                     @php $f = 'fitness_status'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fitness Self-Assessment</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fitness Self-Assessment <span class="text-gray-400 font-normal">(Optional)</span></label>
                         <select name="{{ $f }}" x-model="form.health.fitness" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}">
                             <option value="">Select</option>
                             <option value="excellent">Excellent</option>
@@ -732,7 +758,7 @@
                         <button type="button" @click="prev()" class="px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Previous</button>
                     </div>
                     <div>
-                        <button type="button" @click="saveDraft()" class="px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition" {{ $existing && $existing->status !== 'draft' ? 'disabled' : '' }}>Save Draft</button>
+                        <button type="button" @click="saveDraft()" class="px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition" {{ $existing && !in_array($existing->status, ['draft', 'registered']) ? 'disabled' : '' }}>Save Draft</button>
                     </div>
                     <div class="flex space-x-3">
                         <button type="button" x-show="step < totalsteps" @click="next()" class="px-6 py-3 bg-gaf-green text-white rounded-lg text-sm font-semibold hover:bg-gaf-dark-green transition">Next</button>

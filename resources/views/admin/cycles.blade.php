@@ -101,43 +101,43 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     @php $f = 'name'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Cycle Name</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cycle Name <span class="text-red-500">*</span></label>
                         <input type="text" name="{{ $f }}" x-model="form.name" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" required>
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'cycle_code'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Cycle Code</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cycle Code <span class="text-red-500">*</span></label>
                         <input type="text" name="{{ $f }}" x-model="form.cycle_code" @input="form.cycle_code = $event.target.value.replace(/[^a-zA-Z0-9_-]/g, '')" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" :readonly="editingId" required>
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'start_date'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date <span class="text-red-500">*</span></label>
                         <input type="date" name="{{ $f }}" x-model="form.start_date" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" required>
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'end_date'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">End Date <span class="text-red-500">*</span></label>
                         <input type="date" name="{{ $f }}" x-model="form.end_date" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" required>
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'application_deadline'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Application Deadline</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Application Deadline <span class="text-red-500">*</span></label>
                         <input type="datetime-local" name="{{ $f }}" x-model="form.deadline" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" required>
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'total_vacancies'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Total Vacancies</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Total Vacancies <span class="text-red-500">*</span></label>
                         <input type="number" name="{{ $f }}" x-model="form.vacancies" min="1" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" required>
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     @php $f = 'voucher_price'; @endphp
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Voucher Price (GHS)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Voucher Price (GHS) <span class="text-gray-400 font-normal">(Optional)</span></label>
                         <input type="number" name="{{ $f }}" x-model="form.voucher_price" step="0.01" min="0" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki {{ $errors->has($f) ? 'border-red-500' : 'border-gray-300' }}" placeholder="Leave blank to use default">
                         @error($f) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -148,33 +148,33 @@
                     <h3 class="font-heading font-bold text-base text-gray-800 mb-3">Eligibility Criteria</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Min Age</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Min Age <span class="text-gray-400 font-normal">(Optional)</span></label>
                             <input type="number" name="requirements[min_age]" x-model="form.req.min_age" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Max Age</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Max Age <span class="text-gray-400 font-normal">(Optional)</span></label>
                             <input type="number" name="requirements[max_age]" x-model="form.req.max_age" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Min Height (Male) in m</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Min Height (Male) in m <span class="text-gray-400 font-normal">(Optional)</span></label>
                             <input type="number" name="requirements[min_height_male]" x-model="form.req.min_height_male" step="0.01" min="1.0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Min Height (Female) in m</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Min Height (Female) in m <span class="text-gray-400 font-normal">(Optional)</span></label>
                             <input type="number" name="requirements[min_height_female]" x-model="form.req.min_height_female" step="0.01" min="1.0" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nationality <span class="text-gray-400 font-normal">(Optional)</span></label>
                             <input type="text" name="requirements[nationality]" x-model="form.req.nationality" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Marital Status (comma-separated)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Marital Status (comma-separated) <span class="text-gray-400 font-normal">(Optional)</span></label>
                             <input type="text" name="requirements[marital_status]" x-model="form.req.marital_status" placeholder="Single, Married" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
                             <p class="text-xs text-gray-400 mt-0.5">Leave empty to allow all</p>
                         </div>
                     </div>
                     <div class="mt-3">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Required Education Levels</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Required Education Levels <span class="text-gray-400 font-normal">(Optional)</span></label>
                         <div class="flex flex-wrap gap-3">
                             @foreach(config('recruitment.education_levels') as $edu)
                             <label class="flex items-center space-x-1.5 text-sm">
@@ -198,19 +198,19 @@
                     <p class="text-xs text-gray-500 mb-3">Composite score = medical×weight + interview×weight + fitness×weight + eligibility×weight. Leave blank to use global defaults.</p>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Medical</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Medical <span class="text-gray-400 font-normal">(Optional)</span></label>
                             <input type="number" name="scoring_weights[medical]" x-model="form.scoring.medical" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Interview</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Interview <span class="text-gray-400 font-normal">(Optional)</span></label>
                             <input type="number" name="scoring_weights[interview]" x-model="form.scoring.interview" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Fitness</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fitness <span class="text-gray-400 font-normal">(Optional)</span></label>
                             <input type="number" name="scoring_weights[fitness]" x-model="form.scoring.fitness" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Eligibility</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Eligibility <span class="text-gray-400 font-normal">(Optional)</span></label>
                             <input type="number" name="scoring_weights[eligibility]" x-model="form.scoring.eligibility" step="0.01" min="0" max="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki">
                         </div>
                     </div>

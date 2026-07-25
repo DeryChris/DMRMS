@@ -286,7 +286,7 @@
         <form method="POST" action="{{ route('applicant.documents.upload') }}" enctype="multipart/form-data" class="space-y-5" @submit="handleUpload($event)">
             @csrf
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Document Type <span class="text-red-500">*</span></label>
                 <select name="document_type" x-model="docType" required @change="autoSave()" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-green focus:border-gaf-green outline-none transition">
                     <option value="">Select document type</option>
                     <optgroup label="Required Documents">
@@ -455,6 +455,9 @@ function documentUpload() {
         compressedNotice: '',
         compressEnabled: false,
         originalFileSize: 0,
+
+        // Already-uploaded doc types (used for auto-advance after successful upload)
+        uploadedDocTypes: @json($uploadedDocTypes),
 
         // Autosave state
         autoSaveStatus: '',
@@ -649,12 +652,81 @@ function documentUpload() {
         },
 
         // ── Upload ──
-        handleUpload(event) {
+        async handleUpload(event) {
             if (!this.canSubmit) {
                 event.preventDefault();
                 return;
             }
+            event.preventDefault();
             this.uploading = true;
+
+            const form = event.target;
+            const formData = new FormData(form);
+
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                });
+
+                let data;
+                try {
+                    data = await res.json();
+                } catch (jsonError) {
+                    // Response wasn't JSON — could be a redirect or server error page
+                    const text = await res.text();
+                    this.showToast('Server error (status ' + res.status + '). Please try again.', 'error');
+                    this.uploading = false;
+                    return;
+                }
+
+                if (!res.ok || !data.success) {
+                    // Extract first validation error if present
+                    let errMsg = data.message || 'Upload failed.';
+                    if (data.errors) {
+                        const firstKey = Object.keys(data.errors)[0];
+                        if (firstKey) errMsg = data.errors[firstKey].join(', ');
+                    }
+                    this.showToast(errMsg, 'error');
+                    this.uploading = false;
+                    return;
+                }
+
+                // Success — update uploaded types & advance to next
+                this.uploadedDocTypes = data.uploaded_doc_types || this.uploadedDocTypes;
+                this.docType = this.nextDocType();
+                this.resetFileInput();
+                try { localStorage.removeItem('document_upload_draft'); } catch (e) {}
+                this.autoSaveStatus = '';
+                this.showToast(data.message || 'Document uploaded successfully.', 'success');
+            } catch (e) {
+                this.showToast('Network error. Please try again.', 'error');
+            }
+
+            this.uploading = false;
+        },
+
+        nextDocType() {
+            const order = [
+                'birth_certificate', 'certificate', 'national_id', 'photograph',
+                'medical_report', 'police_clearance', 'other'
+            ];
+            return order.find(t => !this.uploadedDocTypes.includes(t)) || '';
+        },
+
+        resetFileInput() {
+            this.hasFile = false;
+            this.fileName = '';
+            this.fileSize = '';
+            this.fileType = '';
+            this.dimensionError = '';
+            this.bgError = '';
+            document.getElementById('fileInput').value = '';
         },
 
         // ── Autosave ──

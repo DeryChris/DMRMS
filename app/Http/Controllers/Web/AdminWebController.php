@@ -95,6 +95,16 @@ class AdminWebController extends Controller
         $submittedTotal = Application::whereIn('status', ['submitted', 'documents_verified', 'eligibility_passed', 'shortlisted', 'appointment_scheduled', 'screening_completed', 'final_decision_pending', 'selected', 'recruited', 'reserve'])->count();
         $successRate = $submittedTotal > 0 ? round(($approvedCount / $submittedTotal) * 100, 1) : 0;
 
+        // Document verification stats
+        $totalDocs = Document::count();
+        $verifiedDocs = Document::where('verification_status', 'verified')->count();
+        $pendingDocs = Document::where('verification_status', 'pending')->count();
+        $rejectedDocs = Document::where('verification_status', 'rejected')->count();
+        $needsReviewDocs = Document::where('verification_status', 'needs_review')->count();
+        $verifiedTodayDocs = Document::where('verification_status', 'verified')
+            ->whereDate('verified_at', today())
+            ->count();
+
         $recentApplicants = Applicant::with('application')
             ->orderBy('created_at', 'desc')
             ->take(8)
@@ -130,7 +140,8 @@ class AdminWebController extends Controller
             'shortlistedCount', 'disqualifiedCount', 'rejectedCount', 'eligibleCount', 'successRate', 'recentApplicants',
             'regionLabels', 'regionData', 'maleCount', 'femaleCount',
             'funnelApplied', 'funnelScreened', 'funnelDecision', 'funnelShortlisted', 'funnelApproved',
-            'dailyLabels', 'dailyData'
+            'dailyLabels', 'dailyData',
+            'totalDocs', 'verifiedDocs', 'pendingDocs', 'rejectedDocs', 'needsReviewDocs', 'verifiedTodayDocs'
         ));
     }
 
@@ -569,6 +580,36 @@ class AdminWebController extends Controller
         return redirect()->route('admin.selection')->with('success', 'Decision recorded successfully.');
     }
 
+    /**
+     * Predefined rejection reasons with human-readable labels.
+     */
+    public const REJECTION_REASONS = [
+        'not_clear'             => 'Document is not clear or readable',
+        'not_original'          => 'Document appears not to be original',
+        'tampered'              => 'Document shows signs of tampering or alteration',
+        'expired'               => 'Document has expired',
+        'information_mismatch'  => 'Information does not match applicant record',
+        'wrong_document'        => 'Wrong document type uploaded',
+        'missing_fields'        => 'Document is missing required fields or information',
+        'forgery_suspected'     => 'Document is suspected to be a forgery',
+        'low_quality_photo'     => 'Passport photo does not meet specifications',
+        'incomplete'            => 'Document appears incomplete or truncated',
+    ];
+
+    /**
+     * Rejection reasons that allow the applicant to re-upload.
+     * All other reasons result in disqualification.
+     */
+    public const RE_UPLOADABLE_REASONS = [
+        'not_clear',
+        'expired',
+        'wrong_document',
+        'missing_fields',
+        'low_quality_photo',
+        'incomplete',
+        'custom',
+    ];
+
     public function verifyDocument(Request $request, int $id): RedirectResponse
     {
         $document = Document::with('application.applicant')->findOrFail($id);
@@ -576,10 +617,29 @@ class AdminWebController extends Controller
         $application = $document->application;
 
         $validated = $request->validate([
-            'status' => 'required|in:verified,rejected',
+            'status'          => 'required|in:verified,rejected',
+            'rejection_reason'=> 'required_if:status,rejected|string|nullable',
+            'custom_reason'   => 'nullable|string|max:500',
         ]);
 
-        $document->update(['verification_status' => $validated['status']]);
+        // Resolve the final rejection reason text
+        $rejectionReason = null;
+        if ($validated['status'] === 'rejected') {
+            $reasonKey = $validated['rejection_reason'];
+            if ($reasonKey === 'custom') {
+                $rejectionReason = trim($validated['custom_reason'] ?? '');
+                if (empty($rejectionReason)) {
+                    $rejectionReason = 'Document was rejected by the review board.';
+                }
+            } else {
+                $rejectionReason = self::REJECTION_REASONS[$reasonKey] ?? 'Document was rejected by the review board.';
+            }
+        }
+
+        $document->update([
+            'verification_status' => $validated['status'],
+            'rejection_reason'    => $rejectionReason,
+        ]);
 
         if ($validated['status'] === 'verified') {
             $requiredDocs = ['birth_certificate', 'certificate', 'national_id', 'photograph'];
@@ -598,32 +658,97 @@ class AdminWebController extends Controller
                 $this->eligibilityService->evaluateAfterDocVerification($application);
             }
         } elseif ($validated['status'] === 'rejected') {
-            // Notify the applicant about the rejection
+            $reasonKey = $validated['rejection_reason'];
+            $isFixable = in_array($reasonKey, self::RE_UPLOADABLE_REASONS, true);
+
             $applicant = $application->applicant;
-            if ($applicant) {
-                $docType = str_replace('_', ' ', ucfirst($document->document_type));
-                $this->notificationService->sendDashboard(
-                    $applicant->id,
-                    'document_rejected',
-                    'Document Rejected - Action Required',
-                    "Your {$docType} document has been rejected. Please log in and re-upload a valid copy to continue your application."
-                );
-            }
 
-            // Roll back application status so the applicant can re-upload
-            // Handle ALL statuses that could be past 'submitted'
-            $rollbackStatuses = [
-                'documents_verified', 'eligibility_passed', 'eligibility_failed',
-                'shortlisted', 'appointment_scheduled', 'screening_completed',
-            ];
+            if ($isFixable) {
+                // ── FIXABLE: Notify + offer re-upload ─────────────────────
+                if ($applicant) {
+                    $docType = str_replace('_', ' ', ucfirst($document->document_type));
+                    $this->notificationService->documentRejected(
+                        $document,
+                        $applicant,
+                        $rejectionReason
+                    );
+                }
 
-            if (in_array($application->status, $rollbackStatuses, true)) {
-                $application->update([
-                    'status' => 'submitted',
-                    'documents_finalized' => false,
+                // Roll back application status so the applicant can re-upload.
+                // NO MATTER the current status — documents must be re-uploadable.
+                // Final decisions and reserve entries are cleared so the chain
+                // restarts fresh when docs are re-verified.
+                $statusBefore = $application->status;
+
+                if ($application->status !== 'submitted' && $application->status !== 'draft') {
+                    // Remove any final decision / reserve entry so the chain re-fires
+                    $application->finalDecision()?->delete();
+                    $application->reserveList()?->delete();
+
+                    // Roll back to submitted so the verification chain restarts
+                    $application->update([
+                        'status' => 'submitted',
+                        'documents_finalized' => false,
+                    ]);
+                    Log::info('Document rejected — rolled back to allow re-upload', [
+                        'application_id' => $application->id,
+                        'rolled_back_from' => $statusBefore,
+                        'new_status' => 'submitted',
+                    ]);
+                } else {
+                    // Already at submitted or draft — just unlock documents
+                    $application->update(['documents_finalized' => false]);
+                }
+            } else {
+                // ── DISQUALIFYING: Notify + set application to rejected ────
+                Log::warning('Applicant disqualified — admin rejected document with non-fixable reason', [
+                    'application_id' => $application->id,
+                    'document_id'    => $document->id,
+                    'reason_key'     => $reasonKey,
                 ]);
-            } elseif ($application->status === 'submitted') {
-                $application->update(['documents_finalized' => false]);
+
+                $application->update(['status' => 'rejected']);
+
+                if ($applicant) {
+                    $docTypeLabel = str_replace('_', ' ', ucfirst($document->document_type));
+                    $subject = 'Application Disqualified — Document Verification Failed';
+                    $message = "Your {$docTypeLabel} document has been rejected due to: {$rejectionReason}. "
+                             . "Your application for the current recruitment cycle has been disqualified.";
+
+                    $this->notificationService->sendDashboard(
+                        $applicant->id,
+                        'document_disqualified',
+                        $subject,
+                        $message
+                    );
+
+                    // Send email notification
+                    try {
+                        \Illuminate\Support\Facades\Mail::raw(
+                            "Dear {$applicant->first_name} {$applicant->last_name},\n\n"
+                            . "{$message}\n\n"
+                            . "GAF ID: {$application->gaf_id}\n"
+                            . "If you believe this decision is an error, please contact recruitment@gaf.mil.gh\n\n"
+                            . "Ghana Armed Forces – Defence Manpower Recruitment Management System",
+                            function ($mail) use ($applicant, $subject) {
+                                $mail->to($applicant->email, "{$applicant->first_name} {$applicant->last_name}")
+                                     ->subject($subject);
+                            }
+                        );
+                    } catch (\Exception $e) {
+                        Log::error("Disqualification email failed for admin rejection", [
+                            'applicant' => $applicant->email,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
+                $this->notificationService->notifyAdminsByRole(
+                    ['admin', 'super_admin'],
+                    'document_disqualified',
+                    "Applicant Disqualified by Admin — {$document->document_type}",
+                    "{$application->gaf_id}: {$applicant?->name} disqualified — admin rejected {$document->document_type} with reason '{$reasonKey}'. {$rejectionReason}"
+                );
             }
         }
 
@@ -1096,6 +1221,14 @@ class AdminWebController extends Controller
             'eligibleCount' => Application::where('status', 'eligibility_passed')->count(),
             'rejectedCount' => Application::whereIn('status', ['rejected', 'eligibility_failed', 'disqualified'])->count(),
             'successRate' => round((Application::whereIn('status', ['selected', 'recruited'])->count() / max(1, Application::whereIn('status', ['submitted', 'documents_verified', 'eligibility_passed', 'shortlisted', 'appointment_scheduled', 'screening_completed', 'final_decision_pending', 'selected', 'recruited', 'reserve'])->count())) * 100, 1),
+            // Document verification stats
+            'totalDocs' => Document::count(),
+            'verifiedDocs' => Document::where('verification_status', 'verified')->count(),
+            'pendingDocs' => Document::where('verification_status', 'pending')->count(),
+            'rejectedDocs' => Document::where('verification_status', 'rejected')->count(),
+            'needsReviewDocs' => Document::where('verification_status', 'needs_review')->count(),
+            'verifiedTodayDocs' => Document::where('verification_status', 'verified')
+                ->whereDate('verified_at', today())->count(),
         ]);
     }
 
@@ -1580,7 +1713,7 @@ class AdminWebController extends Controller
 
     public function offerLetter(int $id)
     {
-        $application = Application::with('applicant', 'cycle', 'finalDecision')
+        $application = Application::with('applicant', 'cycle', 'finalDecision.barrack')
             ->findOrFail($id);
 
         if (!in_array($application->status, ['selected', 'recruited'])) {
@@ -1772,13 +1905,12 @@ class AdminWebController extends Controller
         DB::transaction(function () use ($applicant) {
             $applicant->load('application.documents', 'voucher');
 
-            // Unlink the voucher but keep it for audit
+            // 1. Delete the voucher entirely (no longer just unlink — user wants full removal)
             if ($voucher = $applicant->voucher) {
-                $voucher->used_by = null;
-                $voucher->save();
+                $voucher->delete();
             }
 
-            // Delete physical files to free storage (records stay in DB for audit)
+            // 2. Delete physical document files from storage
             if ($application = $applicant->application) {
                 foreach ($application->documents as $document) {
                     if ($document->file_path && Storage::exists($document->file_path)) {
@@ -1787,15 +1919,32 @@ class AdminWebController extends Controller
                 }
             }
 
-            // Revoke Sanctum tokens
+            // 3. Revoke Sanctum tokens
             $applicant->tokens()->delete();
 
-            // Soft-delete the applicant
-            $applicant->delete();
+            // 4. Clean up polymorphic / non-cascading records
+            DB::table('audit_logs')
+                ->where('user_id', $applicant->id)
+                ->where('user_type', 'applicant')
+                ->delete();
+
+            DB::table('ai_prompt_logs')
+                ->where('user_id', $applicant->id)
+                ->where('user_type', 'applicant')
+                ->delete();
+
+            DB::table('chatbot_conversations')
+                ->where('applicant_id', $applicant->id)
+                ->delete();
+
+            // 5. Hard-delete the applicant (cascades: applications, documents DB rows,
+            //    eligibility_results, appointments, screening_results, final_decisions,
+            //    reserve_lists, applicant_corp_selections, notifications, verification_codes)
+            $applicant->forceDelete();
         });
 
         return redirect()->route('admin.applicants')
-            ->with('success', "Applicant {$name} has been deactivated. Their data is retained for audit purposes and will be permanently purged after 90 days.");
+            ->with('success', "Applicant {$name} and all associated data have been permanently deleted from the system.");
     }
 
     public function showProfile(): View
@@ -1830,8 +1979,8 @@ class AdminWebController extends Controller
     public function profileCompleteStore(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:50'],
-            'last_name' => ['required', 'string', 'max:50'],
+            'first_name' => ['required', 'string', 'max:50', 'regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u'],
+            'last_name'  => ['required', 'string', 'max:50', 'regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u'],
         ]);
 
         Auth::user()->update($validated);

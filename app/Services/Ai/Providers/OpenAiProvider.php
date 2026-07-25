@@ -89,13 +89,13 @@ class OpenAiProvider implements AiProviderInterface
             }
 
             $promptBody = $analysisPrompt ?: <<<PROMPT
-You are a Ghana Armed Forces document verification officer. Analyze the provided {$documentType} document image and return STRICT JSON only (no markdown, no explanation).
+You are a FORENSIC DOCUMENT EXAMINER for the Ghana Armed Forces. Analyze the provided {$documentType} document image with maximum scrutiny and return STRICT JSON only (no markdown, no explanation). PRESUME EVERY DOCUMENT IS FORGED until proven genuine. Military security depends on your rigor.
 
 {
   "overall": {
-    "verdict": "verified" or "rejected",
+    "verdict": "verified" | "rejected" | "needs_review",
     "confidence": 0.0 to 1.0,
-    "reasons": ["reason1", "reason2"]
+    "reasons": ["specific reason 1", "specific reason 2"]
   },
   "extracted_fields": {
     "full_name": "value or null",
@@ -103,28 +103,36 @@ You are a Ghana Armed Forces document verification officer. Analyze the provided
     "id_number": "value or null",
     "issuing_authority": "value or null",
     "date_issued": "value or null",
-    "expiry_date": "value or null"
+    "expiry_date": "value or null",
+    "gender": "Male, Female, or null",
+    "nationality": "value or null"
   },
   "cross_reference": {
     "name_match": true or false,
     "dob_match": true or false,
-    "nationality_match": true or false
+    "nationality_match": true or false,
+    "gender_match": true or false
   },
   "template_validation": {
     "has_required_fields": true or false,
     "has_official_stamps": true or false,
-    "has_valid_format": true or false
+    "has_valid_format": true or false,
+    "has_security_features": true or false,
+    "font_consistent": true or false
   },
-  "fraud_indicators": ["list of suspected issues or empty array"]
+  "fraud_indicators": ["list every suspected issue — empty only if 100% authentic"]
 }
 
-Rules:
-- Be decisive and err on the side of verification.
-- Set confidence >= 0.5 if the document appears valid.
-- If it looks authentic and matches reference data, mark verified.
-- If clearly forged or doesn't match at all (confidence >= 0.7), mark rejected.
-- When in doubt, lean toward "verified" at lower confidence.
-- Extract any visible text fields from the document.
+STRICT RULES:
+- confidence >= 0.85 → passes ALL checks with full confidence
+- confidence >= 0.60 → plausible but has uncertainties — needs_review
+- confidence < 0.60 → significant issues — REJECT
+- REJECT if ANY field mismatches reference data
+- REJECT if missing official stamps or security features
+- REJECT if evidence of digital manipulation
+- NEVER "err on the side of verification" — verify PROPERLY or reject
+- Extract every visible text field and cross-reference ruthlessly
+- Document every fraud indicator you see, no matter how subtle
 PROMPT;
 
             $systemPrompt = $promptBody . $referenceSection . $templateSection;
@@ -169,6 +177,89 @@ PROMPT;
 
             return $this->prepareErrorResponse($e->getMessage(), $start);
         }
+    }
+
+    public function crossVerifyDocuments(array $documents, array $referenceData, string $prompt): array
+    {
+        $start = microtime(true);
+
+        try {
+            // Build content parts: text prompt + one image_url per document
+            $content = [
+                [
+                    'type' => 'text',
+                    'text' => $prompt . "\n\nReference Data:\n" . json_encode($referenceData, JSON_PRETTY_PRINT),
+                ],
+            ];
+
+            foreach ($documents as $doc) {
+                $imageContent = base64_encode(file_get_contents($doc['path']));
+                $label = $doc['label'] ?? $doc['type'] ?? 'document';
+
+                // Add a label text part before each image
+                $content[] = [
+                    'type' => 'text',
+                    'text' => "--- Document: {$label} ---",
+                ];
+                $content[] = [
+                    'type'     => 'image_url',
+                    'image_url' => [
+                        'url'    => "data:image/jpeg;base64,{$imageContent}",
+                        'detail' => 'high',
+                    ],
+                ];
+            }
+
+            $messages = [
+                ['role' => 'user', 'content' => $content],
+            ];
+
+            $response = $this->buildClient()
+                ->timeout(180)
+                ->post("{$this->baseUrl}/chat/completions", [
+                    'model'      => $this->model,
+                    'messages'   => $messages,
+                    'max_tokens' => 4096,
+                ]);
+
+            if ($response->failed()) {
+                Log::error('OpenAI cross-verify documents failed', ['status' => $response->status()]);
+                return $this->prepareErrorResponse('Cross-verify documents failed', $start);
+            }
+
+            $data = $response->json();
+            $result = $this->prepareSuccessResponse($data, $start, 'cross_verify_documents');
+
+            // Parse the JSON from the response content
+            $content = $result['data']['content'] ?? '';
+            $parsed = $this->extractCrossVerifyJson($content);
+
+            return [
+                'success' => true,
+                'data'    => $parsed ?: ['raw_content' => $content],
+                'model'   => $result['model'] ?? $this->model,
+                'tokens_used' => $result['tokens_used'] ?? 0,
+                'processing_time' => $result['processing_time'] ?? 0,
+                'cost'    => $result['cost'] ?? 0,
+            ];
+        } catch (\Exception $e) {
+            Log::error('OpenAI cross-verify documents exception: ' . $e->getMessage());
+            return $this->prepareErrorResponse($e->getMessage(), $start);
+        }
+    }
+
+    protected function extractCrossVerifyJson(string $text): ?array
+    {
+        $text = preg_replace('/```(?:json)?\s*/i', '', $text);
+
+        if (preg_match('/\{.*\}/s', $text, $match)) {
+            $decoded = json_decode($match[0], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        return null;
     }
 
     public function getEmbeddings(string $text): array

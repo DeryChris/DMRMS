@@ -12,7 +12,7 @@ class CheckApplicantAccess
         'applicant.application'        => ['registered', 'draft'],
         'applicant.application.save'   => ['registered', 'draft'],
         'applicant.application.submit' => ['registered', 'draft'],
-        'applicant.documents'          => ['registered', 'draft', 'submitted'],
+        'applicant.documents'          => ['*'], // Always accessible — applicant can always view their docs
         'applicant.documents.upload'   => ['registered', 'draft', 'submitted'],
         'applicant.documents.delete'   => ['registered', 'draft', 'submitted'],
         'applicant.documents.finalize' => ['registered', 'draft', 'submitted'],
@@ -33,6 +33,8 @@ class CheckApplicantAccess
         'applicant.documents.delete',
         'applicant.documents.finalize',
         'applicant.documents.discard-all',
+        'applicant.dashboard',
+        'applicant.dashboard.status',
     ];
 
     public function handle(Request $request, Closure $next): Response
@@ -63,7 +65,15 @@ class CheckApplicantAccess
             }
         }
 
-        if (!in_array($appStatus, $this->accessMap[$routeName])) {
+        $allowedStatuses = $this->accessMap[$routeName];
+        // '*' means all statuses are allowed
+        if ($allowedStatuses !== ['*'] && !in_array($appStatus, $allowedStatuses)) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied for current application stage.'
+                ], 403);
+            }
             return redirect()->route('applicant.dashboard')
                 ->with('error', 'You do not have access to that page at your current application stage.');
         }

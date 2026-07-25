@@ -121,8 +121,8 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div style="{{ $errors->has('first_name') ? 'border:1px solid #dc2626;border-radius:10px;padding:1px;' : '' }}">
                     <label for="first_name" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">First Name</label>
-                    <input id="first_name" type="text" name="first_name" value="{{ old('first_name') }}" placeholder="John" required
-                           oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                    <input id="first_name" type="text" name="first_name" value="{{ old('first_name') }}" placeholder="John" required pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+" title="Only letters, spaces, hyphens, and apostrophes"
+                           oninput="this.value = this.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '')"
                            style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('first_name') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
                            onblur="this.style.borderColor='{{ $errors->has('first_name') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
@@ -130,8 +130,8 @@
                 </div>
                 <div style="{{ $errors->has('last_name') ? 'border:1px solid #dc2626;border-radius:10px;padding:1px;' : '' }}">
                     <label for="last_name" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Last Name</label>
-                    <input id="last_name" type="text" name="last_name" value="{{ old('last_name') }}" placeholder="Doe" required
-                           oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                    <input id="last_name" type="text" name="last_name" value="{{ old('last_name') }}" placeholder="Doe" required pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+" title="Only letters, spaces, hyphens, and apostrophes"
+                           oninput="this.value = this.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '')"
                            style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('last_name') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
                            onblur="this.style.borderColor='{{ $errors->has('last_name') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">
@@ -139,8 +139,8 @@
                 </div>
                 <div>
                     <label for="other_names" style="display:block;font-size:11px;font-weight:700;color:#4a7a65;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Other Names</label>
-                    <input id="other_names" type="text" name="other_names" value="{{ old('other_names') }}" placeholder="Middle names (optional)"
-                           oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                    <input id="other_names" type="text" name="other_names" value="{{ old('other_names') }}" placeholder="Middle names (optional)" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]*" title="Only letters, spaces, hyphens, and apostrophes"
+                           oninput="this.value = this.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '')"
                            style="width:100%;padding:10px 14px;border:2px solid {{ $errors->has('other_names') ? '#dc2626' : '#e2e8f0' }};border-radius:10px;font-size:13px;color:#1e293b;outline:none;background:#fff;transition:all 0.2s;box-sizing:border-box;"
                            onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
                            onblur="this.style.borderColor='{{ $errors->has('other_names') ? '#dc2626' : '#e2e8f0' }}';this.style.boxShadow='none'">

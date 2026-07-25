@@ -11,7 +11,7 @@
         <form method="POST" action="{{ route('admin.reports.export') }}">
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">Cycle</label>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Cycle <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <select name="cycle_id" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm">
                         <option value="">All Cycles</option>
                         @foreach($cycles as $c)
@@ -19,9 +19,9 @@
                         @endforeach
                     </select>
                 </div>
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label><input type="date" name="start_date" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm"></div>
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">End Date</label><input type="date" name="end_date" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm"></div>
-                <div><label class="block text-sm font-medium text-gray-700 mb-1">Format</label>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Start Date <span class="text-gray-400 font-normal">(Optional)</span></label><input type="date" name="start_date" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">End Date <span class="text-gray-400 font-normal">(Optional)</span></label><input type="date" name="end_date" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">Format <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <select name="format" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm">
                         <option value="pdf">PDF</option>
                         <option value="csv">Excel</option>

@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Events\EligibilityPassed;
+use App\Events\ScreeningCompleted;
+use App\Jobs\AutoRecruit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use App\Models\ReserveList;
+use Illuminate\Support\Facades\Log;
 
 class Application extends Model
 {
@@ -37,6 +40,7 @@ class Application extends Model
         'ai_eligibility_score',
         'ai_ranking_score',
         'ai_verified_at',
+        'identity_verification',
         'returned_count',
         'last_returned_from',
         'last_returned_to',
@@ -56,6 +60,7 @@ class Application extends Model
             'documents_finalized' => 'boolean',
             'documents_finalized_at' => 'datetime',
             'ai_verified_at' => 'datetime',
+            'identity_verification' => 'array',
             'last_returned_at' => 'datetime',
         ];
     }
@@ -70,6 +75,47 @@ class Application extends Model
                 $application->gaf_id = 'GAF-' . date('Y') . '-' . str_pad($latest + 1, 4, '0', STR_PAD_LEFT);
             }
         });
+
+        // ──────────────────────────────────────────────────────────────────
+        // Central status-change observer — fires on ANY status transition
+        // from ANY code path (controllers, commands, jobs, tinker, etc.).
+        // The system automatically adapts and proceeds to the next stage.
+        // ──────────────────────────────────────────────────────────────────
+        static::updated(function (Application $application) {
+            if (!$application->wasChanged('status')) {
+                return;
+            }
+
+            $newStatus = $application->status;
+
+            Log::debug('Application status changed', [
+                'id' => $application->id,
+                'gaf_id' => $application->gaf_id,
+                'new_status' => $newStatus,
+            ]);
+
+            match ($newStatus) {
+                'eligibility_passed' => EligibilityPassed::dispatch($application),
+                'screening_completed' => ScreeningCompleted::dispatch($application),
+                'selected' => self::proceedToRecruit($application),
+                default => null,
+            };
+        });
+    }
+
+    /**
+     * Auto-dispatch recruitment when an applicant is selected.
+     * Runs immediately (no 14-day delay) so the demo flows end-to-end.
+     */
+    private static function proceedToRecruit(Application $application): void
+    {
+        if (config('recruitment.auto_recruit.enabled', false)) {
+            AutoRecruit::dispatch($application);
+            Log::info('AutoRecruit dispatched instantly via model observer', [
+                'application_id' => $application->id,
+                'gaf_id' => $application->gaf_id,
+            ]);
+        }
     }
 
     public function applicant(): BelongsTo

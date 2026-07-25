@@ -1,3 +1,20 @@
+# ── Python dependencies ──
+# Install with: pip install -r requirements.txt
+#
+# ── System dependencies (NOT installed by pip) ──
+# These tools are required for PDF → image conversion (AI document verification).
+# Run the platform-specific setup script to install them:
+#
+#   Windows:  powershell -ExecutionPolicy Bypass -File setup.ps1
+#   Linux:    chmod +x setup.sh && ./setup.sh
+#   macOS:    chmod +x setup.sh && ./setup.sh
+#
+# Manual alternatives:
+#   pdftoppm (poppler-utils) — single binary, recommended
+#   ImageMagick + GhostScript — PHP extension, in-process conversion
+#
+# See docs/setup.md §1.1 for detailed installation steps.
+
 fastapi>=0.115.0
 uvicorn>=0.30.0
 openai>=1.50.0

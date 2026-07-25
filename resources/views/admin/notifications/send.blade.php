@@ -12,7 +12,7 @@
         @csrf
 
         <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Send To</label>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Send To <span class="text-red-500">*</span></label>
             <div class="flex space-x-3">
                 <label class="flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition" :class="target === 'applicants' ? 'border-gaf-green bg-gaf-green/5' : 'border-gray-200 hover:border-gray-300'">
                     <input type="radio" name="target_type" value="applicants" x-model="target" class="text-gaf-green focus:ring-gaf-green">
@@ -80,13 +80,13 @@
         </div>
 
         <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Subject</label>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Subject <span class="text-red-500">*</span></label>
             <input type="text" name="subject" required maxlength="255" placeholder="e.g., Recruitment Update" value="{{ old('subject') }}" class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-green focus:border-gaf-green {{ $errors->has('subject') ? 'border-red-500' : 'border-gray-300' }}">
             @error('subject') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
         <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Message</label>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Message <span class="text-red-500">*</span></label>
             <textarea name="message" required rows="6" placeholder="Type your notification message here..." class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-green focus:border-gaf-green resize-y {{ $errors->has('message') ? 'border-red-500' : 'border-gray-300' }}">{{ old('message') }}</textarea>
             @error('message') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>

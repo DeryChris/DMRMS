@@ -3,7 +3,10 @@
 @section('title', 'Dashboard - Ghana Armed Forces')
 
 @section('content')
-<div class="max-w-6xl mx-auto px-4">
+
+<div class="max-w-6xl mx-auto px-4"
+     x-data="dashboardLive()"
+     x-init="initPolling()">
     <div class="mb-8 gradient-border pb-4">
         <h1 class="font-heading font-bold text-2xl text-gray-800">Welcome, {{ $applicant->name ?? 'Applicant' }}</h1>
         <p class="text-gray-500 text-sm">Track your application progress</p>
@@ -13,9 +16,39 @@
         <x-applicant-status-timeline :currentStage="$currentStage" :stages="$stages" :clickableStages="$canGoBack ? ['draft', 'submitted'] : []" />
     </div>
 
-    {{-- Rejected Documents Alert --}}
-    @if($hasRejectedDocs)
+    {{-- Document Disqualification Alert (not fixable — no re-upload) --}}
+    @if($documentDisqualified)
     <div class="mb-8">
+        <div class="bg-red-50 border-l-4 border-red-500 rounded-r-xl shadow-sm p-6">
+            <div class="flex items-start space-x-4">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-heading font-semibold text-red-800">Application Disqualified — Document Verification Failed</h3>
+                    <p class="text-sm text-red-700 mt-1">The following document(s) could not be verified, and your application for the current recruitment cycle has been disqualified:</p>
+                    <ul class="mt-3 space-y-2">
+                        @foreach($disqualificationDocTypes as $i => $docType)
+                        <li class="flex items-start space-x-2 text-sm text-red-700">
+                            <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <div>
+                                <span class="font-medium">{{ $docType }}</span>
+                                <p class="text-xs text-red-500 mt-0.5">Reason: {{ $disqualificationReasons[$docType] ?? 'No specific reason provided.' }}</p>
+                            </div>
+                        </li>
+                        @endforeach
+                    </ul>
+                    <div class="mt-4">
+                        <p class="text-sm text-gray-600">Thank you for your interest in the Ghana Armed Forces. You may reapply in a future recruitment cycle.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @else
+    {{-- Rejected Documents Alert (Alpine-reactive: shows on load AND appears dynamically when admin rejects) --}}
+    {{-- Hidden when documentDisqualified is true (disqualification has its own banner above) --}}
+    <div id="rejected-docs-alert" class="mb-8" x-show="rejectedDocs.length > 0 && !documentDisqualified">
         <div class="bg-red-50 border-l-4 border-red-500 rounded-r-xl shadow-sm p-6">
             <div class="flex items-start space-x-4">
                 <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -24,13 +57,16 @@
                 <div class="flex-1">
                     <h3 class="font-heading font-semibold text-red-800">Documents Require Re-upload</h3>
                     <p class="text-sm text-red-700 mt-1">The following document(s) were rejected and need to be corrected before your application can proceed:</p>
-                    <ul class="mt-2 space-y-1">
-                        @foreach($rejectedDocTypes as $docType)
-                        <li class="flex items-center space-x-2 text-sm text-red-700">
-                            <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                            <span class="font-medium">{{ $docType }}</span>
-                        </li>
-                        @endforeach
+                    <ul class="mt-2 space-y-2">
+                        <template x-for="(docType, index) in rejectedDocs" :key="index">
+                            <li class="flex items-start space-x-2 text-sm text-red-700">
+                                <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                <div>
+                                    <span class="font-medium" x-text="docType"></span>
+                                    <p class="text-xs text-red-500 mt-0.5" x-text="'Reason: ' + (rejectedReasons[docType] || 'No specific reason provided.')"></p>
+                                </div>
+                            </li>
+                        </template>
                     </ul>
                     <div class="mt-4">
                         <a href="{{ route('applicant.documents') }}" class="inline-flex items-center space-x-2 bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 transition shadow-sm">
@@ -44,14 +80,91 @@
     </div>
     @endif
 
-    {{-- Go-back hint when applicant can return to earlier stages --}}
-    @if($canGoBack && !$hasRejectedDocs && $application && in_array($application->status, ['submitted', 'documents_verified']))
+    {{-- Eligibility Failed Alert --}}
+    @if($eligibilityFailed && $eligibilityResult)
+    <div class="mb-8">
+        <div class="bg-red-50 border-l-4 border-red-500 rounded-r-xl shadow-sm p-6">
+            <div class="flex items-start space-x-4">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-heading font-semibold text-red-800">Application Not Successful — Eligibility Criteria Not Met</h3>
+                    <p class="text-sm text-red-700 mt-1">Unfortunately, your application did not meet the following eligibility requirements:</p>
+                    <ul class="mt-3 space-y-2">
+                        @if(!$eligibilityResult->criminal_check)
+                        <li class="flex items-start space-x-2 text-sm text-red-700">
+                            <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span><strong>Criminal Record:</strong> Applicants with a criminal record are not eligible for recruitment.</span>
+                        </li>
+                        @endif
+                        @if(!$eligibilityResult->age_check)
+                        <li class="flex items-start space-x-2 text-sm text-red-700">
+                            <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span><strong>Age:</strong> You do not meet the age requirement for this recruitment cycle.</span>
+                        </li>
+                        @endif
+                        @if(!$eligibilityResult->nationality_check)
+                        <li class="flex items-start space-x-2 text-sm text-red-700">
+                            <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span><strong>Nationality:</strong> You do not meet the nationality requirement.</span>
+                        </li>
+                        @endif
+                        @if(!$eligibilityResult->education_check)
+                        <li class="flex items-start space-x-2 text-sm text-red-700">
+                            <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span><strong>Education:</strong> Your education level does not meet the minimum requirement.</span>
+                        </li>
+                        @endif
+                        @if(!$eligibilityResult->height_check)
+                        <li class="flex items-start space-x-2 text-sm text-red-700">
+                            <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span><strong>Height:</strong> You do not meet the minimum height requirement.</span>
+                        </li>
+                        @endif
+                        @if(!$eligibilityResult->marital_check)
+                        <li class="flex items-start space-x-2 text-sm text-red-700">
+                            <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span><strong>Marital Status:</strong> Your marital status does not meet the requirement for this cycle.</span>
+                        </li>
+                        @endif
+                        @if(!$eligibilityResult->document_check)
+                        <li class="flex items-start space-x-2 text-sm text-red-700">
+                            <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span><strong>Documents:</strong> Required documents are missing or not verified.</span>
+                        </li>
+                        @endif
+                    </ul>
+                    @if($eligibilityResult->rejection_reasons)
+                    <div class="mt-4 bg-red-100/50 rounded-lg p-4">
+                        <p class="text-sm font-medium text-red-800">Detailed reasons:</p>
+                        <ul class="mt-1 space-y-1">
+                            @foreach((array) $eligibilityResult->rejection_reasons as $reason)
+                            <li class="text-sm text-red-700 flex items-start space-x-2">
+                                <span class="text-red-500">&bull;</span>
+                                <span>{{ $reason }}</span>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
+                    <div class="mt-4">
+                        <p class="text-sm text-gray-600">Thank you for your interest in the Ghana Armed Forces. You may reapply in a future recruitment cycle if you meet the requirements.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Go-back hint shown only when applicant has rejected docs to re-upload --}}
+    @if($canGoBack && $application)
     <div class="mb-8">
         <div class="bg-blue-50 border-l-4 border-blue-500 rounded-r-xl shadow-sm p-5">
             <div class="flex items-start space-x-3">
                 <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <div>
-                    <p class="text-sm text-blue-800">You can click the <strong>Draft</strong> or <strong>Submitted</strong> steps in the progress bar above to go back and edit your application details or documents.</p>
+                    <p class="text-sm text-blue-800">You can click the <strong>Draft</strong> or <strong>Submitted</strong> steps in the progress bar above to edit your application details or re-upload documents.</p>
                 </div>
             </div>
         </div>
@@ -174,3 +287,61 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function dashboardLive() {
+    return {
+        previousStatus: '{{ $application?->status ?? "none" }}',
+        previousRejectedCount: {{ $hasRejectedDocs ? count($rejectedDocTypes) : 0 }},
+        rejectedDocs: {{ Js::from($rejectedDocTypes) }},
+        rejectedReasons: {{ Js::from($rejectedReasons) }},
+        documentDisqualified: {{ Js::from($documentDisqualified) }},
+        pollingTimer: null,
+
+        initPolling() {
+            // Poll every 5 seconds for live changes.
+            // Status changes trigger a full page refresh.
+            // Rejected-doc changes update Alpine state reactively (no refresh).
+            this.pollingTimer = setInterval(() => {
+                this.checkStatus();
+            }, 5000);
+        },
+
+        async checkStatus() {
+            try {
+                const response = await fetch('{{ route("applicant.dashboard.status") }}');
+                if (!response.ok) return;
+                const data = await response.json();
+
+                const statusChanged = data.applicationStatus && data.applicationStatus !== this.previousStatus;
+
+                // Update rejected docs reactively (no page reload)
+                if (data.rejectedDocTypes) {
+                    this.rejectedDocs = data.rejectedDocTypes;
+                }
+                if (data.rejectedReasons) {
+                    this.rejectedReasons = data.rejectedReasons;
+                }
+                if (data.documentDisqualified !== undefined) {
+                    this.documentDisqualified = data.documentDisqualified;
+                }
+
+                if (statusChanged) {
+                    this.previousStatus = data.applicationStatus;
+                    location.reload();
+                }
+            } catch (e) {
+                // Silent fail — polling will retry
+            }
+        },
+
+        destroy() {
+            if (this.pollingTimer) {
+                clearInterval(this.pollingTimer);
+            }
+        }
+    };
+}
+</script>
+@endpush

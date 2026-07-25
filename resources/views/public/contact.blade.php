@@ -63,7 +63,7 @@
                     @csrf
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                        <input type="text" name="name" value="{{ old('name') }}" placeholder="Your name" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('name') ? 'border-red-500' : 'border-gray-300' }}">
+                        <input type="text" name="name" value="{{ old('name') }}" placeholder="Your name" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+" title="Only letters, spaces, hyphens, and apostrophes" oninput="this.value = this.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '')" class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki {{ $errors->has('name') ? 'border-red-500' : 'border-gray-300' }}">
                         @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>

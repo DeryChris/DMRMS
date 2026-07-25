@@ -32,6 +32,7 @@ class Document extends Model
         'cross_reference_results',
         'ai_verified_at',
         'ai_verification_attempts',
+        'rejection_reason',
     ];
 
     protected $appends = ['file_url', 'view_url'];

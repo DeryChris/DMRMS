@@ -3,7 +3,7 @@
         @csrf
 
         <div>
-            <label for="email" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
+            <label for="email" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email Address <span style="color:#dc2626;">*</span></label>
             <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="your@email.com" required autofocus autocomplete="username"
                    style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:border-color 0.2s,box-shadow 0.2s;box-sizing:border-box;"
                    onfocus="this.style.borderColor='#5fa489';this.style.boxShadow='0 0 0 4px rgba(95,164,137,0.12)'"
@@ -12,7 +12,7 @@
         </div>
 
         <div>
-            <label for="password" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Password</label>
+            <label for="password" style="display:block;font-size:12px;font-weight:700;color:#4a7a65;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Password <span style="color:#dc2626;">*</span></label>
             <div style="position:relative;" x-data="{ showPassword: false }">
                 <input id="password" :type="showPassword ? 'text' : 'password'" name="password" placeholder="Enter your password" required autocomplete="current-password"
                        style="width:100%;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:14px;color:#1e293b;outline:none;background:#fff;transition:border-color 0.2s,box-shadow 0.2s;box-sizing:border-box;"
@@ -36,7 +36,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;">
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#64748b;cursor:pointer;">
                 <input type="checkbox" name="remember" style="width:16px;height:16px;border-radius:4px;border:2px solid #cbd5e1;accent-color:#14532d;">
-                Remember me
+                Remember <span style="color:#94a3b8;font-weight:400;">(optional)</span>
             </label>
             @if (Route::has('password.request'))
                 <a href="{{ route('password.request') }}" style="font-size:13px;color:#5fa489;font-weight:600;text-decoration:none;transition:color 0.2s;"

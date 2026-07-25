@@ -17,11 +17,11 @@
     <div class="glass-strong rounded-xl shadow-sm p-4">
         <form method="GET" class="flex flex-wrap gap-3 items-end">
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs text-gray-500 font-medium mb-1">Search</label>
+                <label class="block text-xs text-gray-500 font-medium mb-1">Search <span class="text-gray-400 font-normal">(Optional)</span></label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Name, email, GAF ID, phone..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none">
             </div>
             <div>
-                <label class="block text-xs text-gray-500 font-medium mb-1">Region</label>
+                <label class="block text-xs text-gray-500 font-medium mb-1">Region <span class="text-gray-400 font-normal">(Optional)</span></label>
                 <select name="region" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none">
                     <option value="">All Regions</option>
                     @foreach($regions as $r)
@@ -30,7 +30,7 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs text-gray-500 font-medium mb-1">Status</label>
+                <label class="block text-xs text-gray-500 font-medium mb-1">Status <span class="text-gray-400 font-normal">(Optional)</span></label>
                 <select name="status" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none">
                     <option value="">All Statuses</option>
                     @foreach($statuses as $s)
@@ -147,29 +147,29 @@
             @csrf @method('PUT')
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs text-gray-500 font-medium mb-1">First Name</label>
-                    <input type="text" name="first_name" x-model="form.first_name" @input="form.first_name = $event.target.value.replace(/[0-9]/g, '')" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('first_name') ? 'border-red-500' : 'border-gray-200' }}">
+                    <label class="block text-xs text-gray-500 font-medium mb-1">First Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="first_name" x-model="form.first_name" @input="form.first_name = $event.target.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '')" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+" title="Only letters, spaces, hyphens, and apostrophes" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('first_name') ? 'border-red-500' : 'border-gray-200' }}">
                     @error('first_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block text-xs text-gray-500 font-medium mb-1">Last Name</label>
-                    <input type="text" name="last_name" x-model="form.last_name" @input="form.last_name = $event.target.value.replace(/[0-9]/g, '')" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('last_name') ? 'border-red-500' : 'border-gray-200' }}">
+                    <label class="block text-xs text-gray-500 font-medium mb-1">Last Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="last_name" x-model="form.last_name" @input="form.last_name = $event.target.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-]/g, '')" pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+" title="Only letters, spaces, hyphens, and apostrophes" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('last_name') ? 'border-red-500' : 'border-gray-200' }}">
                     @error('last_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
             <div>
-                <label class="block text-xs text-gray-500 font-medium mb-1">Email</label>
+                <label class="block text-xs text-gray-500 font-medium mb-1">Email <span class="text-red-500">*</span></label>
                 <input type="email" name="email" x-model="form.email" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('email') ? 'border-red-500' : 'border-gray-200' }}">
                 @error('email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs text-gray-500 font-medium mb-1">Contact Number</label>
+                    <label class="block text-xs text-gray-500 font-medium mb-1">Contact Number <span class="text-gray-400 font-normal">(Optional)</span></label>
                     <input type="text" name="contact_number" x-model="form.contact_number" @input="form.contact_number = $event.target.value.replace(/\D/g, '').substring(0, 10)" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('contact_number') ? 'border-red-500' : 'border-gray-200' }}">
                     @error('contact_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block text-xs text-gray-500 font-medium mb-1">Region</label>
+                    <label class="block text-xs text-gray-500 font-medium mb-1">Region <span class="text-red-500">*</span></label>
                     <select name="region" x-model="form.region" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('region') ? 'border-red-500' : 'border-gray-200' }}">
                         <option value="">Select Region</option>
                         @foreach($regions as $r)
@@ -180,7 +180,7 @@
                 </div>
             </div>
             <div>
-                <label class="block text-xs text-gray-500 font-medium mb-1">Status</label>
+                <label class="block text-xs text-gray-500 font-medium mb-1">Status <span class="text-red-500">*</span></label>
                 <select name="status" x-model="form.status" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gaf-khaki/30 focus:border-gaf-khaki outline-none {{ $errors->has('status') ? 'border-red-500' : 'border-gray-200' }}">
                     @error('status') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     <option value="active">Active</option>
