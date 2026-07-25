@@ -700,55 +700,17 @@ class AdminWebController extends Controller
                     $application->update(['documents_finalized' => false]);
                 }
             } else {
-                // ── DISQUALIFYING: Notify + set application to rejected ────
-                Log::warning('Applicant disqualified — admin rejected document with non-fixable reason', [
+                // ── DISQUALIFYING: DocumentObserver handles everything ────
+                // The observer fires synchronously on $document->update() above,
+                // detects disqualifying rejection_reason text, and handles:
+                //   - Setting application to 'rejected'
+                //   - Sending dashboard + email to applicant
+                //   - Notifying admins
+                Log::warning('Admin rejected with non-fixable reason — observer will handle disqualification', [
                     'application_id' => $application->id,
                     'document_id'    => $document->id,
                     'reason_key'     => $reasonKey,
                 ]);
-
-                $application->update(['status' => 'rejected']);
-
-                if ($applicant) {
-                    $docTypeLabel = str_replace('_', ' ', ucfirst($document->document_type));
-                    $subject = 'Application Disqualified — Document Verification Failed';
-                    $message = "Your {$docTypeLabel} document has been rejected due to: {$rejectionReason}. "
-                             . "Your application for the current recruitment cycle has been disqualified.";
-
-                    $this->notificationService->sendDashboard(
-                        $applicant->id,
-                        'document_disqualified',
-                        $subject,
-                        $message
-                    );
-
-                    // Send email notification
-                    try {
-                        \Illuminate\Support\Facades\Mail::raw(
-                            "Dear {$applicant->first_name} {$applicant->last_name},\n\n"
-                            . "{$message}\n\n"
-                            . "GAF ID: {$application->gaf_id}\n"
-                            . "If you believe this decision is an error, please contact recruitment@gaf.mil.gh\n\n"
-                            . "Ghana Armed Forces – Defence Manpower Recruitment Management System",
-                            function ($mail) use ($applicant, $subject) {
-                                $mail->to($applicant->email, "{$applicant->first_name} {$applicant->last_name}")
-                                     ->subject($subject);
-                            }
-                        );
-                    } catch (\Exception $e) {
-                        Log::error("Disqualification email failed for admin rejection", [
-                            'applicant' => $applicant->email,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                }
-
-                $this->notificationService->notifyAdminsByRole(
-                    ['admin', 'super_admin'],
-                    'document_disqualified',
-                    "Applicant Disqualified by Admin — {$document->document_type}",
-                    "{$application->gaf_id}: {$applicant?->name} disqualified — admin rejected {$document->document_type} with reason '{$reasonKey}'. {$rejectionReason}"
-                );
             }
         }
 

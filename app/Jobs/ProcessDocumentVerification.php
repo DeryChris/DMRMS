@@ -488,8 +488,10 @@ PROMPT;
             } elseif ($verdict === 'rejected' && $confidence >= $rejectThreshold) {
                 $reasonText = !empty($reasons) ? implode(', ', $reasons) : 'Document did not pass AI verification.';
 
-                // Determine if rejection is due to data mismatch or fraud (disqualifying)
-                // vs. fixable issues (blurry/wrong type — route to admin review)
+                // Determine if this is a disqualifying rejection (mismatch/fraud)
+                // vs. non-critical (blurry/wrong type — route to admin review).
+                // Disqualification + notifications are automatically handled by
+                // DocumentObserver — the job only sets the status and logs.
                 $crossRef   = $parsed['cross_reference'] ?? [];
                 $fraudInds  = $parsed['fraud_indicators'] ?? [];
                 $hasMismatch = !($crossRef['name_match'] ?? true)
@@ -499,7 +501,11 @@ PROMPT;
                 $hasFraud    = is_array($fraudInds) && count($fraudInds) > 0;
 
                 if ($hasMismatch || $hasFraud) {
-                    // 🚨 DISQUALIFYING REJECTION — data mismatch or forgery
+                    // DocumentObserver fires on this update and handles:
+                    //   - Setting application to 'rejected'
+                    //   - Sending dashboard notification to applicant
+                    //   - Sending disqualification email
+                    //   - Notifying admins
                     $this->document->update([
                         'verification_status' => 'rejected',
                         'ai_confidence'       => $confidence,
@@ -507,7 +513,7 @@ PROMPT;
                         'rejection_reason'    => $reasonText,
                     ]);
 
-                    Log::warning("Document auto-rejected — DISQUALIFYING (mismatch/fraud)", [
+                    Log::warning("Document auto-rejected — DISQUALIFYING (mismatch/fraud) — observer will handle", [
                         'doc_id'      => $this->document->id,
                         'type'        => $docType,
                         'confidence'  => $confidence,
@@ -515,56 +521,6 @@ PROMPT;
                         'hasFraud'    => $hasFraud,
                         'reasons'     => $reasons,
                     ]);
-
-                    // Disqualify the applicant — set application to rejected
-                    if ($application && $applicant) {
-                        $application->update(['status' => 'rejected']);
-                        Log::info("Applicant disqualified due to document mismatch/fraud", [
-                            'applicant_id' => $applicant->id,
-                            'application_id' => $application->id,
-                            'doc_id' => $this->document->id,
-                            'reason' => $reasonText,
-                        ]);
-
-                        // Notify with disqualification message (no re-upload offer)
-                        $subject = 'Application Disqualified — Document Verification Failed';
-                        $docTypeLabel = str_replace('_', ' ', ucfirst($docType));
-                        $message = "Your {$docTypeLabel} document was reviewed by our AI system and flagged for "
-                                 . ($hasMismatch ? 'information mismatch with your application record' : '')
-                                 . ($hasMismatch && $hasFraud ? ' and ' : '')
-                                 . ($hasFraud ? 'potential security concerns' : '')
-                                 . ". Reason: {$reasonText}. "
-                                 . "Your application for the current recruitment cycle has been disqualified.";
-
-                        $notification->sendDashboard($applicant->id, 'document_disqualified', $subject, $message);
-
-                        try {
-                            \Illuminate\Support\Facades\Mail::raw(
-                                "Dear {$applicant->first_name} {$applicant->last_name},\n\n"
-                                . "{$message}\n\n"
-                                . "GAF ID: {$application->gaf_id}\n"
-                                . "Recruitment Cycle: {$application->cycle->name}\n\n"
-                                . "If you believe this decision is an error, please contact recruitment@gaf.mil.gh\n\n"
-                                . "Ghana Armed Forces – Defence Manpower Recruitment Management System",
-                                function ($mail) use ($applicant, $subject) {
-                                    $mail->to($applicant->email, "{$applicant->first_name} {$applicant->last_name}")
-                                         ->subject($subject);
-                                }
-                            );
-                        } catch (\Exception $e) {
-                            Log::error("Disqualification email failed", [
-                                'applicant' => $applicant->email,
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
-                    }
-
-                    $notification->notifyAdminsByRole(
-                        ['admin', 'super_admin'],
-                        'document_disqualified',
-                        "Applicant Disqualified — {$docTypeLabel}",
-                        "{$gafId}: {$applicant?->name} disqualified — AI found mismatch/fraud on {$docTypeLabel}. {$reasonText}"
-                    );
 
                 } else {
                     // Non-critical rejection (blurry, wrong angle, etc.) — route to admin review
