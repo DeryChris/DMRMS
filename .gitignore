@@ -19,15 +19,9 @@
 /storage/*.key
 /storage/pail
 /vendor
-/docs
 /memory
-docs/thesis documentation
+/docs/thesis\ documentation/
 Homestead.json
 Homestead.yaml
 Thumbs.db
-AGENTS.md
-CLAUDE.md
-notes.md
-prd.md
-prd - supporting.md
 notes.md
