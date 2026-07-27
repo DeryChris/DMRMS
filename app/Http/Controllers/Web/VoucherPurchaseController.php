@@ -67,7 +67,7 @@ class VoucherPurchaseController extends Controller
             'cycle_id' => ['required', 'exists:cycles,id,status,active'],
             'purchaser_name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u'],
             'purchaser_email' => ['required', 'email', 'max:100'],
-            'purchaser_phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s()]+$/'],
+            'purchaser_phone' => ['required', 'string', 'digits:10'],
             'payment_method' => ['required', 'string', 'in:mobile_money,bank_transfer,card,bank_deposit'],
         ]);
 
@@ -137,12 +137,12 @@ class VoucherPurchaseController extends Controller
             'cycle_id' => ['required', 'exists:cycles,id,status,active'],
             'purchaser_name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-zÀ-ÖØ-öø-ÿ\s\'\-]+$/u'],
             'purchaser_email' => ['required', 'email', 'max:100'],
-            'purchaser_phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s()]+$/'],
+            'purchaser_phone' => ['required', 'string', 'digits:10'],
             'payment_method' => ['required', 'string', 'in:mobile_money,card,bank_transfer'],
 
             // Mobile Money specific
             'momo_provider' => ['required_if:payment_method,mobile_money', 'nullable', 'string', 'in:mtn,atl,vod'],
-            'momo_phone' => ['required_if:payment_method,mobile_money', 'nullable', 'string', 'max:20'],
+            'momo_phone' => ['required_if:payment_method,mobile_money', 'nullable', 'string', 'digits:10'],
 
             // Bank Transfer specific
             'bank_code' => ['required_if:payment_method,bank_transfer', 'nullable', 'string', 'max:10'],
@@ -427,7 +427,7 @@ class VoucherPurchaseController extends Controller
     /**
      * Lookup voucher by email.
      */
-    public function lookupVoucher(Request $request): View
+    public function lookupVoucher(Request $request): View|\Illuminate\Http\JsonResponse
     {
         $validated = $request->validate([
             'lookup_email' => 'required|email',
@@ -437,6 +437,23 @@ class VoucherPurchaseController extends Controller
             ->with('cycle')
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // AJAX response — used by the frontend overlay
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success'  => true,
+                'email'    => $validated['lookup_email'],
+                'vouchers' => $lookupResults->map(fn($v) => [
+                    'id'            => $v->id,
+                    'cycle_name'    => $v->cycle?->name ?? 'N/A',
+                    'serial_number' => $v->serial_number,
+                    'pin_code'      => $v->pin_code,
+                    'status'        => $v->status,
+                    'purchased_at'  => $v->purchased_at?->format('d M Y'),
+                    'expires_at'    => $v->expires_at?->format('d M Y'),
+                ]),
+            ]);
+        }
 
         $activeCycles = Cycle::where('status', 'active')
             ->orderBy('start_date', 'desc')
@@ -451,7 +468,8 @@ class VoucherPurchaseController extends Controller
 
         $unsplashPhoto = unsplash_hero();
 
-        return view('public.buy-voucher', compact('activeCycles', 'paymentMethods', 'unsplashPhoto', 'lookupResults'));
+        return view('public.buy-voucher',
+            compact('activeCycles', 'paymentMethods', 'unsplashPhoto', 'lookupResults'));
     }
 
     /**

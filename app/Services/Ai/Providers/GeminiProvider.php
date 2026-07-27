@@ -108,9 +108,9 @@ You are a Ghana Armed Forces document verification officer. Analyze the provided
 
 Rules:
 - Be decisive and err on the side of verification.
-- Set confidence >= 0.5 if the document appears valid.
+- Set confidence >= 0.2 if the document appears valid.
 - If it looks authentic and matches reference data, mark verified.
-- If clearly forged or doesn't match at all (confidence >= 0.7), mark rejected.
+- If clearly forged or doesn't match at all (confidence >= 0.3), mark rejected.
 - When in doubt, lean toward "verified" at lower confidence.
 - Extract any visible text fields from the document.
 PROMPT;
@@ -188,8 +188,8 @@ PROMPT;
                 ]);
 
             if ($response->failed()) {
-                Log::error('Gemini document analysis failed', ['status' => $response->status()]);
-                return $this->prepareErrorResponse('Document analysis failed', $start);
+                Log::error('Gemini document analysis failed', ['status' => $response->status(), 'body' => $response->body()]);
+                return $this->prepareErrorResponse('Document analysis failed: ' . $response->body(), $start);
             }
 
             $data = $response->json();
@@ -327,7 +327,20 @@ PROMPT;
 
             $data = $response->json();
 
-            return $this->prepareSuccessResponse($data, $start, 'embeddings');
+            $processingTime = round((microtime(true) - $start) * 1000, 2);
+            $embedding = $data['embedding']['values'] ?? [];
+            $tokensUsed = $this->extractTokens($data);
+
+            $this->logUsage('embeddings', $tokensUsed, 0.0);
+
+            return [
+                'success'         => true,
+                'data'            => ['content' => json_encode($data)],
+                'model'           => $this->embeddingModel,
+                'tokens_used'     => $tokensUsed,
+                'processing_time' => $processingTime,
+                'cost'            => 0.0,
+            ];
         } catch (\Exception $e) {
             Log::error('Gemini embeddings exception: ' . $e->getMessage());
             return $this->prepareErrorResponse($e->getMessage(), $start);

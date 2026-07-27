@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Jobs\AutoRecruit;
 use App\Models\Application;
 use App\Models\Barrack;
 use App\Models\FinalDecision;
@@ -33,7 +32,9 @@ class ProcessFinalDecision implements ShouldQueue
         ?SelectionStrategy $strategy = null,
     ): void {
         try {
-            $applications = Application::with(['applicant', 'screeningResult', 'eligibilityResult'])
+            // Group screening_completed apps by cycle so each cycle is scored
+            // independently with its own vacancy count and scoring weights.
+            $applications = Application::with(['applicant', 'screeningResult', 'eligibilityResult', 'cycle'])
                 ->where('status', 'screening_completed')
                 ->whereDoesntHave('finalDecision')
                 ->get();
@@ -43,31 +44,42 @@ class ProcessFinalDecision implements ShouldQueue
                 return;
             }
 
-            $cycle = $applications->first()->cycle;
-            $availablePositions = $cycle?->total_vacancies ?? 100;
+            $grouped = $applications->groupBy('cycle_id');
 
-            $scorer = new DecisionScoringService(
-                weights: config('recruitment.scoring_weights'),
-                cycleWeights: $cycle?->scoring_weights,
-            );
+            foreach ($grouped as $cycleId => $cycleApps) {
+                $cycle = $cycleApps->first()->cycle;
+                $availablePositions = $cycle?->total_vacancies ?? (int) config('recruitment.default_vacancies', 100);
 
-            $reserveRatio = $cycle?->scoring_weights['reserve_ratio'] ?? config('recruitment.reserve_ratio', 0.2);
+                $scorer = new DecisionScoringService(
+                    weights: config('recruitment.scoring_weights'),
+                    cycleWeights: $cycle?->scoring_weights,
+                );
 
-            $strategy ??= new DefaultSelectionStrategy($scorer, (float) $reserveRatio);
+                $reserveRatio = $cycle?->scoring_weights['reserve_ratio']
+                    ?? config('recruitment.reserve_ratio', 0.2);
 
-            $result = $strategy->select($applications, $availablePositions);
+                $localStrategy = $strategy ?? new DefaultSelectionStrategy($scorer, (float) $reserveRatio);
 
-            DB::transaction(function () use ($result, $notifier) {
-                $this->applySelection('selected', $result->selected, $notifier);
-                $this->applySelection('reserve', $result->reserve, $notifier, true);
-                $this->applySelection('rejected', $result->rejected, $notifier);
-            });
+                $result = $localStrategy->select($cycleApps, $availablePositions);
+
+                DB::transaction(function () use ($result, $notifier) {
+                    $this->applySelection('selected', $result->selected, $notifier);
+                    $this->applySelection('reserve', $result->reserve, $notifier, true);
+                    $this->applySelection('rejected', $result->rejected, $notifier);
+                });
+
+                Log::info('ProcessFinalDecision: Cycle processed', [
+                    'cycle_id'  => $cycleId,
+                    'positions' => $availablePositions,
+                    'selected'  => count($result->selected),
+                    'reserve'   => count($result->reserve),
+                    'rejected'  => count($result->rejected),
+                ]);
+            }
 
             Log::info('ProcessFinalDecision completed', [
-                'selected' => count($result->selected),
-                'reserve' => count($result->reserve),
-                'rejected' => count($result->rejected),
-                'total' => $applications->count(),
+                'total_applications' => $applications->count(),
+                'cycles_processed'   => $grouped->count(),
             ]);
 
         } catch (\Exception $e) {
@@ -132,13 +144,9 @@ class ProcessFinalDecision implements ShouldQueue
 
             $notifier->finalDecision($application);
 
-            // AutoRecruit is now dispatched instantly by the Application model's
-            // central status-change observer (booted/updated) — no 14-day delay.
-            // This dispatch is kept as a redundant safety net; the observer
-            // handles the immediate trigger for presentation/demo flow.
-            if ($status === 'selected' && config('recruitment.auto_recruit.enabled', false)) {
-                AutoRecruit::dispatch($application);
-            }
+            // AutoRecruit is dispatched by the Application model's central
+            // status-change observer (booted/updated) when status changes to
+            // 'selected' — no need to dispatch from here.
         }
     }
 }

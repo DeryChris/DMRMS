@@ -81,7 +81,7 @@ class MnotifySmsService
             $campaignId = $body['summary']['message_id'] ?? ($body['summary']['_id'] ?? null);
             $providerMsg = $body['message'] ?? ($body['status'] ?? 'unknown');
 
-            if ($response->successful() && ($body['code'] ?? 0) === 2000) {
+            if ($response->successful() && ((int) ($body['code'] ?? 0)) === 2000) {
                 $smsLog->update([
                     'campaign_id'        => $campaignId,
                     'status'             => 'sent',
@@ -143,15 +143,23 @@ class MnotifySmsService
 
         try {
             $response = Http::timeout(10)
-                ->get("{$this->baseUrl}/sms/balance?key={$this->apiKey}");
+                ->get("{$this->baseUrl}/balance/sms?key={$this->apiKey}");
 
             $body = $response->json();
 
-            if ($response->successful() && isset($body['balance'])) {
-                return (float) $body['balance'];
+            if ($response->successful()) {
+                // Response can be: {"status":"success","balance":4000,"bonus":70}
+                // or a simple numeric value
+                if (isset($body['balance'])) {
+                    return (float) $body['balance'];
+                }
+                if (is_numeric($body)) {
+                    return (float) $body;
+                }
             }
 
             Log::channel('sms')->warning('[MNotify] Balance check failed', [
+                'status' => $response->status(),
                 'response' => $body,
             ]);
 

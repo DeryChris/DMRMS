@@ -128,6 +128,22 @@ class AiGateway
         $mime = @mime_content_type($path);
 
         if (in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp'], true)) {
+            // Downscale images that are too large for the AI provider
+            $maxBytes = 512 * 1024; // 512KB max
+            $maxDim = 1200;         // max 1200px on longest side
+
+            if (filesize($path) > $maxBytes) {
+                $resized = $this->resizeImage($path, $maxDim, $maxBytes);
+                if ($resized !== null) {
+                    Log::info('AiGateway: image resized/compressed for AI provider', [
+                        'source' => basename($path),
+                        'original' => round(filesize($path) / 1024, 1) . 'KB',
+                        'resized' => round(filesize($resized) / 1024, 1) . 'KB',
+                    ]);
+                    return $resized;
+                }
+            }
+
             return $path;
         }
 
@@ -144,7 +160,7 @@ class AiGateway
                 $img->readImage($path);
                 $img->setIteratorIndex(0);
                 $img->setImageFormat('jpg');
-                $img->setImageCompressionQuality(85);
+                $img->setImageCompressionQuality(60);
                 $img->writeImage($tmpPath);
                 $img->clear();
                 Log::info('AiGateway: PDF converted to image via Imagick', ['source' => $path]);
@@ -179,6 +195,72 @@ class AiGateway
         Log::warning('AiGateway: PDF conversion unavailable — install imagick+ghostscript or poppler-utils. Sending PDF as-is (will fall to needs_review).');
 
         return $path;
+    }
+
+    /**
+     * Resize/compress an image so it doesn't exceed size/memory limits.
+     * Returns the path to the resized image (a temp file) or null on failure.
+     */
+    protected function resizeImage(string $path, int $maxDim, int $maxBytes): ?string
+    {
+        $tmpPath = sys_get_temp_dir() . '/dmrms_resized_' . Str::random(16) . '.jpg';
+
+        // Try Imagick first (best quality)
+        if (class_exists(\Imagick::class, false)) {
+            try {
+                $img = new \Imagick($path);
+                $geo = $img->getImageGeometry();
+                if ($geo['width'] > $maxDim || $geo['height'] > $maxDim) {
+                    $img->resizeImage($maxDim, $maxDim, \Imagick::FILTER_LANCZOS, 1, true);
+                }
+                $img->setImageFormat('jpeg');
+                $img->setImageCompressionQuality(60);
+                $img->writeImage($tmpPath);
+                $img->clear();
+                return $tmpPath;
+            } catch (\Exception $e) {
+                Log::warning('AiGateway: Imagick resize failed', ['error' => $e->getMessage()]);
+                @unlink($tmpPath);
+            }
+        }
+
+        // Fallback: GD
+        if (function_exists('imagecreatefromstring')) {
+            try {
+                $src = @imagecreatefromstring(file_get_contents($path));
+                if (!$src) return null;
+
+                $origW = imagesx($src);
+                $origH = imagesy($src);
+
+                // Calculate new dimensions
+                $ratio = min($maxDim / $origW, $maxDim / $origH, 1);
+                $newW = (int) round($origW * $ratio);
+                $newH = (int) round($origH * $ratio);
+
+                $dst = imagecreatetruecolor($newW, $newH);
+                imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+
+                // Start with quality 60, reduce until under maxBytes
+                $quality = 60;
+                do {
+                    ob_start();
+                    imagejpeg($dst, null, $quality);
+                    $data = ob_get_clean();
+                    $quality -= 10;
+                } while (strlen($data) > $maxBytes && $quality > 15);
+
+                file_put_contents($tmpPath, $data);
+                imagedestroy($src);
+                imagedestroy($dst);
+                return $tmpPath;
+            } catch (\Exception $e) {
+                Log::warning('AiGateway: GD resize failed', ['error' => $e->getMessage()]);
+                @unlink($tmpPath);
+            }
+        }
+
+        return null;
     }
 
     protected function getProvider(): AiProviderInterface

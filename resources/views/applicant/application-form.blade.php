@@ -280,21 +280,23 @@
         return fd;
     }
 }" class="max-w-5xl mx-auto px-4 relative">
-    {{-- Floating toast notification --}}
-    <div x-show="toastVisible" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-y-2 opacity-0" x-transition:enter-end="translate-y-0 opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-y-0 opacity-100" x-transition:leave-end="translate-y-2 opacity-0"
-         class="fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-sm font-medium"
-         :class="toastType === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'">
-        <template x-if="toastType === 'success'">
-            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-        </template>
-        <template x-if="toastType === 'error'">
-            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        </template>
-        <span x-text="toastMessage"></span>
-        <button @click="toastVisible = false" class="ml-2 opacity-70 hover:opacity-100">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-    </div>
+    {{-- Floating toast notification (teleported to body to avoid layout shift) --}}
+    <template x-teleport="body">
+        <div x-show="toastVisible" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-2"
+             class="fixed top-4 right-4 z-[100] flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-sm font-medium" style="backface-visibility: hidden"
+             :class="toastType === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'">
+            <template x-if="toastType === 'success'">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </template>
+            <template x-if="toastType === 'error'">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </template>
+            <span x-text="toastMessage"></span>
+            <button @click="toastVisible = false" class="ml-2 opacity-70 hover:opacity-100">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </template>
     <script id="all-corps-data" type="application/json">@json($allCorpsArray)</script>
     <script id="sectors-data" type="application/json">@json($sectorsArray)</script>
     <script id="eligible-corps-data" type="application/json">{!! $eligibleCorpIdsJson !!}</script>
@@ -360,10 +362,17 @@
                     </template>
                 </div>
             </div>
-            <div class="mt-2 text-right">
-                <span x-show="autoSaveStatus === 'saving'" class="text-xs text-amber-600"><svg class="inline w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Saving...</span>
-                <span x-show="autoSaveStatus === 'saved'" class="text-xs text-green-600"><svg class="inline w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Saved</span>
-                <span x-show="autoSaveStatus === 'error'" class="text-xs text-red-600">Save failed</span>
+            <div class="mt-2 text-right h-5 flex items-center justify-end">
+                <span x-show="autoSaveStatus !== ''" class="text-xs inline-flex items-center gap-1" :class="{'text-amber-600': autoSaveStatus === 'saving', 'text-green-600': autoSaveStatus === 'saved', 'text-red-600': autoSaveStatus === 'error'}">
+                    <template x-if="autoSaveStatus === 'saving'">
+                        <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    </template>
+                    <template x-if="autoSaveStatus === 'saved'">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </template>
+                    <span x-text="autoSaveStatus === 'saving' ? 'Saving...' : (autoSaveStatus === 'saved' ? 'Saved' : 'Save failed')"></span>
+                </span>
+                <span x-show="autoSaveStatus === ''" class="text-xs text-transparent select-none" aria-hidden="true">&nbsp;</span>
             </div>
         </div>
 
@@ -746,10 +755,21 @@
                         </p>
                         @endforeach
                     </div>
-                    <label class="flex items-center space-x-3 mt-4">
-                        <input type="checkbox" x-model="agreed" class="rounded border-gray-300">
-                        <span class="text-sm text-gray-600">I confirm that all the information provided is true and accurate to the best of my knowledge.</span>
-                    </label>
+                    <div class="mt-6 p-5 rounded-xl border-2 transition-all duration-200" :class="agreed ? 'bg-green-50 border-green-400' : 'bg-amber-50 border-amber-300'">
+                        <label class="flex items-start gap-4 cursor-pointer select-none">
+                            <input type="checkbox" x-model="agreed" class="mt-0.5 w-5 h-5 rounded border-gray-300 text-gaf-green focus:ring-gaf-green focus:ring-2 cursor-pointer">
+                            <div>
+                                <span class="text-sm font-bold" :class="agreed ? 'text-green-800' : 'text-amber-800'">Confirmation</span>
+                                <p class="text-sm mt-1" :class="agreed ? 'text-green-700' : 'text-amber-700'">I confirm that all the information provided above is true, complete, and accurate to the best of my knowledge. I understand that providing false information may result in disqualification.</p>
+                            </div>
+                        </label>
+                        <template x-if="!agreed">
+                            <p class="text-xs text-amber-600 mt-3 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                You must check this box to submit your application.
+                            </p>
+                        </template>
+                    </div>
                 </div>
             </div>
             <div class="border-t border-gray-100 px-8 pb-8 pt-6">

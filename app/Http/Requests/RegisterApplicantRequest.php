@@ -19,7 +19,7 @@ class RegisterApplicantRequest extends FormRequest
             'last_name' => ['required', 'string', 'max:50'],
             'date_of_birth' => ['required', 'date', 'before:18 years ago'],
             'gender' => ['required', 'in:Male,Female'],
-            'contact_number' => ['required', 'string', 'max:15'],
+            'contact_number' => ['required', 'string', 'digits:10'],
             'email' => ['required', 'email', 'unique:applicants,email,NULL,id,deleted_at,NULL'],
             'residential_address' => ['required', 'string'],
             'region' => ['required', 'string', 'max:50'],

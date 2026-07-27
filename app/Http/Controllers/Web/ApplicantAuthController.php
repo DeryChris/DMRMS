@@ -57,10 +57,14 @@ class ApplicantAuthController extends Controller
         if (Auth::guard('applicant')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
+            // Clear any stale intended URL (e.g. from a timed-out AJAX poll or dead bookmark)
+            // so the user always lands on their dashboard after login.
+            $request->session()->forget('url.intended');
+
             $applicant = Auth::guard('applicant')->user();
             $applicant->update(['last_login' => now()]);
 
-            return redirect()->intended(route('applicant.dashboard'));
+            return redirect()->route('applicant.dashboard');
         }
 
         throw ValidationException::withMessages([

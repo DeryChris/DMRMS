@@ -64,13 +64,22 @@
             <div class="glass-strong rounded-xl shadow-sm p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-heading font-semibold text-lg text-gray-800">Documents</h3>
-                    <form action="{{ route('admin.applications.verify-all-documents', $application->id) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 transition-colors" title="Verify all pending/needs_review documents">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            Verify All Pending
-                        </button>
-                    </form>
+                    <div class="flex items-center gap-2">
+                        <form action="{{ route('admin.applications.verify-all-documents', $application->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 transition-colors" title="Verify all pending/needs_review documents">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Verify All Pending
+                            </button>
+                        </form>
+                        <form action="{{ route('admin.applications.refresh-document-verification', $application->id) }}" method="POST" onsubmit="return confirm('This will reset all document AI verification results and re-queue them for AI analysis. Continue?')">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors" title="Reset and re-run AI verification on all documents">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                Refresh AI
+                            </button>
+                        </form>
+                    </div>
                 </div>
                 <div class="space-y-3">
                     @forelse($application->documents as $doc)

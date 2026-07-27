@@ -60,7 +60,7 @@ class ApplicantFactory extends Factory
             'date_of_birth' => fake()->dateTimeBetween('-30 years', '-18 years')->format('Y-m-d'),
             'gender' => $gender,
             'marital_status' => fake()->randomElement(['Single', 'Single', 'Single', 'Single', 'Married']),
-            'contact_number' => '+233' . fake()->numerify('#########'),
+            'contact_number' => '0' . fake()->numerify('#########'),
             'email' => fake()->unique()->safeEmail(),
             'residential_address' => 'P.O. Box ' . fake()->numberBetween(100, 9999) . ', ' . $region,
             'region' => $region,

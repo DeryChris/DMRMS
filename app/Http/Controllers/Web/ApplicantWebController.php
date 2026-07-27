@@ -518,7 +518,7 @@ class ApplicantWebController extends Controller
         imagedestroy($img);
     }
 
-    public function uploadDocument(Request $request): RedirectResponse
+    public function uploadDocument(Request $request): RedirectResponse|JsonResponse
     {
         $applicant = Auth::guard('applicant')->user();
         $application = $applicant->application;
@@ -572,7 +572,7 @@ class ApplicantWebController extends Controller
                 $existing->delete();
             }
 
-            // Create the new document record — always finalized + AI-verified instantly
+            // Create the new document record as a draft (not yet sent to AI)
             $newDoc = Document::create([
                 'application_id' => $application->id,
                 'document_type' => $validated['document_type'],
@@ -582,27 +582,21 @@ class ApplicantWebController extends Controller
                 'mime_type' => $file->getMimeType(),
                 'upload_date' => now(),
                 'verification_status' => 'pending',
-                'is_draft' => false,
-                'finalized_at' => now(),
+                'is_draft' => true,
             ]);
         });
 
-        // Trigger AI verification immediately (no need for "Proceed to Application" step)
-        if ($newDoc) {
-            DocumentUploaded::dispatch($newDoc);
-        }
-
         // AJAX response — used by the frontend for auto-advance to next doc type
-        if ($request->ajax()) {
+        if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Document uploaded. AI verification queued.',
+                'message' => 'Document saved as draft.',
                 'document_type' => $validated['document_type'],
                 'uploaded_doc_types' => $application->fresh()->documents()->pluck('document_type')->toArray(),
             ]);
         }
 
-        return redirect()->route('applicant.documents')->with('success', 'Document uploaded. AI verification has been queued — you will see the result shortly.');
+        return redirect()->route('applicant.documents')->with('success', 'Document saved as draft. Click "Proceed to Application" when ready for AI verification.');
     }
 
     public function finalizeDocuments(): RedirectResponse

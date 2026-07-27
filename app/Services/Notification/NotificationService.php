@@ -435,6 +435,6 @@ class NotificationService
     public function sendSmsVerificationCode(Applicant $applicant, string $code): void
     {
         $message = "Your verification code is: {$code}. Valid for 30 minutes.";
-        $this->sendSms($applicant->contact_number, $message, isOtp: true);
+        $this->sendSms($applicant->contact_number, $message);
     }
 }

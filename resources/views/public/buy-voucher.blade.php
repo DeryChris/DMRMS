@@ -141,7 +141,7 @@
                                    class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki transition">
                             <p x-show="touched.purchaser_phone && !validPhone" class="text-red-500 text-xs mt-1">
                                 <template x-if="purchaser_phone.length === 0">Phone number is required</template>
-                                <template x-if="purchaser_phone.length > 0 && purchaser_phone.replace(/[^0-9]/g,'').length < 10">Phone must have at least 10 digits</template>
+                                <template x-if="purchaser_phone.length > 0 && !/^\d{10}$/.test(purchaser_phone)">Phone must be exactly 10 digits</template>
                             </p>
                             @error('purchaser_phone') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
@@ -183,7 +183,9 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">MoMo Phone Number <span class="text-red-500">*</span></label>
-                                <input type="tel" x-model="momo_phone" placeholder="0551234987"
+                                <input type="tel" x-model="momo_phone"
+                                       @input="momo_phone = $event.target.value.replace(/\D/g, '').substring(0, 10)"
+                                       placeholder="0551234987"
                                        class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki focus:border-gaf-khaki transition border-gray-300">
                                 <p class="text-xs text-gray-400 mt-1">Enter the 10-digit phone number registered with your mobile money</p>
                             </div>
@@ -412,77 +414,123 @@
         </div>
     </div>
 
-    {{-- Voucher Lookup Section --}}
-    <div class="mt-8" x-data="{ showLookup: false, showLookupModal: {{ isset($lookupResults) ? 'true' : 'false' }}, lookupEmail: '{{ old('lookup_email', '') }}', lookupTouched: false }">
-        <button @click="showLookup = !showLookup" class="w-full text-center text-sm text-gaf-green hover:text-gaf-dark-green font-semibold py-2 transition">
-            <span x-text="showLookup ? 'Hide' : 'Already purchased? Check your voucher'"></span>
+    {{-- Voucher Lookup Overlay (button + modal in one) --}}
+    <div class="mt-8 text-center" x-data="{
+        showLookup: false,
+        lookupEmail: '',
+        lookupTouched: false,
+        lookupLoading: false,
+        lookupResults: null,
+        lookupError: '',
+        async doLookup() {
+            if (!this.lookupEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.lookupEmail)) return;
+            this.lookupLoading = true;
+            this.lookupError = '';
+            try {
+                const res = await fetch('{{ route("voucher.lookup") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    body: new URLSearchParams({ lookup_email: this.lookupEmail }),
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    this.lookupError = data.message || 'Lookup failed.';
+                } else {
+                    this.lookupResults = data.vouchers;
+                    this.lookupEmailSearched = data.email;
+                }
+            } catch (e) {
+                this.lookupError = 'Network error. Please try again.';
+            }
+            this.lookupLoading = false;
+        }
+    }">
+        <button @click="showLookup = true; lookupEmail = ''; lookupResults = null; lookupError = ''; lookupTouched = false" class="text-sm text-gaf-green hover:text-gaf-dark-green font-semibold py-2 transition">
+            Already purchased? Check your voucher
         </button>
 
-        <div x-show="showLookup" x-cloak x-transition class="mt-4 bg-gray-50 rounded-xl border border-gray-200 p-6">
-            <h3 class="font-heading font-semibold text-sm text-gray-700 mb-3">Look up your purchased voucher</h3>
-            <form method="POST" action="{{ route('voucher.lookup') }}" class="flex gap-3 flex-wrap" @submit.prevent="if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lookupEmail)) $el.submit()">
-                @csrf
-                <div class="flex-1 min-w-[200px]">
-                    <input type="email" name="lookup_email"
-                           x-model="lookupEmail"
-                           @input="lookupTouched = true"
-                           @blur="lookupTouched = true"
-                           placeholder="Enter your email address"
-                           required
-                           class="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-gaf-khaki transition"
-                           :class="lookupTouched ? (lookupEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lookupEmail) ? 'border-green-500' : 'border-red-500') : 'border-gray-300'">
-                    @error('lookup_email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
-                <button type="submit"
-                        class="px-5 py-2.5 rounded-lg text-sm font-semibold transition whitespace-nowrap"
-                        :class="lookupEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lookupEmail) ? 'bg-gaf-green text-white hover:bg-gaf-dark-green' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
-                        :disabled="!lookupEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lookupEmail)">
-                    Check
-                </button>
-            </form>
-        </div>
-
-        {{-- Lookup Results Modal --}}
-        <div x-show="showLookupModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
-            <div @click.away="showLookupModal = false" class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
+        {{-- Lookup Overlay Modal (form + results together) --}}
+        <div x-show="showLookup" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
+            <div @click.away="showLookup = false" class="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
                 <div class="flex items-center justify-between mb-5">
-                    <h3 class="font-heading font-semibold text-lg text-gray-800">Your Voucher{{ isset($lookupResults) && $lookupResults->count() !== 1 ? 's' : '' }}</h3>
-                    <button @click="showLookupModal = false" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                    <h3 class="font-heading font-semibold text-lg text-gray-800">Check Your Voucher</h3>
+                    <button @click="showLookup = false" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
                 </div>
 
-                @isset($lookupResults)
-                    @if($lookupResults->isEmpty())
-                        <div class="text-center py-8">
-                            <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            <p class="text-gray-500 text-sm">No vouchers found for <strong>{{ old('lookup_email') }}</strong>.</p>
-                            <p class="text-gray-400 text-xs mt-1">Make sure you enter the email used during purchase.</p>
-                        </div>
-                    @else
-                        <div class="space-y-4">
-                            @foreach($lookupResults as $v)
-                            <div class="border border-gray-200 rounded-lg p-4 {{ $v->status === 'available' ? 'border-green-200 bg-green-50/50' : ($v->status === 'used' ? 'border-blue-200 bg-blue-50/50' : 'border-gray-200') }}">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="font-heading font-semibold text-sm text-gray-700">{{ $v->cycle->name ?? 'N/A' }}</span>
-                                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold
-                                        {{ $v->status === 'available' ? 'bg-green-100 text-green-700' : ($v->status === 'used' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600') }}">
-                                        {{ ucfirst($v->status) }}
-                                    </span>
-                                </div>
-                                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                                    <div><span class="text-gray-400">Serial:</span> <span class="font-mono font-semibold text-gray-700">{{ $v->serial_number }}</span></div>
-                                    <div><span class="text-gray-400">PIN:</span> <span class="font-mono font-semibold text-gray-700">{{ $v->pin_code }}</span></div>
-                                    <div><span class="text-gray-400">Purchased:</span> <span class="text-gray-600">{{ $v->purchased_at?->format('d M Y') }}</span></div>
-                                    <div><span class="text-gray-400">Expires:</span> <span class="text-gray-600">{{ $v->expires_at?->format('d M Y') }}</span></div>
-                                </div>
+                {{-- Search form (shown until results come back) --}}
+                <template x-if="!lookupResults && !lookupLoading">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-4">Enter the email address you used during purchase to look up your voucher details.</p>
+                        <form method="POST" action="{{ route('voucher.lookup') }}" @submit.prevent="doLookup()">
+                            <input type="email" x-model="lookupEmail"
+                                   @input="lookupTouched = true"
+                                   @blur="lookupTouched = true"
+                                   placeholder="Your email address"
+                                   required
+                                   class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-gaf-khaki transition mb-3"
+                                   :class="lookupTouched ? (lookupEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lookupEmail) ? 'border-green-500' : 'border-red-500') : 'border-gray-300'">
+                            <button type="submit"
+                                    class="w-full px-5 py-3 rounded-lg text-sm font-semibold transition"
+                                    :class="lookupEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lookupEmail) ? 'bg-gaf-green text-white hover:bg-gaf-dark-green' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
+                                    :disabled="!lookupEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lookupEmail)">
+                                Look up
+                            </button>
+                        </form>
+                        <p x-show="lookupError" x-cloak class="text-red-500 text-xs mt-2" x-text="lookupError"></p>
+                    </div>
+                </template>
+
+                {{-- Loading --}}
+                <template x-if="lookupLoading">
+                    <div class="text-center py-10">
+                        <svg class="w-8 h-8 mx-auto mb-3 text-gaf-green animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        <p class="text-sm text-gray-500">Searching for your vouchers...</p>
+                    </div>
+                </template>
+
+                {{-- Results --}}
+                <template x-if="lookupResults && !lookupLoading">
+                    <div>
+                        <template x-if="lookupResults.length === 0">
+                            <div class="text-center py-8">
+                                <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <p class="text-gray-500 text-sm">No vouchers found for <strong x-text="lookupEmailSearched"></strong>.</p>
+                                <p class="text-gray-400 text-xs mt-1">Make sure you enter the email used during purchase.</p>
                             </div>
-                            @endforeach
-                        </div>
-                    @endif
-                @endisset
+                        </template>
 
-                <div class="mt-5 text-center">
-                    <button @click="showLookupModal = false" class="text-sm text-gray-500 hover:text-gray-700 underline">Close</button>
-                </div>
+                        <template x-if="lookupResults.length > 0">
+                            <div class="space-y-4">
+                                <p class="text-sm text-gray-500">Found <strong x-text="lookupResults.length"></strong> voucher<span x-text="lookupResults.length !== 1 ? 's' : ''"></span> for <strong x-text="lookupEmailSearched"></strong>:</p>
+                                <template x-for="v in lookupResults" :key="v.id">
+                                    <div class="border rounded-lg p-4" :class="v.status === 'available' ? 'border-green-200 bg-green-50/50' : (v.status === 'used' ? 'border-blue-200 bg-blue-50/50' : 'border-gray-200')">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="font-heading font-semibold text-sm text-gray-700" x-text="v.cycle_name"></span>
+                                            <span class="text-xs px-2 py-0.5 rounded-full font-semibold"
+                                                  :class="v.status === 'available' ? 'bg-green-100 text-green-700' : (v.status === 'used' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600')"
+                                                  x-text="v.status.charAt(0).toUpperCase() + v.status.slice(1)"></span>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                            <div><span class="text-gray-400">Serial:</span> <span class="font-mono font-semibold text-gray-700" x-text="v.serial_number"></span></div>
+                                            <div><span class="text-gray-400">PIN:</span> <span class="font-mono font-semibold text-gray-700" x-text="v.pin_code"></span></div>
+                                            <div><span class="text-gray-400">Purchased:</span> <span class="text-gray-600" x-text="v.purchased_at"></span></div>
+                                            <div><span class="text-gray-400">Expires:</span> <span class="text-gray-600" x-text="v.expires_at"></span></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <div class="mt-5 flex justify-between items-center">
+                            <button @click="lookupResults = null; lookupEmail = ''; lookupError = ''" class="text-sm text-gray-500 hover:text-gray-700 underline">Search again</button>
+                            <button @click="showLookup = false" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">Close</button>
+                        </div>
+                    </div>
+                </template>
             </div>
         </div>
     </div>
@@ -558,7 +606,7 @@ function voucherForm() {
             this.purchaser_name = this.purchaser_name.replace(/[^A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\s'\-]/g, '');
         },
         filterPhone() {
-            this.purchaser_phone = this.purchaser_phone.replace(/[^0-9+\-\s()]/g, '');
+            this.purchaser_phone = this.purchaser_phone.replace(/\D/g, '').substring(0, 10);
         },
 
         // -- Common: Initialize Payment via AJAX --
@@ -851,14 +899,11 @@ function voucherForm() {
         get validCycle()   { return this.cycle_id !== ''; },
         get validName()    { return /^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\s'\-]{2,}$/.test(this.purchaser_name); },
         get validEmail()   { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.purchaser_email); },
-        get validPhone()   {
-            const digits = (this.purchaser_phone || '').replace(/[^0-9]/g, '');
-            return /^[0-9+\-\s()]{10,20}$/.test(this.purchaser_phone) && digits.length >= 10;
-        },
+        get validPhone()   { return /^\d{10}$/.test(this.purchaser_phone); },
         get validPayment() { return this.payment_method !== ''; },
         get validMomo() {
             if (this.payment_method !== 'mobile_money') return true;
-            return this.momo_provider !== '' && this.momo_phone && this.momo_phone.replace(/[^0-9]/g, '').length >= 10;
+            return this.momo_provider !== '' && /^\d{10}$/.test(this.momo_phone);
         },
         get validBankTransfer() {
             if (this.payment_method !== 'bank_transfer') return true;

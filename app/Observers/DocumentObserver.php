@@ -62,6 +62,12 @@ class DocumentObserver
 
         $application->update(['status' => 'rejected']);
 
+        // Clean up any existing FinalDecision / ReserveList to keep the
+        // database consistent — a disqualified applicant cannot hold a
+        // decision or reserve slot from a previous stage.
+        $application->finalDecision()?->delete();
+        $application->reserveList()?->delete();
+
         // Notify applicant
         if ($applicant) {
             $notification = app(NotificationService::class);

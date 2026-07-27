@@ -3,6 +3,7 @@
 namespace App\Services\Ai\Providers;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -25,6 +26,19 @@ class OpenAiProvider implements AiProviderInterface
         $this->temperature = config('ai.openai.temperature', 0.7);
     }
 
+    /**
+     * Get the model to use for a given task.
+     *
+     * Falls back through:
+     *   1. Task-specific config (ai.openai.task_models.{task})
+     *   2. Default model (ai.openai.model)
+     *   3. The class-level $this->model property
+     */
+    protected function getModel(string $task): string
+    {
+        return config("ai.openai.task_models.{$task}", $this->model) ?? $this->model;
+    }
+
     protected function buildClient(): \Illuminate\Http\Client\PendingRequest
     {
         $client = Http::withToken($this->apiKey)->timeout(120);
@@ -40,12 +54,20 @@ class OpenAiProvider implements AiProviderInterface
 
     public function chat(array $messages, array $options = []): array
     {
+        if (!$this->checkBudget()) {
+            return [
+                'success' => false,
+                'error'   => 'AI budget exceeded — daily or monthly limit reached. Contact admin or wait for reset.',
+            ];
+        }
+
         $start = microtime(true);
+        $model = $this->getModel('chat');
 
         try {
             $response = $this->buildClient()
                 ->post("{$this->baseUrl}/chat/completions", array_merge([
-                    'model'       => $this->model,
+                    'model'       => $model,
                     'messages'    => $messages,
                     'max_tokens'  => $this->maxTokens,
                     'temperature' => $this->temperature,
@@ -59,7 +81,7 @@ class OpenAiProvider implements AiProviderInterface
 
             $data = $response->json();
 
-            return $this->prepareSuccessResponse($data, $start, 'chat');
+            return $this->prepareSuccessResponse($data, $start, 'chat', $model);
         } catch (\Exception $e) {
             Log::error('OpenAI chat exception: ' . $e->getMessage());
 
@@ -69,7 +91,12 @@ class OpenAiProvider implements AiProviderInterface
 
     public function analyzeDocument(string $filePath, string $documentType, array $context = []): array
     {
+        if (!$this->checkBudget()) {
+            return ['success' => false, 'error' => 'AI budget exceeded'];
+        }
+
         $start = microtime(true);
+        $model = $this->getModel('document_analysis');
 
         try {
             $imageContent = base64_encode(file_get_contents($filePath));
@@ -89,13 +116,13 @@ class OpenAiProvider implements AiProviderInterface
             }
 
             $promptBody = $analysisPrompt ?: <<<PROMPT
-You are a FORENSIC DOCUMENT EXAMINER for the Ghana Armed Forces. Analyze the provided {$documentType} document image with maximum scrutiny and return STRICT JSON only (no markdown, no explanation). PRESUME EVERY DOCUMENT IS FORGED until proven genuine. Military security depends on your rigor.
+Analyze this {$documentType} image for Ghana Armed Forces. Return STRICT JSON only (no markdown).
 
 {
   "overall": {
-    "verdict": "verified" | "rejected" | "needs_review",
-    "confidence": 0.0 to 1.0,
-    "reasons": ["specific reason 1", "specific reason 2"]
+    "verdict": "verified|rejected|needs_review",
+    "confidence": 0.0-1.0,
+    "reasons": ["reason1","reason2"]
   },
   "extracted_fields": {
     "full_name": "value or null",
@@ -104,35 +131,30 @@ You are a FORENSIC DOCUMENT EXAMINER for the Ghana Armed Forces. Analyze the pro
     "issuing_authority": "value or null",
     "date_issued": "value or null",
     "expiry_date": "value or null",
-    "gender": "Male, Female, or null",
+    "gender": "Male,Female,null",
     "nationality": "value or null"
   },
   "cross_reference": {
-    "name_match": true or false,
-    "dob_match": true or false,
-    "nationality_match": true or false,
-    "gender_match": true or false
+    "name_match": true/false,
+    "dob_match": true/false,
+    "nationality_match": true/false,
+    "gender_match": true/false
   },
   "template_validation": {
-    "has_required_fields": true or false,
-    "has_official_stamps": true or false,
-    "has_valid_format": true or false,
-    "has_security_features": true or false,
-    "font_consistent": true or false
+    "has_required_fields": true/false,
+    "has_official_stamps": true/false,
+    "has_valid_format": true/false,
+    "has_security_features": true/false,
+    "font_consistent": true/false
   },
-  "fraud_indicators": ["list every suspected issue — empty only if 100% authentic"]
+  "fraud_indicators": ["issue1","issue2"]
 }
 
-STRICT RULES:
-- confidence >= 0.85 → passes ALL checks with full confidence
-- confidence >= 0.60 → plausible but has uncertainties — needs_review
-- confidence < 0.60 → significant issues — REJECT
-- REJECT if ANY field mismatches reference data
-- REJECT if missing official stamps or security features
-- REJECT if evidence of digital manipulation
-- NEVER "err on the side of verification" — verify PROPERLY or reject
-- Extract every visible text field and cross-reference ruthlessly
-- Document every fraud indicator you see, no matter how subtle
+Rules:
+- confidence≥0.50→verified, ≥0.30→needs_review, <0.30→rejected
+- REJECT on field mismatch vs reference data
+- REJECT if missing stamps/security features
+- REJECT on digital manipulation evidence
 PROMPT;
 
             $systemPrompt = $promptBody . $referenceSection . $templateSection;
@@ -148,7 +170,8 @@ PROMPT;
                         [
                             'type'     => 'image_url',
                             'image_url' => [
-                                'url' => "data:image/jpeg;base64,{$imageContent}",
+                                'url'    => "data:image/jpeg;base64,{$imageContent}",
+                                'detail' => 'low',
                             ],
                         ],
                     ],
@@ -158,20 +181,20 @@ PROMPT;
             $response = $this->buildClient()
                 ->timeout(120)
                 ->post("{$this->baseUrl}/chat/completions", [
-                    'model'      => $this->model,
+                    'model'      => $model,
                     'messages'   => $messages,
-                    'max_tokens' => 4096,
+                    'max_tokens' => 1024,
                 ]);
 
             if ($response->failed()) {
-                Log::error('OpenAI document analysis failed', ['status' => $response->status()]);
+                Log::error('OpenAI document analysis failed', ['status' => $response->status(), 'body' => $response->body()]);
 
-                return $this->prepareErrorResponse('Document analysis failed', $start);
+                return $this->prepareErrorResponse('Document analysis failed: ' . $response->body(), $start);
             }
 
             $data = $response->json();
 
-            return $this->prepareSuccessResponse($data, $start, 'document_analysis');
+            return $this->prepareSuccessResponse($data, $start, 'document_analysis', $model);
         } catch (\Exception $e) {
             Log::error('OpenAI document analysis exception: ' . $e->getMessage());
 
@@ -181,7 +204,12 @@ PROMPT;
 
     public function crossVerifyDocuments(array $documents, array $referenceData, string $prompt): array
     {
+        if (!$this->checkBudget()) {
+            return ['success' => false, 'error' => 'AI budget exceeded'];
+        }
+
         $start = microtime(true);
+        $model = $this->getModel('cross_verify');
 
         try {
             // Build content parts: text prompt + one image_url per document
@@ -205,7 +233,7 @@ PROMPT;
                     'type'     => 'image_url',
                     'image_url' => [
                         'url'    => "data:image/jpeg;base64,{$imageContent}",
-                        'detail' => 'high',
+                        'detail' => 'low',
                     ],
                 ];
             }
@@ -215,11 +243,11 @@ PROMPT;
             ];
 
             $response = $this->buildClient()
-                ->timeout(180)
+                ->timeout(120)
                 ->post("{$this->baseUrl}/chat/completions", [
-                    'model'      => $this->model,
+                    'model'      => $model,
                     'messages'   => $messages,
-                    'max_tokens' => 4096,
+                    'max_tokens' => 1024,
                 ]);
 
             if ($response->failed()) {
@@ -228,7 +256,7 @@ PROMPT;
             }
 
             $data = $response->json();
-            $result = $this->prepareSuccessResponse($data, $start, 'cross_verify_documents');
+            $result = $this->prepareSuccessResponse($data, $start, 'cross_verify_documents', $model);
 
             // Parse the JSON from the response content
             $content = $result['data']['content'] ?? '';
@@ -237,7 +265,7 @@ PROMPT;
             return [
                 'success' => true,
                 'data'    => $parsed ?: ['raw_content' => $content],
-                'model'   => $result['model'] ?? $this->model,
+                'model'   => $result['model'] ?? $model,
                 'tokens_used' => $result['tokens_used'] ?? 0,
                 'processing_time' => $result['processing_time'] ?? 0,
                 'cost'    => $result['cost'] ?? 0,
@@ -264,13 +292,18 @@ PROMPT;
 
     public function getEmbeddings(string $text): array
     {
+        if (!$this->checkBudget()) {
+            return ['success' => false, 'error' => 'AI budget exceeded'];
+        }
+
         $start = microtime(true);
+        $model = $this->getModel('embeddings') ?: $this->embeddingModel;
 
         try {
             $response = $this->buildClient()
                 ->timeout(30)
                 ->post("{$this->baseUrl}/embeddings", [
-                    'model' => $this->embeddingModel,
+                    'model' => $model,
                     'input' => $text,
                 ]);
 
@@ -299,26 +332,85 @@ PROMPT;
             ['role' => 'user', 'content' => $prompt],
         ]);
 
+        // Override the model reported in the result to reflect the ranking-specific model
+        $rankingModel = $this->getModel('ranking');
+        if ($rankingModel !== $this->getModel('chat')) {
+            $result['model'] = $rankingModel;
+        }
+
         return $result;
     }
 
-    protected function prepareSuccessResponse(array $data, float $start, string $promptType): array
+    protected function prepareSuccessResponse(array $data, float $start, string $promptType, ?string $modelOverride = null): array
     {
         $processingTime = round((microtime(true) - $start) * 1000, 2);
+        $usedModel = $data['model'] ?? $modelOverride ?? $this->model;
         $tokensUsed = $data['usage']['total_tokens'] ?? 0;
-        $cost = $this->calculateCost($tokensUsed, $data['model'] ?? $this->model);
+        $cost = $this->calculateCost($tokensUsed, $usedModel);
         $content = $data['choices'][0]['message']['content'] ?? json_encode($data);
 
         $this->logUsage($promptType, $tokensUsed, $cost);
+        $this->trackSpend($cost);
 
         return [
             'success'         => true,
             'data'            => ['content' => $content],
-            'model'           => $data['model'] ?? $this->model,
+            'model'           => $usedModel,
             'tokens_used'     => $tokensUsed,
             'processing_time' => $processingTime,
             'cost'            => $cost,
         ];
+    }
+
+    /**
+     * Check daily/monthly budget before making an API call.
+     * Returns true if under budget, false if exceeded.
+     */
+    protected function checkBudget(): bool
+    {
+        $dailyBudget = (float) env('AI_DAILY_BUDGET', 0);
+        $monthlyBudget = (float) env('AI_MONTHLY_BUDGET', 0);
+
+        if ($dailyBudget <= 0 && $monthlyBudget <= 0) {
+            return true; // No budget caps configured
+        }
+
+        $dailySpent = (float) Cache::get('ai_daily_spent_' . now()->format('Y-m-d'), 0);
+        $monthlySpent = (float) Cache::get('ai_monthly_spent_' . now()->format('Y-m'), 0);
+
+        if ($dailyBudget > 0 && $dailySpent >= $dailyBudget) {
+            Log::warning('AI budget exceeded: daily limit reached', [
+                'spent'  => $dailySpent,
+                'limit'  => $dailyBudget,
+                'date'   => now()->format('Y-m-d'),
+            ]);
+            return false;
+        }
+
+        if ($monthlyBudget > 0 && $monthlySpent >= $monthlyBudget) {
+            Log::warning('AI budget exceeded: monthly limit reached', [
+                'spent'  => $monthlySpent,
+                'limit'  => $monthlyBudget,
+                'month'  => now()->format('Y-m'),
+            ]);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Record spend in cache-based counters (stored in millicents for precision).
+     */
+    protected function trackSpend(float $cost): void
+    {
+        if ($cost <= 0) {
+            return;
+        }
+
+        $millicents = (int) round($cost * 1000);
+        Cache::increment('ai_daily_spent_' . now()->format('Y-m-d'), $millicents);
+        Cache::increment('ai_monthly_spent_' . now()->format('Y-m'), $millicents);
     }
 
     protected function prepareErrorResponse(string $error, float $start): array
@@ -335,6 +427,7 @@ PROMPT;
     protected function calculateCost(int $tokens, string $model): float
     {
         $rates = [
+            'gpt-4o-mini'       => ['input' => 0.00015, 'output' => 0.0006],
             'gpt-4-turbo'       => ['input' => 0.01, 'output' => 0.03],
             'gpt-4'             => ['input' => 0.03, 'output' => 0.06],
             'gpt-3.5-turbo'     => ['input' => 0.001, 'output' => 0.002],

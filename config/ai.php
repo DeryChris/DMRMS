@@ -10,6 +10,18 @@ return [
         'embedding_model' => env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
         'max_tokens' => (int) env('OPENAI_MAX_TOKENS', 4096),
         'temperature' => (float) env('OPENAI_TEMPERATURE', 0.7),
+
+        // Per-task model overrides — each method picks its own model.
+        // When pointing at OpenRouter, you can use ANY model from their
+        // catalog by setting the full slug (e.g. "nvidia/llama-nemotron-...").
+        // Falls back to 'model' (the default above) if not set.
+        'task_models' => [
+            'chat'              => env('AI_CHAT_MODEL'),
+            'document_analysis' => env('AI_DOCUMENT_MODEL'),
+            'cross_verify'      => env('AI_CROSS_VERIFY_MODEL'),
+            'embeddings'        => env('AI_EMBEDDING_MODEL'),
+            'ranking'           => env('AI_RANKING_MODEL'),
+        ],
     ],
 
     'gemini' => [

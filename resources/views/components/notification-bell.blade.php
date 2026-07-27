@@ -22,6 +22,7 @@
     async fetchUnreadCount() {
         try {
             let resp = await fetch('/notifications/unread-count');
+            if (resp.redirected || !resp.ok) return;
             let data = await resp.json();
             if (data.count !== undefined) this.unread = data.count;
         } catch (e) {}
@@ -31,6 +32,7 @@
         this.loading = true;
         try {
             let resp = await fetch('/notifications/fetch?per_page=5');
+            if (resp.redirected || !resp.ok) { this.items = []; return; }
             let json = await resp.json();
             this.items = json.data || [];
             this.unread = json.meta?.unread_count || 0;

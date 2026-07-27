@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateCycleRequest;
+use App\Jobs\ProcessDocumentVerification;
 use App\Jobs\ProcessFinalDecision;
 use App\Models\Applicant;
 use App\Models\Application;
@@ -746,6 +747,41 @@ class AdminWebController extends Controller
             ->with('success', "{$updated} document(s) marked as verified.");
     }
 
+    public function refreshDocumentVerification(int $id): RedirectResponse
+    {
+        $application = Application::findOrFail($id);
+
+        $documents = $application->documents;
+
+        if ($documents->isEmpty()) {
+            return redirect()->route('admin.applications.detail', $application->id)
+                ->with('error', 'No documents found to re-verify.');
+        }
+
+        $dispatched = 0;
+
+        foreach ($documents as $document) {
+            // Reset the AI verification state to trigger a fresh AI analysis
+            $document->update([
+                'verification_status' => 'pending',
+                'ai_confidence'       => null,
+                'ai_verified_at'      => null,
+                'verification_note'   => null,
+            ]);
+
+            ProcessDocumentVerification::dispatch($document);
+            $dispatched++;
+        }
+
+        Log::info("Document AI verification refresh triggered for application #{$id}", [
+            'admin_id'   => auth()->id(),
+            'documents'  => $dispatched,
+        ]);
+
+        return redirect()->route('admin.applications.detail', $application->id)
+            ->with('success', "AI verification restarted for {$dispatched} document(s). Jobs queued — results will appear once processed.");
+    }
+
     public function bulkVerifyNeedsReview(): RedirectResponse
     {
         $updated = Document::where('verification_status', 'needs_review')
@@ -1325,7 +1361,7 @@ class AdminWebController extends Controller
             'password_min_length' => 'integer|min:4|max:100',
             'max_login_attempts' => 'integer|min:1|max:100',
             'contact_address' => 'string|max:255',
-            'contact_phone' => 'string|max:50',
+            'contact_phone' => 'string|digits:10',
             'contact_email' => 'email|max:100',
             'registration_enabled' => 'boolean',
             'mfa_required' => 'boolean',
@@ -1881,8 +1917,12 @@ class AdminWebController extends Controller
                 }
             }
 
-            // 3. Revoke Sanctum tokens
+            // 3. Revoke Sanctum tokens (belt-and-suspenders: remove by morph as well)
             $applicant->tokens()->delete();
+            DB::table('personal_access_tokens')
+                ->where('tokenable_type', 'App\Models\Applicant')
+                ->where('tokenable_id', $applicant->id)
+                ->delete();
 
             // 4. Clean up polymorphic / non-cascading records
             DB::table('audit_logs')
@@ -1899,7 +1939,33 @@ class AdminWebController extends Controller
                 ->where('applicant_id', $applicant->id)
                 ->delete();
 
-            // 5. Hard-delete the applicant (cascades: applications, documents DB rows,
+            // 5. Wipe every remaining trace that has no FK cascade
+            //    (failed_login_attempts, password_reset_tokens, sessions,
+            //     sms_logs) — these use email/phone, not applicant_id
+            DB::table('failed_login_attempts')
+                ->where('email', $applicant->email)
+                ->delete();
+
+            DB::table('password_reset_tokens')
+                ->where('email', $applicant->email)
+                ->delete();
+
+            DB::table('sessions')
+                ->where('user_id', (string) $applicant->id)
+                ->delete();
+
+            DB::table('sms_logs')
+                ->where('phone', $applicant->contact_number)
+                ->delete();
+
+            // Also clean up alternative contact in sms_logs
+            if ($applicant->alternative_contact) {
+                DB::table('sms_logs')
+                    ->where('phone', $applicant->alternative_contact)
+                    ->delete();
+            }
+
+            // 6. Hard-delete the applicant (cascades: applications, documents DB rows,
             //    eligibility_results, appointments, screening_results, final_decisions,
             //    reserve_lists, applicant_corp_selections, notifications, verification_codes)
             $applicant->forceDelete();

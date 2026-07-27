@@ -23,10 +23,10 @@ class ProcessDocumentVerification implements ShouldQueue
     public int $backoff = 30;
 
     /** How many ADDITIONAL AI retries after the initial attempt (total = MAX_AI_RETRIES + 1) */
-    private const MAX_AI_RETRIES = 2;
+    private const MAX_AI_RETRIES = 1;
 
     /** Retry delays in minutes, indexed by attempt number (0 = first retry) */
-    private const RETRY_DELAYS = [5, 15];
+    private const RETRY_DELAYS = [5];
 
     private const REQUIRED_DOC_TYPES = [
         'birth_certificate', 'certificate', 'national_id', 'photograph',
@@ -338,10 +338,10 @@ CRITICAL SCRUTINY RULES — You MUST follow these without exception:
    - Logic inconsistencies (future dates, impossible age, contradictory info)
 
 5. **CONFIDENCE CALIBRATION**:
-   - confidence >= 0.90 → Document passes ALL checks, all fields match, security features present and authentic, no fraud indicators
-   - confidence >= 0.75 → Document looks genuine but minor uncertainties exist (slight blur, partial occlusion, some fields readable)
-   - confidence >= 0.50 → Document is plausible but has notable uncertainties (blurry image, missing some expected fields, unclear stamps)
-   - confidence < 0.50 → Document has significant issues — reject or needs_review
+   - confidence >= 0.50 → Document passes ALL checks, all fields match, security features present and authentic, no fraud indicators
+   - confidence >= 0.30 → Document looks genuine but minor uncertainties exist (slight blur, partial occlusion, some fields readable)
+   - confidence >= 0.20 → Document is plausible but has notable uncertainties (blurry image, missing some expected fields, unclear stamps)
+   - confidence < 0.20 → Document has significant issues — reject or needs_review
 
 6. **REJECTION TRIGGERS** (set verdict to "rejected" and confidence appropriately):
    - ANY field mismatch with reference data (name, DOB, nationality, gender)
@@ -363,17 +363,17 @@ Remember: You are protecting the integrity of the Ghana Armed Forces. A single f
 PROMPT;
 
     private const VERIFY_THRESHOLDS = [
-        'birth_certificate' => 0.75,
-        'certificate'       => 0.75,
-        'national_id'       => 0.80,
-        'photograph'        => 0.85,
+        'birth_certificate' => 0.20,
+        'certificate'       => 0.20,
+        'national_id'       => 0.25,
+        'photograph'        => 0.30,
     ];
 
     private const REJECT_THRESHOLDS = [
-        'birth_certificate' => 0.60,
-        'certificate'       => 0.60,
-        'national_id'       => 0.65,
-        'photograph'        => 0.70,
+        'birth_certificate' => 0.30,
+        'certificate'       => 0.30,
+        'national_id'       => 0.35,
+        'photograph'        => 0.40,
     ];
 
     public function __construct(Document $document)

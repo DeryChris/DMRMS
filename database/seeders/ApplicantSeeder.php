@@ -94,7 +94,7 @@ class ApplicantSeeder extends Seeder
             'date_of_birth' => fake()->dateTimeBetween('-30 years', '-18 years')->format('Y-m-d'),
             'gender' => $gender,
             'marital_status' => 'Single',
-            'contact_number' => '+233' . fake()->numerify('#########'),
+            'contact_number' => '0' . fake()->numerify('#########'),
             'email' => strtolower($firstName . '.' . $lastName . $this->uniqueSuffix() . '@example.com'),
             'residential_address' => 'P.O. Box ' . fake()->numberBetween(100, 9999) . ', ' . $region,
             'region' => $region,

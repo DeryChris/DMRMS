@@ -100,6 +100,8 @@ return [
         'default_training_battalion' => env('DEFAULT_TRAINING_BATTALION', 'GAF Training Depot'),
     ],
 
+    'default_vacancies' => (int) env('DEFAULT_VACANCIES', 100),
+
     'reserve_ratio' => 0.20,
 
     'auto_promote_reserve' => env('AUTO_PROMOTE_RESERVE', false),

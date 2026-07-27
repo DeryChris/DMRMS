@@ -660,33 +660,17 @@ function documentUpload() {
             event.preventDefault();
             this.uploading = true;
 
-            const form = event.target;
-            const formData = new FormData(form);
-
             try {
-                const res = await fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    },
-                    body: formData,
+                const form = event.target;
+                const formData = new FormData(form);
+
+                const res = await window.axios.post(form.action, formData, {
+                    headers: { 'Accept': 'application/json' },
                 });
 
-                let data;
-                try {
-                    data = await res.json();
-                } catch (jsonError) {
-                    // Response wasn't JSON — could be a redirect or server error page
-                    const text = await res.text();
-                    this.showToast('Server error (status ' + res.status + '). Please try again.', 'error');
-                    this.uploading = false;
-                    return;
-                }
+                const data = res.data;
 
-                if (!res.ok || !data.success) {
-                    // Extract first validation error if present
+                if (!data.success) {
                     let errMsg = data.message || 'Upload failed.';
                     if (data.errors) {
                         const firstKey = Object.keys(data.errors)[0];
@@ -697,15 +681,26 @@ function documentUpload() {
                     return;
                 }
 
-                // Success — update uploaded types & advance to next
-                this.uploadedDocTypes = data.uploaded_doc_types || this.uploadedDocTypes;
-                this.docType = this.nextDocType();
-                this.resetFileInput();
-                try { localStorage.removeItem('document_upload_draft'); } catch (e) {}
-                this.autoSaveStatus = '';
+                // Success — reload the page so all sections (progress bar, table, finalize banner) are up to date
                 this.showToast(data.message || 'Document uploaded successfully.', 'success');
+                setTimeout(() => window.location.reload(), 800);
             } catch (e) {
-                this.showToast('Network error. Please try again.', 'error');
+                console.error('Upload error:', e);
+                if (e.response) {
+                    // Server responded with error status
+                    const data = e.response.data;
+                    let errMsg = data?.message || 'Upload failed.';
+                    if (data?.errors) {
+                        const firstKey = Object.keys(data.errors)[0];
+                        if (firstKey) errMsg = data.errors[firstKey].join(', ');
+                    }
+                    this.showToast(errMsg, 'error');
+                } else if (e.request) {
+                    // Request sent but no response
+                    this.showToast('No response from server. Please try again.', 'error');
+                } else {
+                    this.showToast('Network error: ' + (e.message || 'Please try again.'), 'error');
+                }
             }
 
             this.uploading = false;

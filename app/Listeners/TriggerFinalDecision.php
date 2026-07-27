@@ -10,7 +10,7 @@ class TriggerFinalDecision
     public function handle(): void
     {
         try {
-            ProcessFinalDecision::dispatchSync();
+            ProcessFinalDecision::dispatch();
         } catch (\Exception $e) {
             Log::error('Failed to dispatch final decision job: ' . $e->getMessage());
         }

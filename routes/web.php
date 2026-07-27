@@ -36,6 +36,8 @@ Route::get('/voucher/buy', [\App\Http\Controllers\Web\VoucherPurchaseController:
 Route::post('/voucher/buy', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'purchase'])->name('voucher.purchase');
 Route::get('/voucher/{voucher}/confirmation', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'confirmation'])->name('voucher.confirmation');
 Route::post('/voucher/buy/lookup', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'lookupVoucher'])->name('voucher.lookup');
+// Catch accidental GET / refresh navigations to the lookup URL
+Route::get('/voucher/buy/lookup', fn() => redirect()->route('voucher.buy'));
 
 // Paystack payment routes (AJAX)
 Route::post('/voucher/buy/init', [\App\Http\Controllers\Web\VoucherPurchaseController::class, 'initPayment'])->name('voucher.init-payment');
@@ -128,6 +130,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,super_ad
     Route::post('/applications/{id}/recheck-voucher', [AdminWebController::class, 'recheckVoucher'])->name('applications.recheck-voucher');
     Route::post('/documents/{id}/verify', [AdminWebController::class, 'verifyDocument'])->name('documents.verify');
     Route::post('/applications/{id}/verify-all-documents', [AdminWebController::class, 'verifyAllDocuments'])->name('applications.verify-all-documents');
+    Route::post('/applications/{id}/refresh-document-verification', [AdminWebController::class, 'refreshDocumentVerification'])->name('applications.refresh-document-verification');
     Route::post('/documents/bulk-verify-needs-review', [AdminWebController::class, 'bulkVerifyNeedsReview'])->name('documents.bulk-verify-needs-review');
 
     // Applicant account management — admin + super_admin + recruitment_officer
