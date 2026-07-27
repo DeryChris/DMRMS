@@ -6,12 +6,14 @@ use App\Models\Applicant;
 use App\Models\Application;
 use App\Models\Cycle;
 use App\Models\Document;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class ApplicantSeeder extends Seeder
 {
+    private $faker;
     private static array $regions = [
         'Greater Accra', 'Ashanti', 'Western', 'Western North', 'Central',
         'Eastern', 'Volta', 'Oti', 'Northern', 'Savannah', 'North East',
@@ -45,6 +47,7 @@ class ApplicantSeeder extends Seeder
 
     public function run(): void
     {
+        $this->faker = Faker::create();
         $activeCycle = Cycle::where('status', 'active')->first();
         if (!$activeCycle) {
             $activeCycle = Cycle::factory()->create(['status' => 'active']);
@@ -82,25 +85,25 @@ class ApplicantSeeder extends Seeder
 
     private function createApplicant(): Applicant
     {
-        $firstName = fake()->randomElement(self::$firstNames);
-        $lastName = fake()->randomElement(self::$lastNames);
-        $region = fake()->randomElement(self::$regions);
-        $gender = fake()->randomElement(['Male', 'Female']);
+        $firstName = $this->faker->randomElement(self::$firstNames);
+        $lastName = $this->faker->randomElement(self::$lastNames);
+        $region = $this->faker->randomElement(self::$regions);
+        $gender = $this->faker->randomElement(['Male', 'Female']);
 
         return Applicant::create([
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'other_names' => fake()->optional(0.5)->firstName(),
-            'date_of_birth' => fake()->dateTimeBetween('-30 years', '-18 years')->format('Y-m-d'),
+            'other_names' => $this->faker->optional(0.5)->firstName(),
+            'date_of_birth' => $this->faker->dateTimeBetween('-30 years', '-18 years')->format('Y-m-d'),
             'gender' => $gender,
             'marital_status' => 'Single',
-            'contact_number' => '0' . fake()->numerify('#########'),
+            'contact_number' => '0' . $this->faker->numerify('#########'),
             'email' => strtolower($firstName . '.' . $lastName . $this->uniqueSuffix() . '@example.com'),
-            'residential_address' => 'P.O. Box ' . fake()->numberBetween(100, 9999) . ', ' . $region,
+            'residential_address' => 'P.O. Box ' . $this->faker->numberBetween(100, 9999) . ', ' . $region,
             'region' => $region,
-            'district' => fake()->randomElement(self::$districts),
+            'district' => $this->faker->randomElement(self::$districts),
             'nationality' => 'Ghanaian',
-            'national_id' => 'GHA-' . fake()->unique()->numerify('##########'),
+            'national_id' => 'GHA-' . $this->faker->unique()->numerify('##########'),
             'password' => Hash::make('change-me-applicant-2026'),
             'email_verified_at' => now(),
             'status' => 'active',
@@ -113,17 +116,17 @@ class ApplicantSeeder extends Seeder
             'applicant_id' => $applicant->id,
             'cycle_id' => $cycle->id,
             'gaf_id' => 'GAF-' . date('Y') . '-' . str_pad(Application::count() + 1, 6, '0', STR_PAD_LEFT),
-            'application_date' => now()->subDays(fake()->numberBetween(1, 90)),
-            'education_level' => fake()->randomElement(['WASSCE', 'Degree', 'HND', 'Diploma']),
-            'institution_name' => fake()->randomElement(self::$institutions),
-            'qualification' => fake()->randomElement(['Bachelor of Arts', 'Bachelor of Science', 'WASSCE Certificate', 'Higher National Diploma']),
-            'year_obtained' => (string) fake()->numberBetween(2015, 2023),
-            'height' => fake()->randomFloat(2, 1.60, 1.85),
-            'weight' => fake()->randomFloat(2, 55, 95),
+            'application_date' => now()->subDays($this->faker->numberBetween(1, 90)),
+            'education_level' => $this->faker->randomElement(['WASSCE', 'Degree', 'HND', 'Diploma']),
+            'institution_name' => $this->faker->randomElement(self::$institutions),
+            'qualification' => $this->faker->randomElement(['Bachelor of Arts', 'Bachelor of Science', 'WASSCE Certificate', 'Higher National Diploma']),
+            'year_obtained' => (string) $this->faker->numberBetween(2015, 2023),
+            'height' => $this->faker->randomFloat(2, 1.60, 1.85),
+            'weight' => $this->faker->randomFloat(2, 55, 95),
             'criminal_record' => $criminalRecord,
-            'fitness_status' => $fitnessStatus ?? fake()->randomElement(['fit', 'unfit']),
+            'fitness_status' => $fitnessStatus ?? $this->faker->randomElement(['fit', 'unfit']),
             'status' => $status,
-            'submitted_at' => $withSubmittedAt ? now()->subDays(fake()->numberBetween(0, 60)) : null,
+            'submitted_at' => $withSubmittedAt ? now()->subDays($this->faker->numberBetween(0, 60)) : null,
         ];
 
         return Application::create($data);
@@ -139,9 +142,9 @@ class ApplicantSeeder extends Seeder
                 'document_type' => $type,
                 'file_name' => 'doc_' . Str::random(10) . '.pdf',
                 'file_path' => 'documents/' . date('Y/m/d') . '/' . Str::random(20),
-                'file_size' => fake()->numberBetween(100000, 2000000),
+                'file_size' => $this->faker->numberBetween(100000, 2000000),
                 'mime_type' => 'application/pdf',
-                'upload_date' => now()->subDays(fake()->numberBetween(0, 30)),
+                'upload_date' => now()->subDays($this->faker->numberBetween(0, 30)),
                 'verification_status' => 'pending',
                 'ai_verified' => false,
             ]);

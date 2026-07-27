@@ -21,6 +21,8 @@
 /vendor
 /memory
 /docs/thesis\ documentation/
+__pycache__/
+/tools/
 Homestead.json
 Homestead.yaml
 Thumbs.db
