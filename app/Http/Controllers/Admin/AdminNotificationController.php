@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Administrator;
 use App\Models\Applicant;
 use App\Models\Notification;
+use App\Services\Notification\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -53,10 +54,8 @@ class AdminNotificationController extends Controller
         $subject = $validated['subject'];
         $messageBody = $validated['message'];
         $count = 0;
-        $emailCount = 0;
-
-        $fromAddress = config('mail.from.address', 'amoaheugene23@gmail.com');
-        $fromName = config('mail.from.name', 'Ghana Armed Forces');
+        $dashboardCount = 0;
+        $smsCount = 0;
 
         if ($validated['target_type'] === 'applicants') {
             $query = Applicant::query();
@@ -69,7 +68,7 @@ class AdminNotificationController extends Controller
             $applicants = $query->get();
 
             foreach ($applicants as $applicant) {
-                // Dashboard notification
+                // Dashboard notification (fast — DB insert)
                 Notification::create([
                     'applicant_id' => $applicant->id,
                     'type' => 'admin_broadcast',
@@ -78,22 +77,18 @@ class AdminNotificationController extends Controller
                     'channel' => 'dashboard',
                     'sent_at' => now(),
                 ]);
+                $dashboardCount++;
 
-                // Email notification
+                // SMS notification (fast — HTTPS API)
                 try {
-                    Mail::send('emails.admin-broadcast', [
-                        'applicant' => $applicant,
-                        'subject' => $subject,
-                        'messageBody' => $messageBody,
-                    ], function ($mail) use ($applicant, $subject, $fromAddress, $fromName) {
-                        $mail->to($applicant->email, $applicant->name)
-                             ->subject($subject)
-                             ->from($fromAddress, $fromName);
-                    });
-                    $emailCount++;
-                } catch (\Exception $e) {
-                    Log::error("Admin broadcast email failed to {$applicant->email}: " . $e->getMessage());
+                    app(NotificationService::class)->sendSms($applicant->contact_number, $messageBody);
+                    $smsCount++;
+                } catch (\Throwable $e) {
+                    Log::warning("Admin broadcast SMS failed to {$applicant->contact_number}: " . $e->getMessage());
                 }
+
+                // Email notification (queued — avoids blocking HTTP response)
+                \App\Jobs\SendAdminBroadcastEmail::dispatch($applicant, $subject, $messageBody);
 
                 $count++;
             }
@@ -116,14 +111,12 @@ class AdminNotificationController extends Controller
                     'channel' => 'dashboard',
                     'sent_at' => now(),
                 ]);
+                $dashboardCount++;
                 $count++;
             }
         }
 
-        $successMsg = "Notification sent to {$count} recipient(s).";
-        if ($emailCount > 0) {
-            $successMsg .= " Email delivered to {$emailCount} applicant(s).";
-        }
+        $successMsg = "Notification sent! Dashboard: {$dashboardCount} · SMS: {$smsCount} · Emails queued: {$count}";
 
         return redirect()->route('admin.notifications.create')
             ->with('success', $successMsg);

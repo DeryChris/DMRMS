@@ -80,10 +80,11 @@ class VoucherPurchaseController extends Controller
 
         $cycle = Cycle::findOrFail($validated['cycle_id']);
 
-        // Duplicate check
+        // Duplicate check — only blocks if there's an unused voucher in flight
         $existing = Voucher::where('cycle_id', $cycle->id)
             ->where('purchaser_email', $validated['purchaser_email'])
             ->whereIn('payment_status', ['completed', 'pending'])
+            ->where('status', '!=', 'used')
             ->first();
 
         if ($existing) {
@@ -152,10 +153,39 @@ class VoucherPurchaseController extends Controller
 
         $cycle = Cycle::findOrFail($validated['cycle_id']);
 
-        // Duplicate check against Payment table (no voucher exists yet)
+        // ── Auto-expire stale pending payments before duplicate check ──
+        // Payments stuck in 'pending' with no Paystack interaction for >10s
+        // are automatically expired so the user can retry.
+        $staleTheshold = (int) env('AI_AUTO_FAILED_PAYMENT_THRESHOLD', 10);
+        Payment::where('payer_email', $validated['purchaser_email'])
+            ->where('metadata->cycle_id', $cycle->id)
+            ->whereIn('status', ['pending', 'processing'])
+            ->whereNull('paystack_status')
+            ->where('created_at', '<', now()->subSeconds($staleTheshold))
+            ->update([
+                'status'           => 'failed',
+                'paystack_status'  => 'expired',
+                'gateway_response' => 'Auto-expired: payment was stuck with no Paystack activity.',
+            ]);
+
+        // Also expire any pending/processing payments with a paystack_status
+        // (e.g. abandoned mid-flow after MoMo OTP was sent).
+        $hardTimeout = $staleTheshold * 3; // 30s in dev, 45min in prod
+        Payment::where('payer_email', $validated['purchaser_email'])
+            ->where('metadata->cycle_id', $cycle->id)
+            ->whereIn('status', ['pending', 'processing'])
+            ->where('created_at', '<', now()->subSeconds($hardTimeout))
+            ->update([
+                'status'           => 'failed',
+                'paystack_status'  => 'expired',
+                'gateway_response' => 'Auto-expired: payment was stuck for too long.',
+            ]);
+        // TODO in production: set AI_AUTO_FAILED_PAYMENT_THRESHOLD=900 (15min)
+
+        // Duplicate check — only blocks in-flight payments, not completed ones
         $existing = Payment::where('payer_email', $validated['purchaser_email'])
             ->where('metadata->cycle_id', $cycle->id)
-            ->whereIn('status', ['pending', 'processing', 'success'])
+            ->whereIn('status', ['pending', 'processing'])
             ->first();
 
         if ($existing) {

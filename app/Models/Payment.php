@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Mail\VoucherPurchaseMail;
+use App\Services\Notification\NotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Log;
@@ -106,6 +107,14 @@ class Payment extends Model
             Mail::to($voucher->purchaser_email)->send(new VoucherPurchaseMail($voucher));
         } catch (\Throwable $e) {
             Log::warning('Failed to send voucher purchase email: ' . $e->getMessage());
+        }
+
+        // Send SMS with voucher details
+        try {
+            $smsMessage = "GAF Recruitment Voucher: Serial {$serial}, PIN {$pin}. Register at " . config('app.url') . "/applicant/register";
+            app(NotificationService::class)->sendSms($this->payer_phone, $smsMessage);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send voucher purchase SMS: ' . $e->getMessage());
         }
 
         Log::info('Voucher created and activated from payment', [

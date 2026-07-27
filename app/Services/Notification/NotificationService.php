@@ -122,6 +122,7 @@ class NotificationService
         $subject = 'Application Submitted';
         $message = "Dear {$applicant->first_name}, your application (GAF ID: {$app->gaf_id}) has been received successfully.";
         $this->sendEmail($applicant, $subject, 'emails.application-submitted', ['applicant' => $applicant, 'application' => $app, 'subject' => $subject, 'message' => $message]);
+        $this->sendSms($applicant->contact_number, $message);
         $this->sendDashboard($applicant->id, 'application_submitted', $subject, $message);
     }
 
@@ -135,6 +136,7 @@ class NotificationService
             ? "Dear {$applicant->first_name}, you have passed the eligibility check for application {$app->gaf_id}."
             : "Dear {$applicant->first_name}, unfortunately you did not pass the eligibility check for application {$app->gaf_id}. Reasons: " . implode('; ', $result->rejection_reasons ?? []);
         $this->sendEmail($applicant, $subject, 'emails.eligibility-result', ['applicant' => $applicant, 'application' => $app, 'result' => $result, 'subject' => $subject, 'message' => $message]);
+        $this->sendSms($applicant->contact_number, $message);
         $this->sendDashboard($applicant->id, 'eligibility_result', $subject, $message);
     }
 
@@ -186,6 +188,7 @@ class NotificationService
         $subject = 'Documents Verified';
         $message = "Dear {$applicant->first_name}, all your required documents have been verified for application {$app->gaf_id}. Eligibility check is in progress.";
         $this->sendEmail($applicant, $subject, 'emails.documents-verified', ['applicant' => $applicant, 'application' => $app, 'subject' => $subject, 'message' => $message]);
+        $this->sendSms($applicant->contact_number, $message);
         $this->sendDashboard($applicant->id, 'documents_verified', $subject, $message);
     }
 
@@ -195,6 +198,7 @@ class NotificationService
         $subject = 'Final Decision Pending';
         $message = "Dear {$applicant->first_name}, your screening process is complete for application {$app->gaf_id}. Your application is now pending final committee review.";
         $this->sendEmail($applicant, $subject, 'emails.final-decision-pending', ['applicant' => $applicant, 'application' => $app, 'subject' => $subject, 'message' => $message]);
+        $this->sendSms($applicant->contact_number, $message);
         $this->sendDashboard($applicant->id, 'final_decision_pending', $subject, $message);
     }
 
@@ -271,6 +275,7 @@ class NotificationService
             'subject' => $subject,
             'message' => $message,
         ]);
+        $this->sendSms($applicant->contact_number, $message);
         $this->sendDashboard($applicant->id, 'cohort_expanded', $subject, $message);
     }
 
@@ -333,6 +338,9 @@ class NotificationService
                 'error'     => $e->getMessage(),
             ]);
         }
+
+        // SMS notification (urgent — applicant must re-upload)
+        $this->sendSms($applicant->contact_number, $message);
 
         // Dashboard notification (in-app)
         $this->sendDashboard(
