@@ -562,11 +562,11 @@ After seeding:
 ### Administrator
 
 
-| Role        | Email                 | Password   |
-| ----------- | --------------------- | ---------- |
-| Super Admin | `admin@dmrms.gov.gh`  | `admin123` |
-| Admin       | `admin2@dmrms.gov.gh` | `admin123` |
-| Admin       | `admin3@dmrms.gov.gh` | `admin123` |
+| Role                | Email                         | Password   |
+| ------------------- | ----------------------------- | ---------- |
+| Super Admin         | `admin@dmrms.gov.gh`          | `password` |
+| Recruitment Officer | `recruitment@dmrms.gov.gh`    | `password` |
+| Screening Officer   | `screening@dmrms.gov.gh`      | `password` |
 
 
 

@@ -276,16 +276,25 @@
                         Phone: <span class="font-semibold" x-text="momo_phone"></span>
                     </p>
 
-                    {{-- OTP input for Telecel --}}
+                    {{-- OTP input for Telecel / MTN MoMo --}}
                     <div x-show="otpRequired" x-cloak class="mt-4 max-w-sm mx-auto">
                         <p class="text-sm text-gray-600 mb-2">Enter the OTP sent to your phone to complete the payment:</p>
                         <div class="flex gap-2">
                             <input type="text" x-model="otpCode" placeholder="Enter OTP"
                                    class="flex-1 border rounded-lg px-4 py-3 text-sm text-center tracking-widest text-lg font-bold focus:ring-2 focus:ring-gaf-khaki border-gray-300">
-                            <button @click="submitOtp()" :disabled="!otpCode || otpCode.length < 4"
+                            <button @click="submitOtp()"
+                                    :disabled="!otpCode || otpCode.length < 4 || submitting"
                                     class="px-4 py-3 bg-gaf-green text-white rounded-lg text-sm font-semibold hover:bg-gaf-dark-green transition disabled:bg-gray-300 disabled:cursor-not-allowed">
-                                Verify
+                                <span x-show="!submitting">Verify</span>
+                                <span x-show="submitting" class="flex items-center gap-1">
+                                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                    Verifying...
+                                </span>
                             </button>
+                        </div>
+                        {{-- OTP error message --}}
+                        <div x-show="errorMessage" x-cloak class="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 text-center">
+                            <p x-text="errorMessage"></p>
                         </div>
                     </div>
 
@@ -659,8 +668,8 @@ function voucherForm() {
                     this.bankDetails = data.bank_details;
                 }
 
-                // Handle OTP (Telecel)
-                if (data.status === 'send_otp') {
+                // Handle OTP (Telecel / MTN MoMo)
+                if (data.paystack_status === 'send_otp') {
                     this.otpRequired = true;
                 }
 
@@ -819,9 +828,12 @@ function voucherForm() {
             return `${m}:${s.toString().padStart(2, '0')}`;
         },
 
-        // -- OTP Submission (Telecel) --
+        // -- OTP Submission (Telecel / MTN MoMo) --
         async submitOtp() {
             if (!this.otpCode || this.otpCode.length < 4) return;
+
+            this.submitting = true;
+            this.errorMessage = '';
 
             try {
                 const res = await fetch('{{ route("voucher.submit-otp") }}', {
@@ -837,13 +849,17 @@ function voucherForm() {
                 const data = await res.json();
 
                 if (data.success && data.status === 'success') {
-                    this.handlePaymentSuccess();
-                } else if (!data.success) {
-                    this.errorMessage = data.message || 'Invalid OTP. Please try again.';
+                    this.voucherId = data.voucher_id;
+                    this.handlePaymentSuccess(data);
+                    return;
                 }
+
+                this.errorMessage = data.message || data.gateway_response || 'Invalid OTP. Please try again.';
             } catch (e) {
                 this.errorMessage = 'Network error. Please try again.';
             }
+
+            this.submitting = false;
         },
 
         // -- Cancel --

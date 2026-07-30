@@ -167,7 +167,7 @@
                     </div>
                     <div class="text-xs text-gray-500 text-center md:text-right">
                         <div>&copy; {{ date('Y') }} GAF. All rights reserved.</div>
-                        <div class="mt-0.5">Built by <a href="https://github.com/DeryChris" target="_blank" rel="noopener noreferrer" class="text-gaf-khaki hover:underline font-medium">Nibenang</a></div>
+                        <!-- <div class="mt-0.5">Built by <a href="https://github.com/DeryChris" target="_blank" rel="noopener noreferrer" class="text-gaf-khaki hover:underline font-medium">Nibenang</a></div> -->
                     </div>
                 </div>
             </div>

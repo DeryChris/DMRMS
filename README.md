@@ -154,7 +154,7 @@ cd ai_service && venv\Scripts\activate && uvicorn app.main:app --reload --port 8
 
 | Role | Email | Password |
 |------|-------|----------|
-| Super Admin | `admin@dmrms.gov.gh` | `admin123` |
+| Super Admin | `admin@dmrms.gov.gh` | `password` |
 | Applicants | various | `password123` |
 
 ---

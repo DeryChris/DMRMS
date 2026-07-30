@@ -356,8 +356,11 @@ class VoucherPurchaseController extends Controller
             'channel' => $payment->channel,
         ];
 
-        // If still processing, check with Paystack API
-        if (in_array($payment->status, ['pending', 'processing'])) {
+        // If still processing and not awaiting OTP, check with Paystack API
+        // (Skip for send_otp — polling Paystack while OTP is pending causes
+        //  the charge to fail prematurely. OTP flow is handled by submitOtp.)
+        if (in_array($payment->status, ['pending', 'processing'])
+            && $payment->paystack_status !== 'send_otp') {
             $checkResult = $this->paystack->checkChargeStatus($payment->paystack_reference);
 
             if ($checkResult['success']) {
@@ -439,19 +442,33 @@ class VoucherPurchaseController extends Controller
             ], 422);
         }
 
+        // Update payment record with OTP submission result
+        $payment->update([
+            'paystack_status' => $result['status'],
+            'gateway_response' => $result['gateway_response'],
+        ]);
+
+        $response = [
+            'success' => $result['status'] === 'success',
+            'status' => $result['status'],
+            'gateway_response' => $result['gateway_response'],
+        ];
+
         // If OTP submission succeeded and charge is now successful, create voucher
         if ($result['status'] === 'success') {
+            $payment->update([
+                'status' => 'success',
+                'paid_at' => now(),
+            ]);
+
             $cycle = Cycle::find($payment->metadata['cycle_id'] ?? null);
             if ($cycle) {
-                $payment->createOrActivateVoucher($cycle);
+                $voucher = $payment->createOrActivateVoucher($cycle);
+                $response['voucher_id'] = $voucher->id;
             }
         }
 
-        return response()->json([
-            'success' => true,
-            'status' => $result['status'],
-            'gateway_response' => $result['gateway_response'],
-        ]);
+        return response()->json($response);
     }
 
     /**
